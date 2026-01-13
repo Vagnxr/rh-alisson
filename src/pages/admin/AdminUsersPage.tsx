@@ -41,6 +41,8 @@ import { useAdminTenantsStore } from '@/stores/adminTenantsStore';
 import type { AdminUser, AdminUserFormData } from '@/types/admin';
 import { ROLE_LABELS, ROLE_COLORS } from '@/types/admin';
 import { cn } from '@/lib/cn';
+import { InputCelular } from '@/components/ui/input-masked';
+import { InputPassword } from '@/components/ui/input-password';
 
 export function AdminUsersPage() {
   const { users, isLoading, fetchUsers, addUser, updateUser, deleteUser, toggleUserStatus } =
@@ -382,18 +384,11 @@ export function AdminUsersPage() {
               />
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Telefone
-              </label>
-              <input
-                type="text"
-                value={formData.telefone}
-                onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                placeholder="(00) 00000-0000"
-              />
-            </div>
+            <InputCelular
+              label="Celular"
+              value={formData.telefone}
+              onValueChange={(masked) => setFormData({ ...formData, telefone: masked })}
+            />
 
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">
@@ -431,18 +426,15 @@ export function AdminUsersPage() {
             </div>
 
             {!editingUser && (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Senha *
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  placeholder="******"
-                />
-              </div>
+              <InputPassword
+                label="Senha"
+                value={formData.password}
+                onValueChange={(value) => setFormData({ ...formData, password: value })}
+                showStrength
+                showRequirements
+                required
+                placeholder="Digite uma senha segura"
+              />
             )}
 
             <div className="flex items-center gap-2">

@@ -119,10 +119,10 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
         </button>
         
         <div className={cn(
-          'overflow-hidden transition-all duration-200',
-          isExpanded && isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          'transition-all duration-200',
+          isExpanded && isOpen ? 'max-h-[50vh] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
         )}>
-          <ul className="ml-8 mt-1 space-y-1 border-l border-slate-200 pl-3">
+          <ul className="ml-8 mt-1 max-h-[calc(50vh-1rem)] space-y-1 overflow-y-auto border-l border-slate-200 pl-3">
             {item.subItems.map((subItem) => (
               <li key={subItem.href}>
                 <NavLink
@@ -145,27 +145,29 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
         </div>
 
         {!isExpanded && (
-          <div className="absolute left-full top-0 z-50 ml-2 hidden min-w-48 rounded-lg border border-slate-200 bg-white py-2 shadow-lg group-hover:block">
-            <div className="border-b border-slate-100 px-3 pb-2 mb-2">
+          <div className="absolute left-full top-0 z-50 ml-2 hidden min-w-48 max-h-[70vh] flex-col rounded-lg border border-slate-200 bg-white shadow-lg group-hover:flex">
+            <div className="shrink-0 border-b border-slate-100 px-3 py-2">
               <span className="text-sm font-medium text-slate-900">{item.label}</span>
             </div>
-            {item.subItems.map((subItem) => (
-              <NavLink
-                key={subItem.href}
-                to={subItem.href}
-                onClick={() => close()}
-                className={({ isActive }) =>
-                  cn(
-                    'block px-3 py-1.5 text-sm transition-colors',
-                    isActive
-                      ? 'bg-emerald-50 font-medium text-emerald-700'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  )
-                }
-              >
-                {subItem.label}
-              </NavLink>
-            ))}
+            <div className="flex-1 overflow-y-auto py-2">
+              {item.subItems.map((subItem) => (
+                <NavLink
+                  key={subItem.href}
+                  to={subItem.href}
+                  onClick={() => close()}
+                  className={({ isActive }) =>
+                    cn(
+                      'block px-3 py-1.5 text-sm transition-colors',
+                      isActive
+                        ? 'bg-emerald-50 font-medium text-emerald-700'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    )
+                  }
+                >
+                  {subItem.label}
+                </NavLink>
+              ))}
+            </div>
           </div>
         )}
       </li>
@@ -244,7 +246,7 @@ export function Sidebar() {
               'ml-3 font-bold text-slate-800 whitespace-nowrap transition-opacity duration-150',
               isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden'
             )}>
-              FinControl
+              MSystem
             </span>
           </div>
           <button

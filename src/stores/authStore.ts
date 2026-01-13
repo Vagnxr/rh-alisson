@@ -31,7 +31,7 @@ const mockNormalUser: User = {
 const mockSuperAdmin: User = {
   id: '0',
   nome: 'Super Admin',
-  email: 'admin@fincontrol.com',
+  email: 'admin@msystem.com',
   tenantId: null, // Super admin precisa selecionar tenant
   lojas: [],
   permissoes: ['*'],
@@ -55,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
         // Mock: verifica tipo de usuario
         if (credentials.email && credentials.password) {
           // Se email contem "admin" = super admin
-          const isSuperAdmin = credentials.email.toLowerCase().includes('admin@fincontrol');
+          const isSuperAdmin = credentials.email.toLowerCase().includes('admin@msystem');
           
           if (isSuperAdmin) {
             // Super admin - nao seta tenant automaticamente

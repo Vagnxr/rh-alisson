@@ -40,6 +40,7 @@ import {
 import { useAdminTenantsStore } from '@/stores/adminTenantsStore';
 import type { AdminTenant, AdminTenantFormData } from '@/types/admin';
 import { cn } from '@/lib/cn';
+import { InputCNPJ, InputTelefone } from '@/components/ui/input-masked';
 
 export function AdminTenantsPage() {
   const { tenants, isLoading, fetchTenants, addTenant, updateTenant, deleteTenant, toggleTenantStatus } =
@@ -385,18 +386,11 @@ export function AdminTenantsPage() {
                 />
               </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  CNPJ
-                </label>
-                <input
-                  type="text"
-                  value={formData.cnpj}
-                  onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  placeholder="00.000.000/0000-00"
-                />
-              </div>
+              <InputCNPJ
+                label="CNPJ"
+                value={formData.cnpj}
+                onValueChange={(masked) => setFormData({ ...formData, cnpj: masked })}
+              />
 
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
@@ -424,18 +418,11 @@ export function AdminTenantsPage() {
                 />
               </div>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Telefone
-                </label>
-                <input
-                  type="text"
-                  value={formData.telefone}
-                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  placeholder="(00) 0000-0000"
-                />
-              </div>
+              <InputTelefone
+                label="Telefone"
+                value={formData.telefone}
+                onValueChange={(masked) => setFormData({ ...formData, telefone: masked })}
+              />
 
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-slate-700">

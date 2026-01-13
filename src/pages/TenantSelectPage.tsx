@@ -7,13 +7,13 @@ import type { Tenant } from '@/types/tenant';
 
 export function TenantSelectPage() {
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  
-  const availableTenants = useTenantStore((s) => s.availableTenants);
-  const isLoading = useTenantStore((s) => s.isLoading);
-  const fetchAvailableTenants = useTenantStore((s) => s.fetchAvailableTenants);
-  const setCurrentTenant = useTenantStore((s) => s.setCurrentTenant);
+  const user = useAuthStore(s => s.user);
+  const logout = useAuthStore(s => s.logout);
+
+  const availableTenants = useTenantStore(s => s.availableTenants);
+  const isLoading = useTenantStore(s => s.isLoading);
+  const fetchAvailableTenants = useTenantStore(s => s.fetchAvailableTenants);
+  const setCurrentTenant = useTenantStore(s => s.setCurrentTenant);
 
   useEffect(() => {
     fetchAvailableTenants();
@@ -39,11 +39,11 @@ export function TenantSelectPage() {
               <Building2 className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="font-bold text-slate-900">FinControl</h1>
-              <p className="text-xs text-slate-500">Plataforma Financeira</p>
+              <h1 className="font-bold text-slate-900">MSystem</h1>
+              <p className="text-xs text-slate-500">Sistema de Gestao</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="text-right">
               <p className="text-sm font-medium text-slate-900">{user?.nome}</p>
@@ -63,12 +63,8 @@ export function TenantSelectPage() {
       {/* Content */}
       <main className="mx-auto max-w-4xl px-4 py-12">
         <div className="mb-8 text-center">
-          <h2 className="text-2xl font-bold text-slate-900">
-            Selecione uma Empresa
-          </h2>
-          <p className="mt-2 text-slate-600">
-            Escolha a empresa que deseja acessar
-          </p>
+          <h2 className="text-2xl font-bold text-slate-900">Selecione uma Empresa</h2>
+          <p className="mt-2 text-slate-600">Escolha a empresa que deseja acessar</p>
         </div>
 
         {isLoading ? (
@@ -77,7 +73,7 @@ export function TenantSelectPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {availableTenants.map((tenant) => (
+            {availableTenants.map(tenant => (
               <button
                 key={tenant.id}
                 onClick={() => handleSelectTenant(tenant)}
@@ -86,17 +82,13 @@ export function TenantSelectPage() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors group-hover:bg-emerald-100">
                   <Building2 className="h-6 w-6" />
                 </div>
-                
+
                 <h3 className="font-semibold text-slate-900 group-hover:text-emerald-700">
                   {tenant.name}
                 </h3>
-                
-                {tenant.cnpj && (
-                  <p className="mt-1 text-sm text-slate-500">
-                    CNPJ: {tenant.cnpj}
-                  </p>
-                )}
-                
+
+                {tenant.cnpj && <p className="mt-1 text-sm text-slate-500">CNPJ: {tenant.cnpj}</p>}
+
                 <div className="mt-4 flex items-center text-sm font-medium text-emerald-600 opacity-0 transition-opacity group-hover:opacity-100">
                   Acessar
                   <ChevronRight className="ml-1 h-4 w-4" />
@@ -109,9 +101,7 @@ export function TenantSelectPage() {
         {!isLoading && availableTenants.length === 0 && (
           <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
             <Building2 className="mx-auto h-12 w-12 text-slate-300" />
-            <h3 className="mt-4 font-semibold text-slate-900">
-              Nenhuma empresa disponivel
-            </h3>
+            <h3 className="mt-4 font-semibold text-slate-900">Nenhuma empresa disponivel</h3>
             <p className="mt-2 text-sm text-slate-500">
               Entre em contato com o administrador do sistema
             </p>
