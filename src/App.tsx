@@ -3,6 +3,16 @@ import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DespesaFixaPage } from '@/pages/DespesaFixaPage';
+import { DespesaExtraPage } from '@/pages/DespesaExtraPage';
+import { DespesaFuncionarioPage } from '@/pages/DespesaFuncionarioPage';
+import { DespesaImpostoPage } from '@/pages/DespesaImpostoPage';
+import { DespesaVeiculoPage } from '@/pages/DespesaVeiculoPage';
+import { DespesaBancoPage } from '@/pages/DespesaBancoPage';
+import { ParcelamentoPage } from '@/pages/ParcelamentoPage';
+import { RendaExtraPage } from '@/pages/RendaExtraPage';
+import { InvestimentoPage } from '@/pages/InvestimentoPage';
+import { SociosPage } from '@/pages/SociosPage';
+import { BalancoGeralPage } from '@/pages/BalancoGeralPage';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Toaster } from '@/components/ui/sonner';
 import '@/index.css';
@@ -18,17 +28,21 @@ function App() {
         {/* Rotas protegidas */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/despesa-fixa" element={<DespesaFixaPage />} />
           
-          {/* Placeholder para outras paginas */}
-          <Route path="/despesa-extra" element={<PlaceholderPage title="Despesa Extra" />} />
-          <Route path="/despesa-funcionario" element={<PlaceholderPage title="Despesa Funcionario" />} />
-          <Route path="/despesa-imposto" element={<PlaceholderPage title="Despesa Imposto" />} />
-          <Route path="/despesa-veiculo" element={<PlaceholderPage title="Despesa Veiculo" />} />
-          <Route path="/despesa-banco" element={<PlaceholderPage title="Despesa Banco" />} />
-          <Route path="/parcelamento" element={<PlaceholderPage title="Parcelamento" />} />
-          <Route path="/renda-extra" element={<PlaceholderPage title="Renda Extra" />} />
-          <Route path="/investimento" element={<PlaceholderPage title="Investimento" />} />
+          {/* Paginas de Despesas */}
+          <Route path="/despesa-fixa" element={<DespesaFixaPage />} />
+          <Route path="/despesa-extra" element={<DespesaExtraPage />} />
+          <Route path="/despesa-funcionario" element={<DespesaFuncionarioPage />} />
+          <Route path="/despesa-imposto" element={<DespesaImpostoPage />} />
+          <Route path="/despesa-veiculo" element={<DespesaVeiculoPage />} />
+          <Route path="/despesa-banco" element={<DespesaBancoPage />} />
+          
+          {/* Outras paginas */}
+          <Route path="/parcelamento" element={<ParcelamentoPage />} />
+          <Route path="/renda-extra" element={<RendaExtraPage />} />
+          <Route path="/investimento" element={<InvestimentoPage />} />
+          <Route path="/socios" element={<SociosPage />} />
+          <Route path="/balanco-geral" element={<BalancoGeralPage />} />
           
           {/* Financeiro - Submenus */}
           <Route path="/financeiro" element={<Navigate to="/financeiro/caixa" replace />} />
@@ -47,8 +61,6 @@ function App() {
           <Route path="/financeiro/agenda" element={<PlaceholderPage title="Agenda" />} />
 
           <Route path="/recursos-humanos" element={<PlaceholderPage title="Recursos Humanos" />} />
-          <Route path="/socios" element={<PlaceholderPage title="Socios" />} />
-          <Route path="/balanco-geral" element={<PlaceholderPage title="Balanco Geral" />} />
         </Route>
 
         {/* Redirect padrao */}
