@@ -36,11 +36,14 @@ export type DespesaCategoria =
   | 'despesa-funcionario'
   | 'despesa-imposto'
   | 'despesa-veiculo'
-  | 'despesa-banco';
+  | 'despesa-banco'
+  | 'investimento'
+  | 'renda-extra'
+  | 'socios';
 
 // Configuração de cada categoria
 export interface DespesaCategoriaConfig {
-  key: DespesaCategoria;
+  key: DespesaCategoria | string; // Permite outras categorias também
   title: string;
   subtitle: string;
   placeholder: string;
@@ -82,5 +85,23 @@ export const DESPESA_CATEGORIAS: Record<DespesaCategoria, DespesaCategoriaConfig
     title: 'Despesas Bancarias',
     subtitle: 'Gerencie tarifas e despesas bancarias',
     placeholder: 'Ex: Tarifa mensal, TED, DOC...',
+  },
+  'investimento': {
+    key: 'investimento',
+    title: 'Investimentos',
+    subtitle: 'Gerencie seus investimentos e aplicacoes financeiras',
+    placeholder: 'Ex: CDB, Tesouro Direto, Fundos Imobiliarios...',
+  },
+  'renda-extra': {
+    key: 'renda-extra',
+    title: 'Renda Extra',
+    subtitle: 'Gerencie suas rendas extras e receitas eventuais',
+    placeholder: 'Ex: Consultoria, Venda de equipamento, Comissao...',
+  },
+  'socios': {
+    key: 'socios',
+    title: 'Socios',
+    subtitle: 'Gerencie pro-labore, distribuicao de lucros e pagamentos aos socios',
+    placeholder: 'Ex: Pro-labore, Distribuicao de lucros, Retirada...',
   },
 };

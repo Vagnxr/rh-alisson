@@ -14,22 +14,22 @@
 - [ ] Protecao de rotas
 
 ### Layout
-- [ ] Sidebar com navegacao
+- [x] Sidebar com navegacao (com modo minimizado)
 - [ ] Header com usuario e loja
 - [ ] Seletor de loja (multi-loja)
 
 ### Modulo Financeiro
-- [ ] Listagem com tabela dinamica
-- [ ] Formulario de criacao
-- [ ] Edicao inline ou modal
-- [ ] Exclusao com confirmacao
-- [ ] Calculos de totais
+- [x] Listagem com tabela dinamica
+- [x] Formulario de criacao
+- [x] Edicao inline ou modal
+- [x] Exclusao com confirmacao
+- [x] Calculos de totais
 
 ## Prioridade Media (P2)
 
 ### Modulo Despesas
-- [ ] CRUD completo
-- [ ] Categorias de despesas
+- [x] CRUD completo
+- [x] Categorias de despesas (6 categorias: Fixa, Extra, Funcionario, Imposto, Veiculo, Banco)
 - [ ] Status de pagamento
 - [ ] Alertas de vencimento
 
@@ -41,12 +41,21 @@
 ### Consolidacao
 - [ ] Visao multi-loja
 - [ ] Comparativo entre lojas
-- [ ] Totais consolidados
+- [x] Totais consolidados (Balanco Geral implementado)
 
 ### Dashboard
 - [ ] Cards de resumo
 - [ ] Graficos principais
-- [ ] Acesso rapido a modulos
+- [x] Acesso rapido a modulos (navegacao via sidebar implementada)
+
+## Modulos Adicionais Implementados
+
+### Modulos Complementares
+- [x] Parcelamento (CRUD completo com Data, Descricao, Parcela, Valor)
+- [x] Renda Extra (CRUD completo com Data, Descricao, Valor)
+- [x] Investimento (CRUD completo com Data, Descricao, Valor)
+- [x] Socios (CRUD completo com Data, Descricao, Valor)
+- [x] Balanco Geral (tela de resumo consolidado mensal)
 
 ## Prioridade Baixa (P3)
 
