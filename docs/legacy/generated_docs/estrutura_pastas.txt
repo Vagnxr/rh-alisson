@@ -1,0 +1,27 @@
+dosed/
+├── supabase/
+│   ├── functions/
+│   │   ├── _shared/           # Lógica Core do Jogo (GameEngine) compartilhada
+│   │   ├── match-action/      # Endpoint: Processa turno
+│   │   ├── create-lobby/      # Endpoint: Matchmaking
+│   │   └── draft-buy/         # Endpoint: Transação de itens
+│   ├── migrations/            # SQL Schemas
+│   └── seed.sql               # Dados iniciais (Itens, Tipos de Pílulas)
+├── src/
+│   ├── components/
+│   │   ├── game/
+│   │   │   ├── hud/           # PlayerStats, InventoryGrid
+│   │   │   ├── board/         # PillDispenser, OpponentList
+│   │   │   └── effects/       # Confetti, BloodSplatter (Canvas)
+│   │   └── retro-ui/          # Botões, Paineis 8-bit (Reutilizáveis)
+│   ├── stores/
+│   │   ├── match.store.ts     # Zustand: Estado local da partida
+│   │   └── socket.store.ts    # Supabase Realtime wrapper
+│   ├── lib/
+│   │   ├── game-math.ts       # Probabilidades e Dano
+│   │   └── constants.ts       # IDs de itens e config visual
+│   └── hooks/
+│       └── useGameSound.ts    # SFX Manager
+└── public/
+    └── assets/
+        └── sprites/           # Spritesheets (Rick, Morty, Pills)

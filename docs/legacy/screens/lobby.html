@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Dosed: Pill Roulette - In-Match Screen</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;family=VT323&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: '#00ff41', // Neon Green
+              secondary: '#d946ef', // Neon Pink/Purple
+              accent: '#facc15', // Yellow
+              'background-light': '#1a1a2e', // Deep blue/black for fallback
+              'background-dark': '#0f0f1a', // Darker space background
+              'panel-bg': '#1f2937', // Gray for panels
+              'grid-bg': '#374151', // Slightly lighter for grid slots
+            },
+            fontFamily: {
+              display: ['"Press Start 2P"', 'cursive'],
+              mono: ['"VT323"', 'monospace'],
+            },
+            boxShadow: {
+              pixel: '4px 4px 0px 0px rgba(0,0,0,0.5)',
+              'pixel-sm': '2px 2px 0px 0px rgba(0,0,0,0.5)',
+              'neon-green': '0 0 10px #00ff41, 0 0 20px #00ff41',
+              'neon-pink': '0 0 5px #d946ef, 0 0 10px #d946ef',
+            },
+            backgroundImage: {
+              'space-pattern':
+                "url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80')",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .pixel-border {
+        border-style: solid;
+        border-width: 4px;
+        border-image-slice: 2;
+        border-image-width: 2;
+        border-image-outset: 0;
+        border-image-source: url('data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8" ?><svg version="1.1" width="8" height="8" xmlns="http://www.w3.org/2000/svg"><path d="M3 1 h1 v1 h-1 z M4 1 h1 v1 h-1 z M2 2 h1 v1 h-1 z M5 2 h1 v1 h-1 z M1 3 h1 v1 h-1 z M6 3 h1 v1 h-1 z M1 4 h1 v1 h-1 z M6 4 h1 v1 h-1 z M2 5 h1 v1 h-1 z M5 5 h1 v1 h-1 z M3 6 h1 v1 h-1 z M4 6 h1 v1 h-1 z" fill="white" /></svg>');
+        image-rendering: pixelated;
+      }
+
+      .pixel-box {
+        box-shadow:
+          -4px 0 0 0 white,
+          4px 0 0 0 white,
+          0 -4px 0 0 white,
+          0 4px 0 0 white;
+        margin: 4px;
+      }
+
+      .text-shadow-sm {
+        text-shadow: 2px 2px 0px #000;
+      }
+
+      body {
+        image-rendering: pixelated;
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-background-light dark:bg-background-dark font-display selection:bg-primary relative min-h-screen overflow-hidden text-white selection:text-black"
+  >
+    <div class="bg-space-pattern absolute inset-0 z-0 bg-cover bg-center opacity-60"></div>
+    <div
+      class="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-40"
+    >
+      <div
+        class="h-[800px] w-[800px] animate-pulse rounded-full bg-linear-to-r from-green-500 via-emerald-600 to-green-900 blur-3xl"
+      ></div>
+    </div>
+    <div
+      class="relative z-10 container mx-auto flex h-screen max-w-7xl flex-col justify-between p-4"
+    >
+      <div class="mb-2 flex justify-center">
+        <div class="shadow-pixel rounded border-4 border-gray-600 bg-gray-800 px-8 py-2">
+          <h1 class="text-primary text-xl tracking-widest text-shadow-sm">DOSED: Pill Roulette</h1>
+        </div>
+      </div>
+      <div class="mb-4 grid grid-cols-5 gap-4">
+        <div
+          class="border-secondary shadow-neon-pink relative flex flex-col items-center border-4 bg-gray-900 p-2"
+        >
+          <div class="bg-secondary absolute -top-3 px-2 py-0.5 text-[10px] text-white">
+            Birdperson
+          </div>
+          <img
+            alt="Birdperson Avatar"
+            class="mb-2 h-16 w-16 border-2 border-white bg-gray-700"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQV29nt8yN0YmWaZMlxaiZko3f7Z7hulGLfKCkoBaA5bko7UtXNS_eNWmBIiRR2QAmnX_q1luDoU8qPtgAN00zlD6gh7H6Rz47jiiPfuL5FL1IyP_VfoQ-SX5fh6uF7n1u6FvTc16IH5yYGm6WWDHsdVJXqwwrQC2hbaaJOpOt_TH_7SpP8xt7uUxshTVLRKegqlwFPwarCsAU8QE-kT222jcjhbaOh8cdLY0qKJT19qgB0wYYz5YLQhLwMh5XVqp1hX3eKzLUyG8Z"
+          />
+          <div class="mb-1 flex space-x-1">
+            <span class="text-secondary text-xs">♥♥♥</span>
+          </div>
+          <div class="flex space-x-1">
+            <span class="text-xs text-blue-400">🛡️🛡️🛡️</span>
+          </div>
+        </div>
+        <div
+          class="border-secondary shadow-neon-pink relative flex flex-col items-center border-4 bg-gray-900 p-2"
+        >
+          <div class="bg-secondary absolute -top-3 px-2 py-0.5 text-[10px] text-white">
+            Cromulon
+          </div>
+          <img
+            alt="Cromulon Avatar"
+            class="mb-2 h-16 w-16 border-2 border-white bg-gray-700"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJD5KWALZpUwLgwc89hWrXsTDKawzbAjyZHrZUuaqXUJDSxAqmR9teoBAqeHy7PBiCXvzecj8C_NTP9y6nJgmWMHzw0gZFi_2SQwlyiG9QPZRTrnk4sXSROvhi_UDWpnnL9_vAHN0Ml8xljYwxPF5zEd2RZwEX96HEZFCwOUeE7DpQGI2nd4_duyYH4sCZTucKylz7utwdwd9AkJez_k4FX243MHMXD_6NlAWHkOr-xpDw7fgwL1z2FkYtA4ZxKVgbAkSMNseOu-pO"
+          />
+          <div class="mb-1 flex space-x-1">
+            <span class="text-secondary text-xs">♥♥♥♥♥</span>
+          </div>
+          <div class="flex space-x-1">
+            <span class="text-xs text-blue-400">🛡️🛡️</span>
+          </div>
+        </div>
+        <div
+          class="border-secondary shadow-neon-pink relative flex flex-col items-center border-4 bg-gray-900 p-2"
+        >
+          <div class="bg-secondary absolute -top-3 px-2 py-0.5 text-[10px] text-white">
+            Squanchy
+          </div>
+          <img
+            alt="Squanchy Avatar"
+            class="mb-2 h-16 w-16 border-2 border-white bg-gray-700"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTzjgxOCVqymP6InQ9tnV-090j4LVYprKc7XXvm4Vx7ILztwF6bJsXFulhcNuANUggnaZHsepTYX1on03bq7xEnrbwXKS0FWz8v18F5Yghtcmpv9qreZZi4-OuWmhYJy4wn52Kv8D4zaIKvrC3-3vppVxR3iJJW_fPrWHL9nmtycVisdhBDiSa0gFrSUzCTo-hYeh32Zte-VvE81BylVYDhq0NjLtdU5vyD6_6QA8vq4S1gZOR8uf5JKQ4zDS3hiu-ARB7XiDzYWp8"
+          />
+          <div class="mb-1 flex space-x-1">
+            <span class="text-secondary text-xs">♥♥</span>
+          </div>
+          <div class="flex space-x-1">
+            <span class="text-xs text-blue-400">🛡️</span>
+          </div>
+        </div>
+        <div
+          class="border-secondary shadow-neon-pink relative flex flex-col items-center border-4 bg-gray-900 p-2"
+        >
+          <div class="bg-secondary absolute -top-3 px-2 py-0.5 text-[10px] text-white">
+            Evil Morty
+          </div>
+          <img
+            alt="Evil Morty Avatar"
+            class="mb-2 h-16 w-16 border-2 border-white bg-gray-700"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_pUv-IwUTtphdxJCyt5Ulo0clZPd179xjWMmNdzu2pyjM94QeDiu_sEMhtnR9fxEljeghaw3qfOy5ZMgO3Zop0VMZ_67JDIVkj7OLH4EAwFHKK6EkeJTuiFiHbHE9dUh9Q0hEWwt34VbVYuvFSxSUGEw1jqydmcpQHYBoJ6SAvKzZIk3wlrphlytbwExSv2EghodnHq4nDLaMT1TfuOHx2PBHT2dm4S3wz4FEL6zxjgfC9a5E4MTvI340JVM5nHO4R2fZZMPH3IqG"
+          />
+          <div class="mb-1 flex space-x-1">
+            <span class="text-secondary text-xs">♥♥♥</span>
+          </div>
+          <div class="flex space-x-1">
+            <span class="text-xs text-blue-400">🛡️🛡️🛡️</span>
+          </div>
+        </div>
+        <div
+          class="border-secondary shadow-neon-pink relative flex flex-col items-center border-4 bg-gray-900 p-2"
+        >
+          <div class="bg-secondary absolute -top-3 px-2 py-0.5 text-[10px] text-white">Mr. PB</div>
+          <img
+            alt="Mr. Poopybutthole Avatar"
+            class="mb-2 h-16 w-16 border-2 border-white bg-gray-700"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZiqP-lfuxl_FtoULPJTWM_LT_-2U3UJnbQ9oENv27x5xGjB8P7NQrDzrPrJUI9BM4O_bRXOEuhkCIAcyxS3UMh5kKE1uerrP-pV9IFjxo1hIXESaPCWJ45wDc5aTxl0EQSc--a-fNfIM7Gg3HqJZfewSkZqNMjWj7wvxfiYwXTAnhsPlxyWeMSB7HbIqtK4KiUd-YJRXCxCSl476w52Rpq3x5Q03N3ZX-p-X6a-bmLuFHD9_R2Y9vMhg-nA2GFQ8eqwydP0G5-Y3x"
+          />
+          <div class="mb-1 flex space-x-1">
+            <span class="text-secondary text-xs">♥♥</span>
+          </div>
+          <div class="flex space-x-1">
+            <span class="text-xs text-gray-500">🛡️</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex grow items-center justify-center py-4">
+        <div
+          class="relative w-full max-w-3xl rounded-lg border-[6px] border-gray-600 bg-gray-800 p-1 shadow-2xl"
+        >
+          <div class="absolute top-1/2 -left-8 h-2 w-8 border-y border-black bg-pink-600"></div>
+          <div class="absolute top-1/2 -right-8 h-2 w-8 border-y border-black bg-green-600"></div>
+          <div class="relative rounded border-4 border-gray-700 bg-gray-900 p-4">
+            <div class="border-primary shadow-neon-green mb-4 border-2 bg-black py-2 text-center">
+              <span class="text-sm text-white md:text-base"
+                >RODADA 2 | TURNO: <span class="text-primary">Rick Sanchez</span></span
+              >
+            </div>
+            <div
+              class="mb-4 flex items-center justify-between rounded border border-gray-700 bg-black/50 p-2 text-[10px] md:text-xs"
+            >
+              <div class="flex flex-col items-center text-green-500">
+                <span class="text-lg font-normal">[7]</span>
+                <span>SAFE</span>
+              </div>
+              <div class="flex flex-col items-center text-purple-500">
+                <span class="text-lg font-normal">[4]</span>
+                <span>POISON</span>
+              </div>
+              <div class="flex flex-col items-center text-yellow-500">
+                <span class="text-lg font-normal">[2]</span>
+                <span>TOXIC</span>
+              </div>
+              <div class="flex flex-col items-center text-yellow-500">
+                <span class="text-lg font-normal">[1]</span>
+                <span>TOXIC</span>
+              </div>
+              <div class="flex flex-col items-center text-cyan-400">
+                <span class="text-lg font-normal">[1]</span>
+                <span>ANTIDOTE</span>
+              </div>
+              <div class="flex flex-col items-center text-red-500">
+                <span class="text-lg font-normal">[0]</span>
+                <span>LETAL</span>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <div
+                class="relative overflow-hidden border-t-4 border-b-4 border-gray-950 bg-gray-800 p-2"
+              >
+                <div
+                  class="bg-repeating-linear-gradient-90 absolute inset-x-0 bottom-0 h-2 from-gray-600 to-gray-800 bg-size-[20px_100%]"
+                ></div>
+                <div class="relative z-10 flex items-center justify-between px-4">
+                  <div
+                    class="flex h-10 w-10 animate-bounce items-center justify-center bg-transparent"
+                  >
+                    <span class="text-2xl drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] filter">💊</span>
+                  </div>
+                  <div class="flex h-10 w-10 items-center justify-center bg-transparent">
+                    <span
+                      class="text-2xl text-purple-400 drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] filter"
+                      >✴️</span
+                    >
+                  </div>
+                  <div class="flex h-10 w-10 items-center justify-center bg-transparent">
+                    <span
+                      class="text-2xl text-gray-400 drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] filter"
+                      >💊</span
+                    >
+                  </div>
+                  <div class="flex h-10 w-10 items-center justify-center bg-transparent">
+                    <span
+                      class="text-2xl text-cyan-300 drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] filter"
+                      >🔮</span
+                    >
+                  </div>
+                  <div class="flex h-10 w-10 items-center justify-center bg-transparent">
+                    <span
+                      class="text-2xl text-gray-300 drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] filter"
+                      >⚙️</span
+                    >
+                  </div>
+                  <div class="flex h-10 w-10 items-center justify-center bg-transparent">
+                    <span class="text-2xl drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] filter">❓</span>
+                  </div>
+                </div>
+                <div class="mt-1 flex justify-around">
+                  <div
+                    class="flex h-6 w-6 animate-spin items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ⚙
+                  </div>
+                  <div
+                    class="flex h-6 w-6 animate-spin items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ⚙
+                  </div>
+                  <div
+                    class="flex h-6 w-6 animate-spin items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ⚙
+                  </div>
+                  <div
+                    class="flex h-6 w-6 animate-spin items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ⚙
+                  </div>
+                  <div
+                    class="flex h-6 w-6 animate-spin items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ⚙
+                  </div>
+                  <div
+                    class="flex h-6 w-6 animate-spin items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ⚙
+                  </div>
+                </div>
+              </div>
+              <div
+                class="relative overflow-hidden border-t-4 border-b-4 border-gray-950 bg-gray-800 p-2 opacity-70"
+              >
+                <div
+                  class="bg-repeating-linear-gradient-90 absolute inset-x-0 bottom-0 h-2 from-gray-600 to-gray-800 bg-size-[20px_100%]"
+                ></div>
+                <div class="relative z-10 flex items-center justify-between px-4">
+                  <div class="flex h-10 w-10 items-center justify-center">
+                    <span class="text-xl opacity-50 grayscale">💊</span>
+                  </div>
+                  <div class="flex h-10 w-10 items-center justify-center">
+                    <span class="text-xl opacity-50 grayscale">💊</span>
+                  </div>
+                  <div class="flex h-10 w-10 items-center justify-center">
+                    <span class="text-xl opacity-50 grayscale">💊</span>
+                  </div>
+                  <div class="flex h-10 w-10 items-center justify-center">
+                    <span class="text-xl opacity-50 grayscale">💊</span>
+                  </div>
+                  <div class="flex h-10 w-10 items-center justify-center">
+                    <span class="text-xl opacity-50 grayscale">💊</span>
+                  </div>
+                  <div class="flex h-10 w-10 items-center justify-center">
+                    <span class="text-xl opacity-50 grayscale">💊</span>
+                  </div>
+                </div>
+                <div class="mt-1 flex justify-around">
+                  <div
+                    class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ?
+                  </div>
+                  <div
+                    class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ?
+                  </div>
+                  <div
+                    class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ?
+                  </div>
+                  <div
+                    class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ?
+                  </div>
+                  <div
+                    class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ?
+                  </div>
+                  <div
+                    class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-600 bg-gray-900 text-[8px] text-gray-500"
+                  >
+                    ?
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid h-auto grid-cols-1 gap-4 md:h-48 md:grid-cols-12">
+        <div
+          class="border-primary shadow-neon-green group relative flex gap-4 border-4 bg-black p-2 md:col-span-5"
+        >
+          <div
+            class="relative h-full w-32 shrink-0 overflow-hidden border-2 border-green-700 bg-gray-800"
+          >
+            <img
+              alt="Rick Sanchez Avatar"
+              class="h-full w-full object-cover"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjI9cI6XUrpUZmqZ_ub7_thHUKnpEuw9mRvf4IzagkVZk9cds0h1OfqYj7Ryr1b6gifKdMT-HK4ZJyEubHGEpCnTcgseS7Sv0Gv93pIKDomHUSk8o_wh1tZDqKLWGaJBEexW77um0b5B-FXrocJyKuY7rI2o3WZ743iNQSgbbI-O_zIdZ7QBh6D3yoyHor8nL6CdFp-DjmpHHZr2vhLEPy5iFoM--V1jTjo30Yexnk4wWP09bhM4q_OMeaHr7_FCUPafCqIOjiesd6"
+            />
+            <div
+              class="absolute inset-0 animate-[ping_3s_linear_infinite] bg-linear-to-b from-transparent via-green-500/10 to-transparent opacity-30"
+            ></div>
+          </div>
+          <div class="flex grow flex-col justify-between">
+            <div>
+              <h2 class="text-primary mb-2 text-sm">Rick Sanchez (YOU)</h2>
+              <div class="mb-2 flex items-start justify-between">
+                <div>
+                  <span class="mb-1 block text-[10px] text-gray-400">HEALTH BAR</span>
+                  <div class="text-secondary text-sm">♥♥♥♥</div>
+                </div>
+                <div>
+                  <span class="mb-1 block text-[10px] text-gray-400">RESISTANCE BAR</span>
+                  <div class="text-sm text-blue-400">🛡️🛡️🛡️🛡️</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <span class="mb-1 block text-[10px] text-gray-400">INVENTORY GRID</span>
+              <div class="grid grid-cols-6 gap-1 border border-gray-700 bg-gray-900 p-1">
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                  title="Magnifying Glass"
+                >
+                  🔍
+                </div>
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                  title="Handcuffs"
+                >
+                  🔗
+                </div>
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                  title="Knife"
+                >
+                  🔪
+                </div>
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                  title="Beer"
+                >
+                  🍺
+                </div>
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                  title="Gun"
+                >
+                  🔫
+                </div>
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                ></div>
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                >
+                  🔫
+                </div>
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                  title="Apple"
+                >
+                  🍎
+                </div>
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                  title="Wrench"
+                >
+                  🔧
+                </div>
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                  title="Device"
+                >
+                  📱
+                </div>
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                  title="Potion"
+                >
+                  🧪
+                </div>
+                <div
+                  class="flex aspect-square cursor-pointer items-center justify-center border border-gray-600 bg-gray-800 transition-colors hover:bg-gray-700"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-col justify-between gap-4 md:col-span-7">
+          <div class="flex h-1/3 gap-4">
+            <button
+              class="bg-primary shadow-pixel group flex flex-1 items-center justify-center gap-2 border-4 border-green-800 text-xl text-black transition-all hover:translate-y-1 hover:shadow-none"
+            >
+              <span class="material-icons group-hover:animate-bounce">shopping_cart</span> SHOP
+            </button>
+            <button
+              class="bg-secondary shadow-pixel group flex flex-1 items-center justify-center gap-2 border-4 border-purple-900 text-xl text-white transition-all hover:translate-y-1 hover:shadow-none"
+            >
+              <span class="material-icons group-hover:rotate-12">chat</span> CHAT
+            </button>
+          </div>
+          <div
+            class="shadow-pixel relative h-2/3 overflow-hidden border-4 border-gray-700 bg-black p-4 font-mono text-lg"
+          >
+            <div
+              class="absolute top-2 right-2 h-2 w-2 animate-pulse rounded-full bg-green-500"
+            ></div>
+            <div class="custom-scrollbar h-full space-y-2 overflow-y-auto pr-2">
+              <p class="text-gray-400">&gt; Match started.</p>
+              <p class="text-gray-400">&gt; Round 1 ended.</p>
+              <p class="text-white">
+                &gt; <span class="text-primary">Rick Sanchez</span> used
+                <span class="text-yellow-400">Beer</span>.
+              </p>
+              <p class="text-white">Ejected shell.</p>
+              <p class="animate-pulse text-white">&gt; Waiting for input...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="bg-radial-gradient pointer-events-none fixed inset-0 z-50 from-transparent to-black opacity-40"
+    ></div>
+    <script>
+      // Just a small script to make the inventory items interactive visually
+      document.querySelectorAll('.aspect-square').forEach(item => {
+        item.addEventListener('click', () => {
+          if (item.innerText) {
+            // Simple "flash" effect on click
+            item.classList.add('bg-white');
+            setTimeout(() => item.classList.remove('bg-white'), 100);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

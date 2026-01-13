@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" shape-rendering="crispEdges">
+  <defs>
+    <!-- Glow Filter for the Green Elements -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <!-- Pixel Art Grid Pattern (Optional, implicit in paths) -->
+  </defs>
+
+  <!-- Background Group: Scaled to create large pixels (16x16 unit pixels) -->
+  <g transform="translate(32, 32) scale(14)">
+    
+    <!-- 1. THICK BLACK OUTLINE (The Silhouette) -->
+    <path fill="#111111" d="
+      M 6 20 
+      H 10 V 16 H 12 V 14 H 14 V 10 H 16 V 8 H 22 V 10 H 24 V 12 H 26 V 14 H 28 V 20 H 26 V 22 H 24 V 24 H 16 V 22 H 14 V 26 H 12 V 30 H 4 V 22 H 6 Z
+    " />
+
+    <!-- 2. HANDLE -->
+    <!-- Base Color -->
+    <path fill="#B0BEC5" d="
+      M 5 22 
+      H 11 V 26 H 13 V 22 H 15 V 21 H 11 V 17 H 5 Z
+    " />
+    <!-- Handle Shading (Right/Bottom) -->
+    <path fill="#78909C" d="
+      M 11 22 
+      H 13 V 26 H 11 V 29 H 5 V 22 H 6 V 21 H 11 Z
+      M 11 17 H 12 V 21 H 11 Z
+    " />
+    <!-- Handle Highlight (Left) -->
+    <path fill="#ECEFF1" d="
+      M 5 22 V 21 H 6 V 18 H 7 V 17 H 11 V 21 H 6 V 22 Z
+    " />
+
+    <!-- 3. MAIN BODY -->
+    <!-- Base Color -->
+    <path fill="#CFD8DC" d="
+      M 11 16 
+      H 13 V 14 H 15 V 12 H 23 V 14 H 25 V 19 H 23 V 21 H 15 V 19 H 13 V 17 H 11 Z
+    " />
+    <!-- Body Shading (Bottom/Right) -->
+    <path fill="#90A4AE" d="
+      M 15 19 H 23 V 21 H 15 Z
+      M 23 14 H 25 V 19 H 23 Z
+      M 13 17 H 15 V 19 H 13 Z
+    " />
+    <!-- Body Highlight (Top/Left) -->
+    <path fill="#FFFFFF" fill-opacity="0.6" d="
+      M 11 16 H 13 V 14 H 15 V 12 H 23 V 13 H 15 V 15 H 13 V 17 H 11 Z
+    " />
+    
+    <!-- Red Detail (Rect on side) -->
+    <path fill="#D32F2F" d="M 16 16 H 18 V 18 H 16 Z" />
+    <path fill="#FFCDD2" d="M 16 16 H 17 V 17 H 16 Z" /> <!-- Highlight on red button -->
+
+    <!-- 4. TOP BULB (Container) -->
+    <!-- Glass Background (Darker Green) -->
+    <path fill="#2E7D32" d="
+      M 16 9 H 22 V 12 H 16 Z
+    " />
+    <!-- Liquid (Bright Green) -->
+    <path fill="#00E676" filter="url(#glow)" d="
+      M 17 10 H 21 V 11 H 17 Z
+      M 16 11 H 22 V 12 H 16 Z
+    " />
+    <!-- Glass Highlight (White) -->
+    <path fill="#FFFFFF" fill-opacity="0.9" d="
+      M 17 9 H 19 V 10 H 17 Z
+    " />
+    <!-- Bubbles/Details in liquid -->
+    <path fill="#B9F6CA" d="M 20 11 H 21 V 12 H 20 Z" />
+
+    <!-- 5. FRONT EMITTER -->
+    <!-- Dark Grey Housing -->
+    <path fill="#37474F" d="
+      M 25 13 H 27 V 19 H 25 Z
+    " />
+    <!-- Emitter Shading -->
+    <path fill="#263238" d="
+      M 26 13 H 27 V 19 H 26 Z
+    " />
+    
+    <!-- 6. GLOWING LENSES (Three distinct circles/squares) -->
+    <g filter="url(#glow)">
+      <!-- Top Lens -->
+      <path fill="#76FF03" d="M 27 14 H 28 V 15 H 27 Z" />
+      <!-- Middle Lens -->
+      <path fill="#76FF03" d="M 27 16 H 28 V 17 H 27 Z" />
+      <!-- Bottom Lens -->
+      <path fill="#76FF03" d="M 27 18 H 28 V 19 H 27 Z" />
+    </g>
+
+    <!-- 7. FINAL OUTLINE TOUCHUPS (Internal Separation Lines) -->
+    <!-- Line separating handle from body -->
+    <path fill="#111111" d="
+      M 11 21 H 15 V 22 H 11 Z
+    " />
+    <!-- Line under the bulb -->
+    <path fill="#111111" d="
+      M 15 12 H 23 V 13 H 15 Z
+    " />
+
+  </g>
+</svg>

@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Survived Screen</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;family=VT323&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: '#39FF14', // Neon Green
+              'primary-dark': '#2cb80f',
+              secondary: '#FFD700', // Gold
+              'background-light': '#1a1a2e', // Dark Blue-ish
+              'background-dark': '#0f0f1a', // Deep space dark
+              'panel-bg': '#0D1117',
+              'border-green': '#2ea44f',
+              rust: '#8B4513',
+              metal: '#708090',
+            },
+            fontFamily: {
+              pixel: ['"Press Start 2P"', 'cursive'],
+              'pixel-text': ['"VT323"', 'monospace'],
+            },
+            boxShadow: {
+              pixel: '4px 4px 0px 0px rgba(0,0,0,0.5)',
+              'pixel-sm': '2px 2px 0px 0px rgba(0,0,0,0.5)',
+              'neon-green': '0 0 10px #39FF14, 0 0 20px #39FF14',
+              'neon-gold': '0 0 10px #FFD700, 0 0 20px #FFD700',
+            },
+            animation: {
+              float: 'float 3s ease-in-out infinite',
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              shine: 'shine 1.5s infinite',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              },
+              shine: {
+                '0%': { backgroundPosition: '-200% center' },
+                '100%': { backgroundPosition: '200% center' },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        image-rendering: pixelated;
+        background-color: #0f0f1a;
+        background-image:
+          radial-gradient(white, rgba(255, 255, 255, 0.2) 2px, transparent 3px),
+          radial-gradient(white, rgba(255, 255, 255, 0.15) 1px, transparent 2px),
+          radial-gradient(white, rgba(255, 255, 255, 0.1) 2px, transparent 3px);
+        background-size:
+          550px 550px,
+          350px 350px,
+          250px 250px;
+        background-position:
+          0 0,
+          40px 60px,
+          130px 270px;
+      }
+
+      .pixel-border {
+        box-shadow:
+          -4px 0 0 0 #333,
+          4px 0 0 0 #333,
+          0 -4px 0 0 #333,
+          0 4px 0 0 #333;
+        margin: 4px;
+      }
+
+      .pixel-border-green {
+        box-shadow:
+          -4px 0 0 0 #0f3915,
+          4px 0 0 0 #0f3915,
+          0 -4px 0 0 #0f3915,
+          0 4px 0 0 #0f3915,
+          inset 0 0 0 4px #2ea44f;
+      }
+
+      .pixel-border-gold {
+        box-shadow:
+          -4px 0 0 0 #665200,
+          4px 0 0 0 #665200,
+          0 -4px 0 0 #665200,
+          0 4px 0 0 #665200,
+          inset 0 0 0 4px #ffd700;
+      }
+
+      .text-stroke {
+        -webkit-text-stroke: 2px #000;
+      }
+
+      .text-stroke-sm {
+        -webkit-text-stroke: 1px #000;
+      }
+
+      .scanlines {
+        background: linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0),
+          rgba(255, 255, 255, 0) 50%,
+          rgba(0, 0, 0, 0.2) 50%,
+          rgba(0, 0, 0, 0.2)
+        );
+        background-size: 100% 4px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        z-index: 50;
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-background-dark font-pixel-text relative flex min-h-screen items-center justify-center overflow-hidden p-4 text-white"
+  >
+    <div class="scanlines"></div>
+    <div
+      class="relative z-10 w-full max-w-5xl rounded-xl border-12 border-[#4a5568] bg-[#090b10] p-2 shadow-[0_0_50px_rgba(57,255,20,0.2)]"
+    >
+      <div
+        class="absolute -top-[16px] left-1/2 z-20 -translate-x-1/2 transform rounded-b-lg border-4 border-[#1a202c] bg-[#2d3748] px-8 py-2 shadow-md"
+      >
+        <h2 class="font-pixel text-shadow-green text-lg tracking-widest text-[#39FF14]">VICTORY</h2>
+      </div>
+      <div
+        class="absolute top-2 left-2 h-4 w-4 animate-pulse rounded-full bg-[#39FF14] shadow-[0_0_10px_#39FF14]"
+      ></div>
+      <div
+        class="absolute top-2 right-2 h-4 w-4 rounded-full bg-[#FFD700] shadow-[0_0_10px_#FFD700]"
+      ></div>
+      <div
+        class="absolute bottom-2 left-2 h-4 w-4 rounded-full bg-[#FFD700] shadow-[0_0_10px_#FFD700]"
+      ></div>
+      <div
+        class="absolute right-2 bottom-2 h-4 w-4 animate-pulse rounded-full bg-[#39FF14] shadow-[0_0_10px_#39FF14]"
+      ></div>
+      <div class="bg-rust absolute top-[20%] left-[-10px] h-8 w-3 rounded-sm opacity-60"></div>
+      <div class="bg-rust absolute right-[-10px] bottom-[20%] h-8 w-3 rounded-sm opacity-60"></div>
+      <div
+        class="relative overflow-hidden rounded-lg border-4 border-[#2d3748] bg-linear-to-br from-[#1a1a2e] to-[#0f0f1a] p-6 md:p-10"
+      >
+        <div class="pointer-events-none absolute inset-0 overflow-hidden opacity-20">
+          <div
+            class="animate-pulse-slow absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 transform rounded-full bg-linear-to-r from-purple-500 via-pink-500 to-red-500 blur-3xl"
+          ></div>
+        </div>
+        <div class="absolute top-10 left-10 h-2 w-2 rotate-45 transform bg-red-500"></div>
+        <div class="absolute top-20 right-20 h-3 w-3 rotate-12 transform bg-yellow-400"></div>
+        <div class="absolute bottom-32 left-1/4 h-2 w-2 bg-blue-400"></div>
+        <div class="absolute top-1/3 right-10 h-2 w-2 rounded-full bg-green-400"></div>
+        <div class="relative z-10 mb-12 text-center">
+          <div
+            class="pointer-events-none absolute -top-32 left-1/2 h-96 w-64 -translate-x-1/2 transform bg-linear-to-b from-[#FFD700]/30 to-transparent blur-xl"
+          ></div>
+          <h1
+            class="font-pixel text-stroke animate-float relative inline-block text-5xl tracking-widest text-[#FFD700] drop-shadow-[4px_4px_0_rgba(0,0,0,1)] md:text-7xl"
+          >
+            SURVIVED
+            <span
+              class="absolute top-0 left-0 h-full w-full animate-pulse text-white opacity-50 mix-blend-overlay"
+              >SURVIVED</span
+            >
+          </h1>
+        </div>
+        <div class="relative z-10 grid grid-cols-1 items-center gap-8 md:grid-cols-3">
+          <div
+            class="shadow-neon-green transform rounded-lg border-4 border-[#39FF14] bg-[#0f3915]/80 p-1 transition-transform duration-300 hover:scale-105"
+          >
+            <div
+              class="relative flex h-full flex-col rounded border-2 border-[#2ea44f] bg-[#051108] p-4"
+            >
+              <div
+                class="absolute -top-5 left-1/2 -translate-x-1/2 transform rounded-full border-2 border-[#39FF14] bg-[#051108] px-4 py-1"
+              >
+                <span class="font-pixel text-xs tracking-wider text-[#39FF14] uppercase md:text-sm"
+                  >Match Stats</span
+                >
+              </div>
+              <div class="mt-4 space-y-6 text-lg tracking-wide md:text-xl">
+                <div class="group flex items-center justify-between">
+                  <span class="text-white drop-shadow-md">Pills Survived:</span>
+                  <div class="flex items-center gap-2">
+                    <span class="font-pixel text-2xl text-[#FFD700]">12</span>
+                    <span class="text-xl">💊</span>
+                  </div>
+                </div>
+                <div class="group flex items-center justify-between">
+                  <span class="text-white drop-shadow-md">Items Used:</span>
+                  <div class="flex items-center gap-2">
+                    <span class="font-pixel text-2xl text-[#FFD700]">5</span>
+                    <span class="text-xl">🎲</span>
+                  </div>
+                </div>
+                <div class="group flex items-center justify-between">
+                  <span class="text-white drop-shadow-md">Turns Survived:</span>
+                  <div class="flex items-center gap-2">
+                    <span class="font-pixel text-2xl text-[#FFD700]">8</span>
+                    <span class="text-xl">⏳</span>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-auto flex justify-start pt-6">
+                <div
+                  class="pixel-border relative h-12 w-12 overflow-hidden rounded-sm border-2 border-black bg-gray-200"
+                >
+                  <img
+                    alt="Player Avatar Mini"
+                    class="h-full w-full object-cover"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiufVYYNTGXins-X2WSM0x_b446JAlaBtmzI5H8AV12lA4pTfC2rmC234eJ5Jo0ZkurZFTNy46F3zsmtTatoZYpkdd82cpqRj4FZf3vw1hMv9jCu63MRlIFto_kd2Y1fBUxaWz-_fNB8G697H_9CZcorQEqW_s_HufjJiNFjfcBUvf3RFp1grKoyHF7mtUyGJDvssGeps2V2KDe_jFjVnw1iQy63uF5BIZKoFLMVy_O1wHzRydIUz2e3vwv3XvB2yCaPcPQNpWT3Hc"
+                  />
+                </div>
+                <div class="mt-auto ml-2 text-2xl">👍</div>
+              </div>
+            </div>
+          </div>
+          <div class="relative -mt-8 flex flex-col items-center justify-center md:-mt-16">
+            <div
+              class="animate-float relative h-48 w-48 md:h-56 md:w-56"
+              style="animation-delay: 1s"
+            >
+              <div
+                class="absolute -top-4 -left-4 -rotate-45 transform text-4xl text-[#FFD700] drop-shadow-lg"
+              >
+                🌿
+              </div>
+              <div
+                class="absolute -top-4 -right-4 scale-x-[-1] rotate-45 transform text-4xl text-[#FFD700] drop-shadow-lg"
+              >
+                🌿
+              </div>
+              <div class="absolute inset-0 rounded-full bg-[#FFD700] opacity-40 blur-2xl"></div>
+              <div class="relative z-10 h-full w-full">
+                <img
+                  alt="Character Portrait"
+                  class="h-full w-full object-contain contrast-125 drop-shadow-[4px_4px_0_rgba(0,0,0,1)] saturate-150 filter"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0a0QW1nDCs9axZMpFN9otKEXZhVS-W-bLabXLxU1bQeBFMTHSY05CqVBJmX6OxS46mc2b45bjoJbKWoLsDNCQ5E5Zqw_RjmAtBWrn5SyvFjQv9HuAcufxlYzHwNyk_Cj7RCyui9XHD1BqXhyVxQeAlJJ-59alWY0054vcwRaWglusCOe-rgcImtl6L4yIAOM96xcBN2DmP5pbwTHQBGsiHe7dUSXiKDskxl1p_CP4InNF2vSyTArkviNNpCLd4QRM3WoARS_0E_3x"
+                />
+              </div>
+              <div class="absolute top-0 right-0 animate-pulse text-2xl text-yellow-300">✨</div>
+              <div
+                class="absolute bottom-10 left-0 animate-pulse text-xl text-yellow-300"
+                style="animation-delay: 0.5s"
+              >
+                ✨
+              </div>
+            </div>
+          </div>
+          <div
+            class="shadow-neon-gold transform rounded-lg border-4 border-[#FFD700] bg-[#3e3b0a]/80 p-1 transition-transform duration-300 hover:scale-105"
+          >
+            <div
+              class="relative flex h-full flex-col items-center rounded border-2 border-[#b09300] bg-[#1a1500] p-4 text-center"
+            >
+              <div
+                class="absolute -top-5 left-1/2 -translate-x-1/2 transform rounded-full border-2 border-[#FFD700] bg-[#1a1500] px-4 py-1"
+              >
+                <span class="font-pixel text-xs tracking-wider text-[#FFD700] uppercase md:text-sm"
+                  >Rewards</span
+                >
+              </div>
+              <div class="mt-6 w-full">
+                <h3 class="mb-1 text-xl text-white">XP GAINED:</h3>
+                <p class="font-pixel text-3xl text-[#39FF14] drop-shadow-md">+1200</p>
+                <div
+                  class="relative mt-2 h-4 w-full overflow-hidden rounded-full border-2 border-gray-600 bg-gray-800"
+                >
+                  <div
+                    class="absolute top-0 left-0 h-full w-3/4 bg-linear-to-r from-yellow-400 to-yellow-600"
+                  ></div>
+                </div>
+                <div class="relative z-10 -mt-3 flex justify-end">
+                  <span class="text-lg text-green-500 drop-shadow-md">⬆</span>
+                </div>
+              </div>
+              <div class="mt-4 w-full border-t-2 border-dashed border-gray-700 pt-4">
+                <h4 class="font-pixel mb-2 text-sm text-[#FFD700]">LOOT DROP</h4>
+                <div class="group relative inline-block cursor-pointer">
+                  <div class="mb-2 animate-bounce text-6xl transition-transform hover:scale-110">
+                    📦
+                  </div>
+                  <div
+                    class="absolute -top-4 left-1/2 -translate-x-1/2 transform rounded border border-[#39FF14] bg-black/50 p-1 backdrop-blur-sm"
+                  >
+                    <span class="text-2xl">🕶️</span>
+                  </div>
+                </div>
+                <div class="mt-1">
+                  <p class="text-lg leading-none text-blue-300">Cool Rick Sunglasses</p>
+                  <p class="mt-1 text-xs text-[#FFD700] uppercase">New Cosmetic Unlocked!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="relative z-20 mt-16 flex flex-col items-center justify-center gap-4 md:flex-row"
+        >
+          <button
+            class="group relative border-r-8 border-b-8 border-[#006400] bg-[#00a82d] px-8 py-3 transition-all duration-100 hover:bg-[#00c234] active:mt-2 active:ml-2 active:border-r-0 active:border-b-0"
+          >
+            <div class="pointer-events-none absolute inset-0 border-2 border-[#39FF14]"></div>
+            <div class="flex items-center gap-3">
+              <span class="material-icons text-white group-hover:animate-spin">refresh</span>
+              <span class="font-pixel text-shadow text-lg tracking-wider text-white uppercase"
+                >Play Again</span
+              >
+            </div>
+          </button>
+          <button
+            class="group relative border-r-8 border-b-8 border-gray-800 bg-gray-600 px-8 py-3 transition-all duration-100 hover:bg-gray-500 active:mt-2 active:ml-2 active:border-r-0 active:border-b-0"
+          >
+            <div class="pointer-events-none absolute inset-0 border-2 border-gray-400"></div>
+            <div class="flex items-center gap-3">
+              <span class="material-icons text-white">home</span>
+              <span class="font-pixel text-shadow text-lg tracking-wider text-white uppercase"
+                >Main Menu</span
+              >
+            </div>
+          </button>
+        </div>
+        <div class="absolute right-6 bottom-4 z-20">
+          <button
+            class="flex items-center gap-2 text-sm text-red-500 uppercase transition-colors hover:text-red-400"
+          >
+            <span class="material-icons text-base">warning</span>
+            Report Player
+          </button>
+        </div>
+      </div>
+      <div
+        class="absolute -bottom-[12px] left-1/4 h-4 w-1/2 rounded-b-lg border-x-4 border-b-4 border-[#1a202c] bg-[#2d3748]"
+      ></div>
+    </div>
+  </body>
+</html>
