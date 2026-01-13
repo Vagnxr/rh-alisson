@@ -31,7 +31,7 @@ const InputPassword = forwardRef<HTMLInputElement, InputPasswordProps>(
     const [showPassword, setShowPassword] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
 
-    const strength = useMemo(() => checkPasswordStrength(value), [value]);
+    const strength = useMemo(() => checkPasswordStrength(value || ''), [value]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       onValueChange?.(e.target.value);
@@ -102,7 +102,7 @@ const InputPassword = forwardRef<HTMLInputElement, InputPasswordProps>(
                 />
               ))}
             </div>
-            <p className={cn('text-xs font-medium', strength.color.replace('bg-', 'text-'))}>
+            <p className={cn('text-xs font-medium', strength.color?.replace('bg-', 'text-') || 'text-slate-500')}>
               {strength.label}
             </p>
           </div>

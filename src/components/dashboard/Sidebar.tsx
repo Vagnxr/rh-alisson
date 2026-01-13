@@ -239,7 +239,7 @@ export function Sidebar() {
         {/* Header */}
         <div className="flex h-16 items-center border-b border-slate-200 px-3">
           <div className="flex items-center">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-emerald-500 to-emerald-600 text-white shadow-sm">
               <DollarSign className="h-5 w-5" />
             </div>
             <span className={cn(

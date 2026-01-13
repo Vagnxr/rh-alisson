@@ -30,12 +30,12 @@ export function TenantSelectPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100">
       {/* Header */}
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-emerald-500 to-emerald-600 text-white shadow-sm">
               <Building2 className="h-5 w-5" />
             </div>
             <div>

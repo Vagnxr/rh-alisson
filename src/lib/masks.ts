@@ -190,13 +190,15 @@ export interface PasswordStrength {
   };
 }
 
-export function checkPasswordStrength(password: string): PasswordStrength {
+export function checkPasswordStrength(password: string | undefined | null): PasswordStrength {
+  const pwd = password || '';
+  
   const requirements = {
-    minLength: password.length >= 8,
-    hasUppercase: /[A-Z]/.test(password),
-    hasLowercase: /[a-z]/.test(password),
-    hasNumber: /[0-9]/.test(password),
-    hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    minLength: pwd.length >= 8,
+    hasUppercase: /[A-Z]/.test(pwd),
+    hasLowercase: /[a-z]/.test(pwd),
+    hasNumber: /[0-9]/.test(pwd),
+    hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(pwd),
   };
   
   const passed = Object.values(requirements).filter(Boolean).length;
