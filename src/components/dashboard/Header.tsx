@@ -1,17 +1,46 @@
-import { LogOut, User, Bell, Menu } from 'lucide-react';
+import { LogOut, User, Bell, Menu, Building2, ChevronDown, Users, Settings } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
-import { useNavigate } from 'react-router-dom';
+import { useTenantStore } from '@/stores/tenantStore';
+import { useNavigate, Link } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
 
 export function Header() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const toggleSidebar = useSidebarStore((s) => s.toggle);
+  const currentTenant = useTenantStore((s) => s.currentTenant);
+  const clearTenant = useTenantStore((s) => s.clearTenant);
   const navigate = useNavigate();
+  
+  const [showTenantMenu, setShowTenantMenu] = useState(false);
+  const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const tenantMenuRef = useRef<HTMLDivElement>(null);
+  const adminMenuRef = useRef<HTMLDivElement>(null);
+
+  // Fecha menus ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (tenantMenuRef.current && !tenantMenuRef.current.contains(event.target as Node)) {
+        setShowTenantMenu(false);
+      }
+      if (adminMenuRef.current && !adminMenuRef.current.contains(event.target as Node)) {
+        setShowAdminMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleChangeTenant = () => {
+    clearTenant();
+    setShowTenantMenu(false);
+    navigate('/selecionar-empresa');
   };
 
   return (
@@ -25,12 +54,82 @@ export function Header() {
           <Menu className="h-5 w-5" />
         </button>
 
-        <h2 className="hidden text-lg font-semibold text-slate-800 sm:block">
+        {/* Tenant atual */}
+        {currentTenant && (
+          <div className="relative" ref={tenantMenuRef}>
+            <button
+              onClick={() => user?.isSuperAdmin && setShowTenantMenu(!showTenantMenu)}
+              className={`flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm ${
+                user?.isSuperAdmin 
+                  ? 'cursor-pointer hover:bg-slate-50' 
+                  : 'cursor-default'
+              }`}
+            >
+              <Building2 className="h-4 w-4 text-emerald-600" />
+              <span className="hidden font-medium text-slate-700 sm:inline">
+                {currentTenant.name}
+              </span>
+              {user?.isSuperAdmin && (
+                <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${showTenantMenu ? 'rotate-180' : ''}`} />
+              )}
+            </button>
+
+            {/* Menu dropdown para super admin */}
+            {showTenantMenu && user?.isSuperAdmin && (
+              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                <button
+                  onClick={handleChangeTenant}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                >
+                  <Building2 className="h-4 w-4" />
+                  Trocar empresa
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <h2 className="hidden text-lg font-semibold text-slate-800 lg:block">
           Plataforma Financeira
         </h2>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
+        {/* Menu Admin - Apenas para Super Admin */}
+        {user?.isSuperAdmin && (
+          <div className="relative" ref={adminMenuRef}>
+            <button
+              onClick={() => setShowAdminMenu(!showAdminMenu)}
+              className="flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 transition-colors hover:bg-purple-100"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Admin</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showAdminMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showAdminMenu && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                <Link
+                  to="/admin/empresas"
+                  onClick={() => setShowAdminMenu(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                >
+                  <Building2 className="h-4 w-4" />
+                  Empresas
+                </Link>
+                <Link
+                  to="/admin/usuarios"
+                  onClick={() => setShowAdminMenu(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                >
+                  <Users className="h-4 w-4" />
+                  Usuarios
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Notificacoes */}
         <button className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700">
           <Bell className="h-5 w-5" />
@@ -43,7 +142,14 @@ export function Header() {
             <User className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-medium text-slate-700">{user?.nome}</p>
+            <p className="text-sm font-medium text-slate-700">
+              {user?.nome}
+              {user?.isSuperAdmin && (
+                <span className="ml-1.5 rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+                  Super
+                </span>
+              )}
+            </p>
             <p className="text-xs text-slate-500">{user?.email}</p>
           </div>
           <button

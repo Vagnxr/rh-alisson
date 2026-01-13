@@ -2,9 +2,10 @@ export interface User {
   id: string;
   nome: string;
   email: string;
-  tenantId: string;
+  tenantId: string | null; // null = super admin que precisa selecionar tenant
   lojas: string[];
   permissoes: string[];
+  isSuperAdmin: boolean; // true = pode acessar multiplos tenants
 }
 
 export interface LoginCredentials {
@@ -24,4 +25,11 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+}
+
+// Response do login (mock)
+export interface LoginResponse {
+  user: User;
+  token: string;
+  tenantId: string | null; // null se for super admin
 }

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
+import { TenantSelectPage } from '@/pages/TenantSelectPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DespesaFixaPage } from '@/pages/DespesaFixaPage';
 import { DespesaExtraPage } from '@/pages/DespesaExtraPage';
@@ -13,7 +14,9 @@ import { RendaExtraPage } from '@/pages/RendaExtraPage';
 import { InvestimentoPage } from '@/pages/InvestimentoPage';
 import { SociosPage } from '@/pages/SociosPage';
 import { BalancoGeralPage } from '@/pages/BalancoGeralPage';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
+import { AdminTenantsPage } from '@/pages/admin/AdminTenantsPage';
+import { ProtectedRoute, AuthOnlyRoute, SuperAdminRoute } from '@/components/ProtectedRoute';
 import { Toaster } from '@/components/ui/sonner';
 import '@/index.css';
 
@@ -25,7 +28,18 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/cadastro" element={<RegisterPage />} />
 
-        {/* Rotas protegidas */}
+        {/* Rota de selecao de tenant (requer autenticacao, mas nao tenant) */}
+        <Route element={<AuthOnlyRoute />}>
+          <Route path="/selecionar-empresa" element={<TenantSelectPage />} />
+        </Route>
+
+        {/* Rotas administrativas - Super Admin Only */}
+        <Route element={<SuperAdminRoute />}>
+          <Route path="/admin/usuarios" element={<AdminUsersPage />} />
+          <Route path="/admin/empresas" element={<AdminTenantsPage />} />
+        </Route>
+
+        {/* Rotas protegidas (requer autenticacao + tenant) */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           
