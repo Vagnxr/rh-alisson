@@ -17,6 +17,7 @@ import {
   BarChart3,
   X,
   ChevronDown,
+  Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSidebarStore } from '@/stores/sidebarStore';
@@ -66,6 +67,7 @@ const menuItems: MenuItem[] = [
   { label: 'Recursos Humanos', icon: UserCog, href: '/recursos-humanos' },
   { label: 'Socios', icon: UsersRound, href: '/socios' },
   { label: 'Balanco Geral', icon: BarChart3, href: '/balanco-geral' },
+  { label: 'Configuracoes', icon: Settings, href: '/configuracoes' },
 ];
 
 function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: boolean }) {

@@ -14,6 +14,7 @@ import { RendaExtraPage } from '@/pages/RendaExtraPage';
 import { InvestimentoPage } from '@/pages/InvestimentoPage';
 import { SociosPage } from '@/pages/SociosPage';
 import { BalancoGeralPage } from '@/pages/BalancoGeralPage';
+import { ConfiguracoesPage } from '@/pages/ConfiguracoesPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminTenantsPage } from '@/pages/admin/AdminTenantsPage';
 import { ProtectedRoute, AuthOnlyRoute, SuperAdminRoute } from '@/components/ProtectedRoute';
@@ -75,6 +76,9 @@ function App() {
           <Route path="/financeiro/agenda" element={<PlaceholderPage title="Agenda" />} />
 
           <Route path="/recursos-humanos" element={<PlaceholderPage title="Recursos Humanos" />} />
+          
+          {/* Configuracoes */}
+          <Route path="/configuracoes" element={<ConfiguracoesPage />} />
         </Route>
 
         {/* Redirect padrao */}

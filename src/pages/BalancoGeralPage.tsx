@@ -1,82 +1,150 @@
-import { useState } from 'react';
-import { Calendar, TrendingUp, TrendingDown, DollarSign, Package, Building2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { TrendingUp, TrendingDown, DollarSign, Package, Building2, Store, Filter } from 'lucide-react';
+import { DateFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { useLojaStore } from '@/stores/lojaStore';
+import { cn } from '@/lib/cn';
 
-// Mock data baseado na planilha
-const mockBalanco = {
-  mes: 'Janeiro',
-  ano: 2026,
-  valorTotal: 53340.0,
+// Tipos para o balanco
+interface BalancoItem {
+  descricao: string;
+  valor: number;
+  percentual: number;
+  lojaId?: string;
+  lojaNome?: string;
+}
 
-  despesas: {
-    items: [
-      { descricao: 'DESP - FIXA', valor: 3369.9, percentual: 6.32 },
-      { descricao: 'DESP - EXTRA', valor: 1050.0, percentual: 1.97 },
-      { descricao: 'DESP - FUNCIONARIO', valor: 7620.0, percentual: 14.29 },
-      { descricao: 'DESP - IMPOSTO', valor: 3360.0, percentual: 6.3 },
-      { descricao: 'DESP - PARCELAMENTO', valor: 1600.0, percentual: 3.0 },
-      { descricao: 'DESP - VEICULO', valor: 1930.0, percentual: 3.62 },
-      { descricao: 'DESP - BANCO', valor: 229.5, percentual: 0.43 },
-      { descricao: 'DESP - SOCIOS', valor: 5000.0, percentual: 9.37 },
-      { descricao: 'DESP - CARTOES - TAXAS', valor: 5066.16, percentual: 9.5 },
-    ],
-    total: 29225.56,
-  },
+interface BalancoSecao {
+  items: BalancoItem[];
+  total: number;
+}
 
-  vendas: {
-    items: [
-      { descricao: 'DINHEIRO - DEPOSITO', valor: 51000.0, percentual: 95.61 },
-      { descricao: 'DINHEIRO - SOBRA', valor: 300.0, percentual: 0.56 },
-      { descricao: 'PAGAMENTO PDV', valor: 200.0, percentual: 0.37 },
-      { descricao: 'PIX', valor: 100.0, percentual: 0.19 },
-      { descricao: 'CREDITO', valor: 350.0, percentual: 0.66 },
-      { descricao: 'DEBITO', valor: 800.0, percentual: 1.5 },
-      { descricao: 'VOUCHER', valor: 140.0, percentual: 0.26 },
-      { descricao: 'IFOOD', valor: 450.0, percentual: 0.84 },
-    ],
-    total: 53340.0,
-  },
+interface MockBalancoData {
+  mes: string;
+  ano: number;
+  valorTotal: number;
+  despesas: BalancoSecao;
+  vendas: BalancoSecao;
+  outrosValores: BalancoSecao;
+  mercadoriaEntrada: BalancoSecao;
+  mercadoriaSaida: BalancoSecao;
+  ativoImobilizado: { entrada: number; saida: number };
+  investimento: number;
+  rendaExtra: number;
+}
 
-  outrosValores: {
-    items: [
-      { descricao: 'DESC. IFOOD', valor: 0, percentual: 0 },
-      { descricao: 'DESC. LOJISTA', valor: 0, percentual: 0 },
-      { descricao: 'DESC. SOCIOS', valor: 0, percentual: 0 },
-    ],
-    total: 0,
-  },
+// Mock data baseado na planilha - COM SUPORTE A MULTI-LOJA
+function getMockBalanco(isMultiLoja: boolean): MockBalancoData {
+  const baseItems = [
+    { descricao: 'DESP - FIXA', valor: 3369.9, percentual: 6.32 },
+    { descricao: 'DESP - EXTRA', valor: 1050.0, percentual: 1.97 },
+    { descricao: 'DESP - FUNCIONARIO', valor: 7620.0, percentual: 14.29 },
+    { descricao: 'DESP - IMPOSTO', valor: 3360.0, percentual: 6.3 },
+    { descricao: 'DESP - PARCELAMENTO', valor: 1600.0, percentual: 3.0 },
+    { descricao: 'DESP - VEICULO', valor: 1930.0, percentual: 3.62 },
+    { descricao: 'DESP - BANCO', valor: 229.5, percentual: 0.43 },
+    { descricao: 'DESP - SOCIOS', valor: 5000.0, percentual: 9.37 },
+    { descricao: 'DESP - CARTOES - TAXAS', valor: 5066.16, percentual: 9.5 },
+  ];
 
-  mercadoriaEntrada: {
-    items: [
-      { descricao: 'INDUSTRIALIZACAO', valor: 0, percentual: 0 },
-      { descricao: 'COMERCIALIZACAO', valor: 0, percentual: 0 },
-      { descricao: 'EMBALAGEM', valor: 0, percentual: 0 },
-      { descricao: 'MATERIAL USO/CONS', valor: 0, percentual: 0 },
-      { descricao: 'MERCADORIA USO/CONS', valor: 0, percentual: 0 },
-      { descricao: 'GAS', valor: 0, percentual: 0 },
-    ],
-    total: 0,
-  },
+  // Se multi-loja, adiciona loja a cada item
+  const despesasItems = isMultiLoja
+    ? [
+        ...baseItems.map((item) => ({ ...item, lojaId: 'loja-1', lojaNome: 'Loja Centro' })),
+        ...baseItems.map((item) => ({
+          ...item,
+          valor: item.valor * 0.7,
+          lojaId: 'loja-2',
+          lojaNome: 'Loja Shopping',
+        })),
+      ]
+    : baseItems;
 
-  mercadoriaSaida: {
-    items: [
-      { descricao: 'INDUSTRIALIZACAO', valor: 0, percentual: 0 },
-      { descricao: 'COMERCIALIZACAO', valor: 0, percentual: 0 },
-      { descricao: 'EMBALAGEM', valor: 0, percentual: 0 },
-      { descricao: 'MATERIAL USO/CONS', valor: 0, percentual: 0 },
-      { descricao: 'MERCADORIA USO/CONS', valor: 0, percentual: 0 },
-      { descricao: 'GAS', valor: 0, percentual: 0 },
-    ],
-    total: 0,
-  },
+  const vendasItems = isMultiLoja
+    ? [
+        { descricao: 'DINHEIRO - DEPOSITO', valor: 30000.0, percentual: 56.24, lojaId: 'loja-1', lojaNome: 'Loja Centro' },
+        { descricao: 'PIX', valor: 5000.0, percentual: 9.37, lojaId: 'loja-1', lojaNome: 'Loja Centro' },
+        { descricao: 'CREDITO', valor: 3000.0, percentual: 5.62, lojaId: 'loja-1', lojaNome: 'Loja Centro' },
+        { descricao: 'DEBITO', valor: 2000.0, percentual: 3.75, lojaId: 'loja-1', lojaNome: 'Loja Centro' },
+        { descricao: 'DINHEIRO - DEPOSITO', valor: 21000.0, percentual: 39.37, lojaId: 'loja-2', lojaNome: 'Loja Shopping' },
+        { descricao: 'PIX', valor: 3000.0, percentual: 5.62, lojaId: 'loja-2', lojaNome: 'Loja Shopping' },
+        { descricao: 'CREDITO', valor: 2000.0, percentual: 3.75, lojaId: 'loja-2', lojaNome: 'Loja Shopping' },
+        { descricao: 'DEBITO', valor: 1340.0, percentual: 2.51, lojaId: 'loja-2', lojaNome: 'Loja Shopping' },
+      ]
+    : [
+        { descricao: 'DINHEIRO - DEPOSITO', valor: 51000.0, percentual: 95.61 },
+        { descricao: 'DINHEIRO - SOBRA', valor: 300.0, percentual: 0.56 },
+        { descricao: 'PAGAMENTO PDV', valor: 200.0, percentual: 0.37 },
+        { descricao: 'PIX', valor: 100.0, percentual: 0.19 },
+        { descricao: 'CREDITO', valor: 350.0, percentual: 0.66 },
+        { descricao: 'DEBITO', valor: 800.0, percentual: 1.5 },
+        { descricao: 'VOUCHER', valor: 140.0, percentual: 0.26 },
+        { descricao: 'IFOOD', valor: 450.0, percentual: 0.84 },
+      ];
 
-  ativoImobilizado: {
-    entrada: 10000.0,
-    saida: 5000.0,
-  },
+  const totalDespesas = despesasItems.reduce((acc, item) => acc + item.valor, 0);
+  const totalVendas = vendasItems.reduce((acc, item) => acc + item.valor, 0);
 
-  investimento: 10500.0,
-  rendaExtra: 4550.0,
-};
+  // Recalcula percentuais baseado no total de vendas
+  const despesasComPercentual = despesasItems.map((item) => ({
+    ...item,
+    percentual: (item.valor / totalVendas) * 100,
+  }));
+
+  const vendasComPercentual = vendasItems.map((item) => ({
+    ...item,
+    percentual: (item.valor / totalVendas) * 100,
+  }));
+
+  return {
+    mes: 'Janeiro',
+    ano: 2026,
+    valorTotal: totalVendas,
+    despesas: {
+      items: despesasComPercentual,
+      total: totalDespesas,
+    },
+    vendas: {
+      items: vendasComPercentual,
+      total: totalVendas,
+    },
+    outrosValores: {
+      items: [
+        { descricao: 'DESC. IFOOD', valor: 0, percentual: 0 },
+        { descricao: 'DESC. LOJISTA', valor: 0, percentual: 0 },
+        { descricao: 'DESC. SOCIOS', valor: 0, percentual: 0 },
+      ],
+      total: 0,
+    },
+    mercadoriaEntrada: {
+      items: [
+        { descricao: 'INDUSTRIALIZACAO', valor: 0, percentual: 0 },
+        { descricao: 'COMERCIALIZACAO', valor: 0, percentual: 0 },
+        { descricao: 'EMBALAGEM', valor: 0, percentual: 0 },
+        { descricao: 'MATERIAL USO/CONS', valor: 0, percentual: 0 },
+        { descricao: 'MERCADORIA USO/CONS', valor: 0, percentual: 0 },
+        { descricao: 'GAS', valor: 0, percentual: 0 },
+      ],
+      total: 0,
+    },
+    mercadoriaSaida: {
+      items: [
+        { descricao: 'INDUSTRIALIZACAO', valor: 0, percentual: 0 },
+        { descricao: 'COMERCIALIZACAO', valor: 0, percentual: 0 },
+        { descricao: 'EMBALAGEM', valor: 0, percentual: 0 },
+        { descricao: 'MATERIAL USO/CONS', valor: 0, percentual: 0 },
+        { descricao: 'MERCADORIA USO/CONS', valor: 0, percentual: 0 },
+        { descricao: 'GAS', valor: 0, percentual: 0 },
+      ],
+      total: 0,
+    },
+    ativoImobilizado: {
+      entrada: 10000.0,
+      saida: 5000.0,
+    },
+    investimento: 10500.0,
+    rendaExtra: 4550.0,
+  };
+}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -89,75 +157,220 @@ function formatPercent(value: number) {
   return `${value.toFixed(2)}%`;
 }
 
+// Componente de tabela com suporte a multi-loja
 interface BalancoTableProps {
   titulo: string;
-  items: Array<{ descricao: string; valor: number; percentual: number }>;
+  items: BalancoItem[];
   total: number;
   showPercent?: boolean;
+  showLoja?: boolean;
+  valorTotalVendas?: number;
 }
 
-function BalancoTable({ titulo, items, total, showPercent = true }: BalancoTableProps) {
+function BalancoTable({
+  titulo,
+  items,
+  total,
+  showPercent = true,
+  showLoja = false,
+  valorTotalVendas,
+}: BalancoTableProps) {
+  // Calcula percentual vs vendas se fornecido
+  const itemsComAnalise = useMemo(() => {
+    if (!valorTotalVendas) return items;
+    return items.map((item) => ({
+      ...item,
+      percentualVenda: (item.valor / valorTotalVendas) * 100,
+    }));
+  }, [items, valorTotalVendas]);
+
+  const gridCols = showLoja ? 'grid-cols-16' : 'grid-cols-12';
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <div className="bg-slate-900 px-4 py-2.5">
+      <div className="bg-slate-900 px-4 py-2.5 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-white uppercase tracking-wide">{titulo}</h3>
+        {valorTotalVendas && (
+          <span className="text-xs text-slate-400">
+            % sobre vendas: {formatCurrency(valorTotalVendas)}
+          </span>
+        )}
       </div>
-      <div className="divide-y divide-slate-100">
-        <div className="grid grid-cols-12 gap-2 bg-slate-100 px-4 py-2 text-xs font-medium uppercase text-slate-500">
-          <div className="col-span-6">Descricao</div>
-          <div className="col-span-3 text-right">Valor</div>
-          {showPercent && <div className="col-span-3 text-right">%</div>}
+      <div className="divide-y divide-slate-100 overflow-x-auto">
+        <div
+          className={cn(
+            'grid gap-2 bg-slate-100 px-4 py-2 text-xs font-medium uppercase text-slate-500 min-w-[500px]',
+            showLoja ? 'grid-cols-[1fr_100px_100px_80px]' : 'grid-cols-[1fr_100px_80px]'
+          )}
+        >
+          <div>Descricao</div>
+          {showLoja && <div className="text-center">Loja</div>}
+          <div className="text-right">Valor</div>
+          {showPercent && <div className="text-right">% Venda</div>}
         </div>
-        {items.map((item, i) => (
-          <div key={i} className="grid grid-cols-12 gap-2 px-4 py-2.5 text-sm hover:bg-slate-50">
-            <div className="col-span-6 text-slate-700">{item.descricao}</div>
-            <div className="col-span-3 text-right font-medium text-slate-900">
-              {formatCurrency(item.valor)}
-            </div>
+        {itemsComAnalise.map((item, i) => (
+          <div
+            key={i}
+            className={cn(
+              'grid gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 min-w-[500px]',
+              showLoja ? 'grid-cols-[1fr_100px_100px_80px]' : 'grid-cols-[1fr_100px_80px]'
+            )}
+          >
+            <div className="text-slate-700">{item.descricao}</div>
+            {showLoja && (
+              <div className="text-center">
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                  <Store className="h-3 w-3" />
+                  {item.lojaNome || '-'}
+                </span>
+              </div>
+            )}
+            <div className="text-right font-medium text-slate-900">{formatCurrency(item.valor)}</div>
             {showPercent && (
-              <div className="col-span-3 text-right text-slate-500">
-                {formatPercent(item.percentual)}
+              <div
+                className={cn(
+                  'text-right font-medium',
+                  'percentualVenda' in item && item.percentualVenda
+                    ? (item.percentualVenda as number) > 10
+                      ? 'text-red-600'
+                      : (item.percentualVenda as number) > 5
+                        ? 'text-amber-600'
+                        : 'text-emerald-600'
+                    : 'text-slate-500'
+                )}
+              >
+                {formatPercent(
+                  'percentualVenda' in item && item.percentualVenda
+                    ? (item.percentualVenda as number)
+                    : item.percentual
+                )}
               </div>
             )}
           </div>
         ))}
-        <div className="grid grid-cols-12 gap-2 bg-slate-100 px-4 py-2.5 text-sm font-semibold">
-          <div className="col-span-6 text-slate-900">TOTAL</div>
-          <div className="col-span-3 text-right text-slate-900">
-            {formatCurrency(total)}
-          </div>
-          {showPercent && <div className="col-span-3 text-right text-slate-500">-</div>}
+        <div
+          className={cn(
+            'grid gap-2 bg-slate-100 px-4 py-2.5 text-sm font-semibold min-w-[500px]',
+            showLoja ? 'grid-cols-[1fr_100px_100px_80px]' : 'grid-cols-[1fr_100px_80px]'
+          )}
+        >
+          <div className="text-slate-900">TOTAL</div>
+          {showLoja && <div></div>}
+          <div className="text-right text-slate-900">{formatCurrency(total)}</div>
+          {showPercent && (
+            <div className="text-right text-slate-700">
+              {valorTotalVendas ? formatPercent((total / valorTotalVendas) * 100) : '-'}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export function BalancoGeralPage() {
-  const [mesSelecionado] = useState(mockBalanco.mes);
-  const [anoSelecionado] = useState(mockBalanco.ano);
-  const data = mockBalanco;
+// Componente de seletor de loja
+interface LojaSelectorProps {
+  lojas: { id: string; nome: string }[];
+  lojaAtual: string | null;
+  onChange: (lojaId: string | null) => void;
+}
 
-  const lucroLiquido = data.valorTotal - data.despesas.total;
-  const margemLucro = (lucroLiquido / data.valorTotal) * 100;
+function LojaSelector({ lojas, lojaAtual, onChange }: LojaSelectorProps) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-1">
+      <button
+        onClick={() => onChange(null)}
+        className={cn(
+          'flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors',
+          lojaAtual === null
+            ? 'bg-emerald-600 text-white'
+            : 'text-slate-600 hover:bg-slate-100'
+        )}
+      >
+        <Store className="h-4 w-4" />
+        Todas
+      </button>
+      {lojas.map((loja) => (
+        <button
+          key={loja.id}
+          onClick={() => onChange(loja.id)}
+          className={cn(
+            'rounded px-3 py-1.5 text-sm font-medium transition-colors',
+            lojaAtual === loja.id
+              ? 'bg-emerald-600 text-white'
+              : 'text-slate-600 hover:bg-slate-100'
+          )}
+        >
+          {loja.nome}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function BalancoGeralPage() {
+  const { lojas, isMultiLoja, fetchLojas, lojaAtual, setLojaAtual } = useLojaStore();
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>();
+  const [lojaFiltro, setLojaFiltro] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchLojas();
+  }, [fetchLojas]);
+
+  const data = useMemo(() => getMockBalanco(isMultiLoja), [isMultiLoja]);
+
+  // Filtra items por loja se necessario
+  const filteredData = useMemo(() => {
+    if (!lojaFiltro || !isMultiLoja) return data;
+
+    return {
+      ...data,
+      despesas: {
+        ...data.despesas,
+        items: data.despesas.items.filter((item) => item.lojaId === lojaFiltro),
+        total: data.despesas.items
+          .filter((item) => item.lojaId === lojaFiltro)
+          .reduce((acc, item) => acc + item.valor, 0),
+      },
+      vendas: {
+        ...data.vendas,
+        items: data.vendas.items.filter((item) => item.lojaId === lojaFiltro),
+        total: data.vendas.items
+          .filter((item) => item.lojaId === lojaFiltro)
+          .reduce((acc, item) => acc + item.valor, 0),
+      },
+    };
+  }, [data, lojaFiltro, isMultiLoja]);
+
+  const lucroLiquido = filteredData.vendas.total - filteredData.despesas.total;
+  const margemLucro =
+    filteredData.vendas.total > 0 ? (lucroLiquido / filteredData.vendas.total) * 100 : 0;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
-            Balanco Mensal
-          </h1>
+          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Balanco Mensal</h1>
           <p className="mt-1 text-sm text-slate-500">
             Resumo financeiro consolidado do periodo
+            {isMultiLoja && !lojaFiltro && ' - Todas as lojas'}
+            {isMultiLoja && lojaFiltro && ` - ${lojas.find((l) => l.id === lojaFiltro)?.nome}`}
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
-          <Calendar className="h-4 w-4 text-slate-400" />
-          <span className="text-sm font-medium text-slate-900">
-            {mesSelecionado} / {anoSelecionado}
-          </span>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Filtro de data */}
+          <DateFilter value={dateFilter} onChange={setDateFilter} />
+
+          {/* Seletor de loja (apenas se multi-loja) */}
+          {isMultiLoja && (
+            <LojaSelector
+              lojas={lojas.map((l) => ({ id: l.id, nome: l.nome }))}
+              lojaAtual={lojaFiltro}
+              onChange={setLojaFiltro}
+            />
+          )}
         </div>
       </div>
 
@@ -171,7 +384,7 @@ export function BalancoGeralPage() {
             <div>
               <p className="text-xs font-medium text-slate-500">Faturamento</p>
               <p className="text-lg font-bold text-slate-900">
-                {formatCurrency(data.valorTotal)}
+                {formatCurrency(filteredData.vendas.total)}
               </p>
             </div>
           </div>
@@ -185,7 +398,11 @@ export function BalancoGeralPage() {
             <div>
               <p className="text-xs font-medium text-slate-500">Despesas</p>
               <p className="text-lg font-bold text-slate-900">
-                {formatCurrency(data.despesas.total)}
+                {formatCurrency(filteredData.despesas.total)}
+              </p>
+              <p className="text-xs text-slate-500">
+                {formatPercent((filteredData.despesas.total / filteredData.vendas.total) * 100 || 0)} das
+                vendas
               </p>
             </div>
           </div>
@@ -198,7 +415,12 @@ export function BalancoGeralPage() {
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500">Lucro Liquido</p>
-              <p className="text-lg font-bold text-emerald-600">
+              <p
+                className={cn(
+                  'text-lg font-bold',
+                  lucroLiquido >= 0 ? 'text-emerald-600' : 'text-red-600'
+                )}
+              >
                 {formatCurrency(lucroLiquido)}
               </p>
             </div>
@@ -212,7 +434,16 @@ export function BalancoGeralPage() {
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500">Margem</p>
-              <p className="text-lg font-bold text-slate-900">
+              <p
+                className={cn(
+                  'text-lg font-bold',
+                  margemLucro >= 20
+                    ? 'text-emerald-600'
+                    : margemLucro >= 10
+                      ? 'text-amber-600'
+                      : 'text-red-600'
+                )}
+              >
                 {formatPercent(margemLucro)}
               </p>
             </div>
@@ -222,26 +453,29 @@ export function BalancoGeralPage() {
 
       {/* Secoes principais */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Despesas */}
+        {/* Despesas com % sobre vendas */}
         <BalancoTable
           titulo="Despesas"
-          items={data.despesas.items}
-          total={data.despesas.total}
+          items={filteredData.despesas.items}
+          total={filteredData.despesas.total}
+          showLoja={isMultiLoja && !lojaFiltro}
+          valorTotalVendas={filteredData.vendas.total}
         />
 
         {/* Vendas */}
         <BalancoTable
           titulo="Vendas"
-          items={data.vendas.items}
-          total={data.vendas.total}
+          items={filteredData.vendas.items}
+          total={filteredData.vendas.total}
+          showLoja={isMultiLoja && !lojaFiltro}
         />
       </div>
 
       {/* Outros Valores */}
       <BalancoTable
         titulo="Outros Valores"
-        items={data.outrosValores.items}
-        total={data.outrosValores.total}
+        items={filteredData.outrosValores.items}
+        total={filteredData.outrosValores.total}
       />
 
       {/* Mercadoria */}
@@ -255,7 +489,7 @@ export function BalancoGeralPage() {
               Entrada
             </div>
             <div className="divide-y divide-slate-100">
-              {data.mercadoriaEntrada.items.map((item, i) => (
+              {filteredData.mercadoriaEntrada.items.map((item, i) => (
                 <div key={i} className="grid grid-cols-12 gap-2 px-4 py-2.5 text-sm hover:bg-slate-50">
                   <div className="col-span-6 text-slate-700">{item.descricao}</div>
                   <div className="col-span-3 text-right font-medium text-slate-900">
@@ -269,7 +503,7 @@ export function BalancoGeralPage() {
               <div className="grid grid-cols-12 gap-2 bg-slate-100 px-4 py-2.5 text-sm font-semibold">
                 <div className="col-span-6 text-slate-900">TOTAL</div>
                 <div className="col-span-3 text-right text-slate-900">
-                  {formatCurrency(data.mercadoriaEntrada.total)}
+                  {formatCurrency(filteredData.mercadoriaEntrada.total)}
                 </div>
                 <div className="col-span-3 text-right text-slate-500">-</div>
               </div>
@@ -280,7 +514,7 @@ export function BalancoGeralPage() {
               Saida
             </div>
             <div className="divide-y divide-slate-100">
-              {data.mercadoriaSaida.items.map((item, i) => (
+              {filteredData.mercadoriaSaida.items.map((item, i) => (
                 <div key={i} className="grid grid-cols-12 gap-2 px-4 py-2.5 text-sm hover:bg-slate-50">
                   <div className="col-span-6 text-slate-700">{item.descricao}</div>
                   <div className="col-span-3 text-right font-medium text-slate-900">
@@ -294,7 +528,7 @@ export function BalancoGeralPage() {
               <div className="grid grid-cols-12 gap-2 bg-slate-100 px-4 py-2.5 text-sm font-semibold">
                 <div className="col-span-6 text-slate-900">TOTAL</div>
                 <div className="col-span-3 text-right text-slate-900">
-                  {formatCurrency(data.mercadoriaSaida.total)}
+                  {formatCurrency(filteredData.mercadoriaSaida.total)}
                 </div>
                 <div className="col-span-3 text-right text-slate-500">-</div>
               </div>
@@ -308,7 +542,9 @@ export function BalancoGeralPage() {
         {/* Ativo Imobilizado */}
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden sm:col-span-2">
           <div className="bg-slate-900 px-4 py-2.5">
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wide">Ativo Imobilizado</h3>
+            <h3 className="text-sm font-semibold text-white uppercase tracking-wide">
+              Ativo Imobilizado
+            </h3>
           </div>
           <div className="grid grid-cols-2 divide-x divide-slate-200">
             <div className="p-4">
@@ -317,7 +553,7 @@ export function BalancoGeralPage() {
                 <span className="text-xs font-medium uppercase text-slate-500">Entrada</span>
               </div>
               <p className="text-lg font-bold text-slate-900">
-                {formatCurrency(data.ativoImobilizado.entrada)}
+                {formatCurrency(filteredData.ativoImobilizado.entrada)}
               </p>
             </div>
             <div className="p-4">
@@ -326,7 +562,7 @@ export function BalancoGeralPage() {
                 <span className="text-xs font-medium uppercase text-slate-500">Saida</span>
               </div>
               <p className="text-lg font-bold text-slate-900">
-                {formatCurrency(data.ativoImobilizado.saida)}
+                {formatCurrency(filteredData.ativoImobilizado.saida)}
               </p>
             </div>
           </div>
@@ -343,7 +579,7 @@ export function BalancoGeralPage() {
               <span className="text-xs font-medium uppercase text-slate-500">Total</span>
             </div>
             <p className="text-lg font-bold text-slate-900">
-              {formatCurrency(data.investimento)}
+              {formatCurrency(filteredData.investimento)}
             </p>
           </div>
         </div>
@@ -359,7 +595,7 @@ export function BalancoGeralPage() {
               <span className="text-xs font-medium uppercase text-slate-500">Total</span>
             </div>
             <p className="text-lg font-bold text-slate-900">
-              {formatCurrency(data.rendaExtra)}
+              {formatCurrency(filteredData.rendaExtra)}
             </p>
           </div>
         </div>

@@ -10,6 +10,7 @@ import {
 import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DespesaBase, DespesaInput, DespesaCategoriaConfig } from '@/types/despesa';
+import { DateFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import {
   Dialog,
   DialogContent,
@@ -67,6 +68,7 @@ export function DespesaPage({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<DespesaBase | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>();
 
   const [formData, setFormData] = useState<DespesaInput>({
     data: '',
@@ -77,6 +79,16 @@ export function DespesaPage({
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  // Filtra items por data
+  const filteredItems = useMemo(() => {
+    if (!dateFilter || !items) return items;
+
+    return items.filter((item) => {
+      const itemDate = new Date(item.data);
+      return itemDate >= dateFilter.startDate && itemDate <= dateFilter.endDate;
+    });
+  }, [items, dateFilter]);
 
   const handleOpenDialog = (item?: DespesaBase) => {
     if (item) {
@@ -213,7 +225,7 @@ export function DespesaPage({
   );
 
   const table = useReactTable({
-    data: items ?? [],
+    data: filteredItems ?? [],
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -222,8 +234,8 @@ export function DespesaPage({
   });
 
   const total = useMemo(
-    () => (items ?? []).reduce((acc, d) => acc + d.valor, 0),
-    [items]
+    () => (filteredItems ?? []).reduce((acc, d) => acc + d.valor, 0),
+    [filteredItems]
   );
 
   if (isLoading && items.length === 0) {
@@ -244,13 +256,16 @@ export function DespesaPage({
           </h1>
           <p className="mt-1 text-sm text-slate-500">{config.subtitle}</p>
         </div>
-        <button
-          onClick={() => handleOpenDialog()}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Novo Registro</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <button
+            onClick={() => handleOpenDialog()}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Novo Registro</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabela */}
@@ -305,7 +320,7 @@ export function DespesaPage({
                 ))
               )}
             </tbody>
-            {items.length > 0 && (
+            {filteredItems.length > 0 && (
               <tfoot className="border-t border-slate-200 bg-slate-50">
                 <tr>
                   <td
@@ -326,13 +341,13 @@ export function DespesaPage({
 
         {/* Lista Mobile */}
         <div className="divide-y divide-slate-200 sm:hidden">
-          {items.length === 0 ? (
+          {filteredItems.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm text-slate-500">
-              Nenhum registro cadastrado
+              Nenhum registro encontrado
             </div>
           ) : (
             <>
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <div key={item.id} className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">

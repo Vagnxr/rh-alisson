@@ -11,6 +11,7 @@ import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Parcelamento, ParcelamentoInput } from '@/types/parcelamento';
 import { useParcelamentoStore } from '@/stores/parcelamentoStore';
+import { DateFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,7 @@ export function ParcelamentoPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Parcelamento | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>();
 
   const [formData, setFormData] = useState<ParcelamentoInput>({
     data: '',
@@ -68,6 +70,16 @@ export function ParcelamentoPage() {
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  // Filtra items por data
+  const filteredItems = useMemo(() => {
+    if (!dateFilter || !items) return items;
+
+    return items.filter((item) => {
+      const itemDate = new Date(item.data);
+      return itemDate >= dateFilter.startDate && itemDate <= dateFilter.endDate;
+    });
+  }, [items, dateFilter]);
 
   const handleOpenDialog = (item?: Parcelamento) => {
     if (item) {
@@ -228,7 +240,7 @@ export function ParcelamentoPage() {
   );
 
   const table = useReactTable({
-    data: items ?? [],
+    data: filteredItems ?? [],
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -237,8 +249,8 @@ export function ParcelamentoPage() {
   });
 
   const total = useMemo(
-    () => (items ?? []).reduce((acc, d) => acc + d.valor, 0),
-    [items]
+    () => (filteredItems ?? []).reduce((acc, d) => acc + d.valor, 0),
+    [filteredItems]
   );
 
   if (isLoading && items.length === 0) {
@@ -261,13 +273,16 @@ export function ParcelamentoPage() {
             Gerencie seus parcelamentos e compras parceladas
           </p>
         </div>
-        <button
-          onClick={() => handleOpenDialog()}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Novo Registro</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <button
+            onClick={() => handleOpenDialog()}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Novo Registro</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabela */}
@@ -322,7 +337,7 @@ export function ParcelamentoPage() {
                 ))
               )}
             </tbody>
-            {items.length > 0 && (
+            {filteredItems.length > 0 && (
               <tfoot className="border-t border-slate-200 bg-slate-50">
                 <tr>
                   <td
@@ -343,13 +358,13 @@ export function ParcelamentoPage() {
 
         {/* Lista Mobile */}
         <div className="divide-y divide-slate-200 sm:hidden">
-          {items.length === 0 ? (
+          {filteredItems.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm text-slate-500">
-              Nenhum registro cadastrado
+              Nenhum registro encontrado
             </div>
           ) : (
             <>
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <div key={item.id} className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">

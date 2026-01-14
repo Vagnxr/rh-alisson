@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -7,6 +8,7 @@ import {
   ArrowDownRight,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { DateFilter, type DateFilterValue } from '@/components/ui/date-filter';
 
 interface StatCardProps {
   label: string;
@@ -160,16 +162,21 @@ function formatCurrency(value: number) {
 }
 
 export function DashboardPage() {
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>();
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Titulo */}
-      <div>
-        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Visao geral das suas financas
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+            Dashboard
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Visao geral das suas financas
+          </p>
+        </div>
+        <DateFilter value={dateFilter} onChange={setDateFilter} />
       </div>
 
       {/* Cards de Estatisticas */}
