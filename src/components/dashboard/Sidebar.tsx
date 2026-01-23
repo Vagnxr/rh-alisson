@@ -18,6 +18,8 @@ import {
   X,
   ChevronDown,
   Settings,
+  Truck,
+  Store,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSidebarStore } from '@/stores/sidebarStore';
@@ -64,6 +66,8 @@ const menuItems: MenuItem[] = [
       { label: 'Agenda', href: '/financeiro/agenda' },
     ],
   },
+  { label: 'Fornecedores', icon: Truck, href: '/fornecedores' },
+  { label: 'Lojas', icon: Store, href: '/lojas' },
   { label: 'Recursos Humanos', icon: UserCog, href: '/recursos-humanos' },
   { label: 'Socios', icon: UsersRound, href: '/socios' },
   { label: 'Balanco Geral', icon: BarChart3, href: '/balanco-geral' },

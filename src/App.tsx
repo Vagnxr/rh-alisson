@@ -15,6 +15,8 @@ import { InvestimentoPage } from '@/pages/InvestimentoPage';
 import { SociosPage } from '@/pages/SociosPage';
 import { BalancoGeralPage } from '@/pages/BalancoGeralPage';
 import { ConfiguracoesPage } from '@/pages/ConfiguracoesPage';
+import { FornecedoresPage } from '@/pages/FornecedoresPage';
+import { LojasPage } from '@/pages/LojasPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminTenantsPage } from '@/pages/admin/AdminTenantsPage';
 import { ProtectedRoute, AuthOnlyRoute, SuperAdminRoute } from '@/components/ProtectedRoute';
@@ -58,6 +60,8 @@ function App() {
           <Route path="/investimento" element={<InvestimentoPage />} />
           <Route path="/socios" element={<SociosPage />} />
           <Route path="/balanco-geral" element={<BalancoGeralPage />} />
+          <Route path="/fornecedores" element={<FornecedoresPage />} />
+          <Route path="/lojas" element={<LojasPage />} />
           
           {/* Financeiro - Submenus */}
           <Route path="/financeiro" element={<Navigate to="/financeiro/caixa" replace />} />

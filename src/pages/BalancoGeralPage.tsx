@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Package, Building2, Store, Filter } from 'lucide-react';
 import { DateFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { useLojaStore } from '@/stores/lojaStore';
+import type { Loja } from '@/types/loja';
 import { cn } from '@/lib/cn';
 
 // Tipos para o balanco
@@ -270,7 +271,7 @@ function BalancoTable({
 
 // Componente de seletor de loja
 interface LojaSelectorProps {
-  lojas: { id: string; nome: string }[];
+  lojas: Loja[];
   lojaAtual: string | null;
   onChange: (lojaId: string | null) => void;
 }
@@ -301,7 +302,7 @@ function LojaSelector({ lojas, lojaAtual, onChange }: LojaSelectorProps) {
               : 'text-slate-600 hover:bg-slate-100'
           )}
         >
-          {loja.nome}
+          {loja.apelido}
         </button>
       ))}
     </div>
@@ -355,7 +356,7 @@ export function BalancoGeralPage() {
           <p className="mt-1 text-sm text-slate-500">
             Resumo financeiro consolidado do periodo
             {isMultiLoja && !lojaFiltro && ' - Todas as lojas'}
-            {isMultiLoja && lojaFiltro && ` - ${lojas.find((l) => l.id === lojaFiltro)?.nome}`}
+            {isMultiLoja && lojaFiltro && ` - ${lojas.find((l) => l.id === lojaFiltro)?.apelido}`}
           </p>
         </div>
 
@@ -366,7 +367,7 @@ export function BalancoGeralPage() {
           {/* Seletor de loja (apenas se multi-loja) */}
           {isMultiLoja && (
             <LojaSelector
-              lojas={lojas.map((l) => ({ id: l.id, nome: l.nome }))}
+              lojas={lojas}
               lojaAtual={lojaFiltro}
               onChange={setLojaFiltro}
             />

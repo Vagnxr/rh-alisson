@@ -270,7 +270,7 @@ export function ParcelamentoPage() {
             Parcelamentos
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gerencie seus parcelamentos e compras parceladas
+            Gerencie seus parcelamentos
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">

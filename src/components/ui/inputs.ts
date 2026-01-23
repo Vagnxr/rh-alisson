@@ -17,6 +17,13 @@ export { InputPassword, type InputPasswordProps } from './input-password';
 
 export { InputEndereco, type EnderecoData } from './input-endereco';
 
+export {
+  InputUppercase,
+  TextareaUppercase,
+  type InputUppercaseProps,
+  type TextareaUppercaseProps,
+} from './input-uppercase';
+
 // Re-exporta utilitarios de mascara para uso direto se necessario
 export {
   applyMask,
