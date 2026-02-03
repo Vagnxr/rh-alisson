@@ -74,45 +74,45 @@ function createDespesaStore(categoria: DespesaCategoria, mockData: DespesaBase[]
 
 // Mock data para cada categoria
 const mockDespesaFixa: DespesaBase[] = [
-  { id: '1', data: '2026-01-05', descricao: 'Aluguel', valor: 2500.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-10', descricao: 'Internet', valor: 150.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-15', descricao: 'Energia Eletrica', valor: 450.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '4', data: '2026-01-20', descricao: 'Agua', valor: 180.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '5', data: '2026-01-25', descricao: 'Telefone', valor: 89.9, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '1', data: '2026-01-05', tipo: 'ALUGUEL', descricao: 'Aluguel', valor: 2500.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '2', data: '2026-01-10', tipo: 'INTERNET', descricao: 'Internet', valor: 150.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '3', data: '2026-01-15', tipo: 'LUZ', descricao: 'Energia Eletrica', valor: 450.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '4', data: '2026-01-20', tipo: 'AGUA', descricao: 'Agua', valor: 180.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '5', data: '2026-01-25', tipo: 'TELEFONE', descricao: 'Telefone', valor: 89.9, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
 ];
 
 const mockDespesaExtra: DespesaBase[] = [
-  { id: '1', data: '2026-01-03', descricao: 'Material de Escritorio', valor: 320.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-08', descricao: 'Manutencao Ar Condicionado', valor: 450.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-12', descricao: 'Limpeza Especializada', valor: 280.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '1', data: '2026-01-03', tipo: 'MATERIAL', descricao: 'Material de Escritorio', valor: 320.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '2', data: '2026-01-08', tipo: 'MANUTENCAO', descricao: 'Manutencao Ar Condicionado', valor: 450.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '3', data: '2026-01-12', tipo: 'SERVICO', descricao: 'Limpeza Especializada', valor: 280.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
 ];
 
 const mockDespesaFuncionario: DespesaBase[] = [
-  { id: '1', data: '2026-01-05', descricao: 'Salario - Joao Silva', valor: 3500.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-05', descricao: 'Salario - Maria Santos', valor: 2800.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-10', descricao: 'Vale Transporte', valor: 440.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '4', data: '2026-01-10', descricao: 'Vale Alimentacao', valor: 880.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '1', data: '2026-01-05', tipo: 'SALARIO', descricao: 'Salario - Joao Silva', valor: 3500.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '2', data: '2026-01-05', tipo: 'SALARIO', descricao: 'Salario - Maria Santos', valor: 2800.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '3', data: '2026-01-10', tipo: 'VALE TRANSPORTE', descricao: 'Vale Transporte', valor: 440.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '4', data: '2026-01-10', tipo: 'VALE ALIMENTACAO', descricao: 'Vale Alimentacao', valor: 880.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
 ];
 
 const mockDespesaImposto: DespesaBase[] = [
-  { id: '1', data: '2026-01-15', descricao: 'ICMS', valor: 1250.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-20', descricao: 'ISS', valor: 580.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-20', descricao: 'INSS', valor: 890.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '4', data: '2026-01-20', descricao: 'FGTS', valor: 640.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '1', data: '2026-01-15', tipo: 'ICMS', descricao: 'ICMS', valor: 1250.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '2', data: '2026-01-20', tipo: 'ISS', descricao: 'ISS', valor: 580.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '3', data: '2026-01-20', tipo: 'INSS', descricao: 'INSS', valor: 890.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '4', data: '2026-01-20', tipo: 'FGTS', descricao: 'FGTS', valor: 640.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
 ];
 
 const mockDespesaVeiculo: DespesaBase[] = [
-  { id: '1', data: '2026-01-02', descricao: 'Combustivel - Gol', valor: 350.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-08', descricao: 'Combustivel - Fiorino', valor: 420.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-12', descricao: 'Troca de Oleo - Gol', valor: 180.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '4', data: '2026-01-18', descricao: 'IPVA - Gol', valor: 980.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '1', data: '2026-01-02', tipo: 'COMBUSTIVEL', descricao: 'Combustivel - Gol', valor: 350.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '2', data: '2026-01-08', tipo: 'COMBUSTIVEL', descricao: 'Combustivel - Fiorino', valor: 420.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '3', data: '2026-01-12', tipo: 'MANUTENCAO', descricao: 'Troca de Oleo - Gol', valor: 180.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '4', data: '2026-01-18', tipo: 'IPVA', descricao: 'IPVA - Gol', valor: 980.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
 ];
 
 const mockDespesaBanco: DespesaBase[] = [
-  { id: '1', data: '2026-01-05', descricao: 'Tarifa Mensal - Bradesco', valor: 45.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-05', descricao: 'Tarifa Mensal - Itau', valor: 52.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-10', descricao: 'TED para Fornecedor', valor: 12.5, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '4', data: '2026-01-15', descricao: 'Anuidade Cartao', valor: 120.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '1', data: '2026-01-05', tipo: 'TARIFA MENSAL', descricao: 'Tarifa Mensal - Bradesco', valor: 45.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '2', data: '2026-01-05', tipo: 'TARIFA MENSAL', descricao: 'Tarifa Mensal - Itau', valor: 52.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '3', data: '2026-01-10', tipo: 'TED', descricao: 'TED para Fornecedor', valor: 12.5, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '4', data: '2026-01-15', tipo: 'TAXA CARTAO', descricao: 'Anuidade Cartao', valor: 120.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
 ];
 
 // Exportar stores

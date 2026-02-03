@@ -1,17 +1,34 @@
 export interface DespesaBase {
   id: string;
   data: string;
+  tipo: string; // Tipo da despesa (obrigatorio)
   descricao: string;
   valor: number;
+  comunicarAgenda?: boolean; // Se deve comunicar a agenda
   createdAt: string;
   updatedAt: string;
 }
 
 export interface DespesaInput {
   data: string;
+  tipo: string;
   descricao: string;
   valor: number;
+  comunicarAgenda?: boolean;
 }
+
+// Tipos padrao por categoria de despesa
+export const TIPOS_DESPESA: Record<DespesaCategoria, string[]> = {
+  'despesa-fixa': ['ALUGUEL', 'AGUA', 'LUZ', 'INTERNET', 'TELEFONE', 'CONDOMINIO', 'SEGURO', 'OUTROS'],
+  'despesa-extra': ['MANUTENCAO', 'MATERIAL', 'EQUIPAMENTO', 'SERVICO', 'OUTROS'],
+  'despesa-funcionario': ['SALARIO', 'VALE TRANSPORTE', 'VALE ALIMENTACAO', 'PLANO SAUDE', 'FERIAS', '13º SALARIO', 'RESCISAO', 'OUTROS'],
+  'despesa-imposto': ['ICMS', 'ISS', 'INSS', 'FGTS', 'PIS', 'COFINS', 'IRPJ', 'CSLL', 'SIMPLES', 'OUTROS'],
+  'despesa-veiculo': ['COMBUSTIVEL', 'MANUTENCAO', 'SEGURO', 'IPVA', 'LICENCIAMENTO', 'MULTA', 'PEDAGIO', 'ESTACIONAMENTO', 'OUTROS'],
+  'despesa-banco': ['TARIFA MENSAL', 'TED', 'DOC', 'PIX', 'TAXA CARTAO', 'JUROS', 'IOF', 'OUTROS'],
+  'investimento': ['CDB', 'TESOURO DIRETO', 'FUNDOS', 'ACOES', 'IMOVEIS', 'OUTROS'],
+  'renda-extra': ['CONSULTORIA', 'VENDA', 'COMISSAO', 'ALUGUEL', 'RENDIMENTOS', 'OUTROS'],
+  'socios': ['PRO-LABORE', 'DISTRIBUICAO', 'RETIRADA', 'EMPRESTIMO', 'OUTROS'],
+};
 
 // Tipos específicos (herdam de DespesaBase)
 export type DespesaFixa = DespesaBase;

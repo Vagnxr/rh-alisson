@@ -19,6 +19,8 @@ import { FornecedoresPage } from '@/pages/FornecedoresPage';
 import { LojasPage } from '@/pages/LojasPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminTenantsPage } from '@/pages/admin/AdminTenantsPage';
+import { RelatoriosPage } from '@/pages/RelatoriosPage';
+import { LembretesPage } from '@/pages/LembretesPage';
 import { ProtectedRoute, AuthOnlyRoute, SuperAdminRoute } from '@/components/ProtectedRoute';
 import { Toaster } from '@/components/ui/sonner';
 import '@/index.css';
@@ -80,6 +82,8 @@ function App() {
           <Route path="/financeiro/agenda" element={<PlaceholderPage title="Agenda" />} />
 
           <Route path="/recursos-humanos" element={<PlaceholderPage title="Recursos Humanos" />} />
+          <Route path="/relatorios" element={<RelatoriosPage />} />
+          <Route path="/lembretes" element={<LembretesPage />} />
           
           {/* Configuracoes */}
           <Route path="/configuracoes" element={<ConfiguracoesPage />} />

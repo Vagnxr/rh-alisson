@@ -20,6 +20,10 @@ import {
   Settings,
   Truck,
   Store,
+  Pin,
+  PinOff,
+  FileText,
+  Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSidebarStore } from '@/stores/sidebarStore';
@@ -38,12 +42,18 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-  { label: 'Despesa Fixa', icon: Receipt, href: '/despesa-fixa' },
-  { label: 'Despesa Extra', icon: CreditCard, href: '/despesa-extra' },
-  { label: 'Despesa Funcionario', icon: Users, href: '/despesa-funcionario' },
-  { label: 'Despesa Imposto', icon: Building2, href: '/despesa-imposto' },
-  { label: 'Despesa Veiculo', icon: Car, href: '/despesa-veiculo' },
-  { label: 'Despesa Banco', icon: Landmark, href: '/despesa-banco' },
+  {
+    label: 'Despesas',
+    icon: Receipt,
+    subItems: [
+      { label: 'Despesa Fixa', href: '/despesa-fixa' },
+      { label: 'Despesa Extra', href: '/despesa-extra' },
+      { label: 'Despesa Funcionario', href: '/despesa-funcionario' },
+      { label: 'Despesa Imposto', href: '/despesa-imposto' },
+      { label: 'Despesa Veiculo', href: '/despesa-veiculo' },
+      { label: 'Despesa Banco', href: '/despesa-banco' },
+    ],
+  },
   { label: 'Parcelamento', icon: Calendar, href: '/parcelamento' },
   { label: 'Renda Extra', icon: TrendingUp, href: '/renda-extra' },
   { label: 'Investimento', icon: PiggyBank, href: '/investimento' },
@@ -71,35 +81,36 @@ const menuItems: MenuItem[] = [
   { label: 'Recursos Humanos', icon: UserCog, href: '/recursos-humanos' },
   { label: 'Socios', icon: UsersRound, href: '/socios' },
   { label: 'Balanco Geral', icon: BarChart3, href: '/balanco-geral' },
+  { label: 'Relatorios', icon: FileText, href: '/relatorios' },
+  { label: 'Lembretes', icon: Bell, href: '/lembretes' },
   { label: 'Configuracoes', icon: Settings, href: '/configuracoes' },
 ];
 
 function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: boolean }) {
   const location = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
   const close = useSidebarStore((s) => s.close);
+  const openSubmenus = useSidebarStore((s) => s.openSubmenus);
+  const toggleSubmenu = useSidebarStore((s) => s.toggleSubmenu);
+  const setSubmenuOpen = useSidebarStore((s) => s.setSubmenuOpen);
+
+  const isOpen = openSubmenus.includes(item.label);
 
   const isSubItemActive = item.subItems?.some(
     (sub) => location.pathname === sub.href
   );
 
+  // Abre submenu automaticamente se um item filho estiver ativo
   useEffect(() => {
-    if (isSubItemActive && isExpanded) {
-      setIsOpen(true);
+    if (isSubItemActive && !isOpen) {
+      setSubmenuOpen(item.label, true);
     }
-  }, [isSubItemActive, isExpanded]);
-
-  useEffect(() => {
-    if (!isExpanded) {
-      setIsOpen(false);
-    }
-  }, [isExpanded]);
+  }, [isSubItemActive, isOpen, item.label, setSubmenuOpen]);
 
   if (item.subItems) {
     return (
       <li className="relative group">
         <button
-          onClick={() => isExpanded && setIsOpen(!isOpen)}
+          onClick={() => isExpanded && toggleSubmenu(item.label)}
           title={!isExpanded ? item.label : undefined}
           className={cn(
             'flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
@@ -217,9 +228,13 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
 export function Sidebar() {
   const isOpen = useSidebarStore((s) => s.isOpen);
   const close = useSidebarStore((s) => s.close);
+  const isPinned = useSidebarStore((s) => s.isPinned);
+  const togglePin = useSidebarStore((s) => s.togglePin);
   const [isHovered, setIsHovered] = useState(false);
 
-  const isExpanded = isHovered;
+  // Desktop: expande se pinned OU hover
+  const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
+  const isExpanded = isPinned || isHovered || isOpen || !isDesktop;
 
   return (
     <>
@@ -250,11 +265,28 @@ export function Sidebar() {
             </div>
             <span className={cn(
               'ml-3 font-bold text-slate-800 whitespace-nowrap transition-opacity duration-150',
-              isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden'
+              isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
             )}>
               MSystem
             </span>
           </div>
+          
+          {/* Botao Pin (desktop) - sempre visivel quando expandido */}
+          <button
+            onClick={togglePin}
+            title={isPinned ? 'Recolher menu' : 'Fixar menu aberto'}
+            className={cn(
+              'ml-auto rounded-lg p-1.5 transition-all hidden lg:block',
+              isPinned 
+                ? 'text-emerald-600 hover:bg-emerald-50' 
+                : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600',
+              isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
+            )}
+          >
+            {isPinned ? <Pin className="h-4 w-4" /> : <PinOff className="h-4 w-4" />}
+          </button>
+          
+          {/* Botao Fechar (mobile) */}
           <button
             onClick={close}
             className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 lg:hidden"
@@ -270,7 +302,7 @@ export function Sidebar() {
               <MenuItemComponent 
                 key={item.label} 
                 item={item} 
-                isExpanded={isExpanded || !window.matchMedia('(min-width: 1024px)').matches} 
+                isExpanded={isExpanded} 
               />
             ))}
           </ul>
@@ -280,7 +312,7 @@ export function Sidebar() {
         <div className="border-t border-slate-200 p-3">
           <p className={cn(
             'text-xs text-slate-400 text-center whitespace-nowrap transition-opacity duration-150',
-            isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden'
+            isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
           )}>
             Versao 1.0.0 (MVP)
           </p>

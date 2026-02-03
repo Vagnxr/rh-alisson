@@ -22,6 +22,7 @@ const mockTenants: AdminTenant[] = [
   {
     id: 'tenant-001',
     name: 'Empresa Alpha Ltda',
+    nomeFantasia: 'Alpha',
     cnpj: '12.345.678/0001-90',
     email: 'contato@alpha.com',
     telefone: '(11) 3333-4444',
@@ -34,6 +35,7 @@ const mockTenants: AdminTenant[] = [
   {
     id: 'tenant-002',
     name: 'Beta Comercio SA',
+    nomeFantasia: 'Beta',
     cnpj: '98.765.432/0001-10',
     email: 'contato@beta.com',
     telefone: '(21) 2222-5555',
@@ -46,6 +48,7 @@ const mockTenants: AdminTenant[] = [
   {
     id: 'tenant-003',
     name: 'Gamma Servicos ME',
+    nomeFantasia: 'Gamma',
     cnpj: '11.222.333/0001-44',
     email: 'contato@gamma.com',
     telefone: '(31) 3111-6666',
@@ -75,6 +78,7 @@ export const useAdminTenantsStore = create<AdminTenantsStore>((set, get) => ({
     const newTenant: AdminTenant = {
       id: `tenant-${Date.now()}`,
       name: data.name,
+      nomeFantasia: data.name,
       cnpj: data.cnpj,
       email: data.email,
       telefone: data.telefone,

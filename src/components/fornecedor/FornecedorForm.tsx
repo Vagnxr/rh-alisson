@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Upload, X, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/cn';
+import { Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -68,7 +67,6 @@ const initialFormData = {
   } as ContatoVendedor,
   // Outros
   observacoes: '',
-  logo: undefined as File | undefined,
 };
 
 export function FornecedorForm({
@@ -79,7 +77,6 @@ export function FornecedorForm({
   isLoading = false,
 }: FornecedorFormProps) {
   const [formData, setFormData] = useState(initialFormData);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -97,7 +94,6 @@ export function FornecedorForm({
           contatoEmpresa: fornecedor.contatoEmpresa,
           contatoVendedor: fornecedor.contatoVendedor || initialFormData.contatoVendedor,
           observacoes: fornecedor.observacoes || '',
-          logo: undefined,
         });
       } else {
         setFormData({
@@ -112,13 +108,10 @@ export function FornecedorForm({
           contatoEmpresa: fornecedor.contatoEmpresa,
           contatoVendedor: fornecedor.contatoVendedor || initialFormData.contatoVendedor,
           observacoes: fornecedor.observacoes || '',
-          logo: undefined,
         });
       }
-      setLogoPreview(fornecedor.logoUrl || null);
     } else {
       setFormData(initialFormData);
-      setLogoPreview(null);
     }
     setErrors({});
   }, [fornecedor, open]);
@@ -159,7 +152,6 @@ export function FornecedorForm({
         contatoEmpresa: formData.contatoEmpresa,
         contatoVendedor: formData.contatoVendedor.nome ? formData.contatoVendedor : undefined,
         observacoes: formData.observacoes || undefined,
-        logo: formData.logo,
       };
       await onSubmit(dto);
     } else {
@@ -172,37 +164,9 @@ export function FornecedorForm({
         contatoEmpresa: formData.contatoEmpresa,
         contatoVendedor: formData.contatoVendedor.nome ? formData.contatoVendedor : undefined,
         observacoes: formData.observacoes || undefined,
-        logo: formData.logo,
       };
       await onSubmit(dto);
     }
-  };
-
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Valida tipo
-      if (!file.type.startsWith('image/')) {
-        setErrors({ ...errors, logo: 'Arquivo deve ser uma imagem' });
-        return;
-      }
-      // Valida tamanho (2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        setErrors({ ...errors, logo: 'Imagem deve ter no máximo 2MB' });
-        return;
-      }
-      setFormData({ ...formData, logo: file });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeLogo = () => {
-    setFormData({ ...formData, logo: undefined });
-    setLogoPreview(null);
   };
 
   return (
@@ -432,40 +396,6 @@ export function FornecedorForm({
               placeholder="Anotações internas, alertas, histórico de negociação..."
               rows={4}
             />
-          </div>
-
-          {/* Logo */}
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">Logo da Empresa</label>
-            {logoPreview ? (
-              <div className="relative inline-block">
-                <img
-                  src={logoPreview}
-                  alt="Logo preview"
-                  className="h-32 w-32 rounded-lg border border-slate-200 object-contain"
-                />
-                <button
-                  type="button"
-                  onClick={removeLogo}
-                  className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ) : (
-              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 p-6 transition-colors hover:border-emerald-400 hover:bg-emerald-50">
-                <Upload className="mb-2 h-8 w-8 text-slate-400" />
-                <span className="text-sm font-medium text-slate-600">Clique para fazer upload</span>
-                <span className="text-xs text-slate-500">JPG, PNG ou SVG (máx. 2MB)</span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/svg+xml"
-                  onChange={handleLogoChange}
-                  className="hidden"
-                />
-              </label>
-            )}
-            {errors.logo && <p className="mt-1 text-xs text-red-500">{errors.logo}</p>}
           </div>
 
           <DialogFooter>

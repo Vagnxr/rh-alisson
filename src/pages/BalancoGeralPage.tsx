@@ -158,7 +158,23 @@ function formatPercent(value: number) {
   return `${value.toFixed(2)}%`;
 }
 
-// Componente de tabela com suporte a multi-loja
+// Agrupa items por descricao e retorna valores por loja
+function agruparPorLoja(items: BalancoItem[], lojas: Loja[]): Map<string, Map<string, number>> {
+  const grupos = new Map<string, Map<string, number>>();
+  
+  items.forEach((item) => {
+    if (!grupos.has(item.descricao)) {
+      grupos.set(item.descricao, new Map());
+    }
+    const lojaMap = grupos.get(item.descricao)!;
+    const lojaId = item.lojaId || 'total';
+    lojaMap.set(lojaId, (lojaMap.get(lojaId) || 0) + item.valor);
+  });
+  
+  return grupos;
+}
+
+// Componente de tabela com suporte a multi-loja (lojas como colunas)
 interface BalancoTableProps {
   titulo: string;
   items: BalancoItem[];
@@ -166,6 +182,7 @@ interface BalancoTableProps {
   showPercent?: boolean;
   showLoja?: boolean;
   valorTotalVendas?: number;
+  lojas?: Loja[];
 }
 
 function BalancoTable({
@@ -175,18 +192,113 @@ function BalancoTable({
   showPercent = true,
   showLoja = false,
   valorTotalVendas,
+  lojas = [],
 }: BalancoTableProps) {
-  // Calcula percentual vs vendas se fornecido
-  const itemsComAnalise = useMemo(() => {
-    if (!valorTotalVendas) return items;
-    return items.map((item) => ({
-      ...item,
-      percentualVenda: (item.valor / valorTotalVendas) * 100,
-    }));
-  }, [items, valorTotalVendas]);
+  // Agrupa dados por loja se multi-loja
+  const dadosAgrupados = useMemo(() => {
+    if (!showLoja || lojas.length === 0) return null;
+    return agruparPorLoja(items, lojas);
+  }, [items, showLoja, lojas]);
 
-  const gridCols = showLoja ? 'grid-cols-16' : 'grid-cols-12';
+  // Se multi-loja, renderiza com lojas como colunas
+  if (showLoja && dadosAgrupados && lojas.length > 0) {
+    // Calcula totais por loja
+    const totaisPorLoja = new Map<string, number>();
+    lojas.forEach((loja) => totaisPorLoja.set(loja.id, 0));
+    
+    dadosAgrupados.forEach((lojaMap) => {
+      lojaMap.forEach((valor, lojaId) => {
+        if (lojaId !== 'total') {
+          totaisPorLoja.set(lojaId, (totaisPorLoja.get(lojaId) || 0) + valor);
+        }
+      });
+    });
 
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+        <div className="bg-slate-900 px-4 py-2.5 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-white uppercase tracking-wide">{titulo}</h3>
+          {valorTotalVendas && (
+            <span className="text-xs text-slate-400">
+              % sobre vendas: {formatCurrency(valorTotalVendas)}
+            </span>
+          )}
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px]">
+            <thead className="bg-slate-100">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium uppercase text-slate-500">
+                  Descricao
+                </th>
+                {lojas.map((loja) => (
+                  <th key={loja.id} className="px-4 py-2 text-right text-xs font-medium uppercase text-slate-500">
+                    <div className="flex items-center justify-end gap-1">
+                      <Store className="h-3 w-3" />
+                      {loja.apelido}
+                    </div>
+                  </th>
+                ))}
+                <th className="px-4 py-2 text-right text-xs font-medium uppercase text-slate-500">
+                  Total
+                </th>
+                {showPercent && (
+                  <th className="px-4 py-2 text-right text-xs font-medium uppercase text-slate-500">
+                    % Venda
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {Array.from(dadosAgrupados.entries()).map(([descricao, lojaMap], i) => {
+                const totalItem = Array.from(lojaMap.values()).reduce((a, b) => a + b, 0);
+                const percentual = valorTotalVendas ? (totalItem / valorTotalVendas) * 100 : 0;
+                
+                return (
+                  <tr key={i} className="hover:bg-slate-50">
+                    <td className="px-4 py-2.5 text-sm text-slate-700">{descricao}</td>
+                    {lojas.map((loja) => (
+                      <td key={loja.id} className="px-4 py-2.5 text-sm text-right font-medium text-slate-900">
+                        {formatCurrency(lojaMap.get(loja.id) || 0)}
+                      </td>
+                    ))}
+                    <td className="px-4 py-2.5 text-sm text-right font-bold text-slate-900">
+                      {formatCurrency(totalItem)}
+                    </td>
+                    {showPercent && (
+                      <td className="px-4 py-2.5 text-sm text-right font-medium text-slate-600">
+                        {formatPercent(percentual)}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot className="bg-slate-100">
+              <tr>
+                <td className="px-4 py-2.5 text-sm font-semibold text-slate-900">TOTAL</td>
+                {lojas.map((loja) => (
+                  <td key={loja.id} className="px-4 py-2.5 text-sm text-right font-bold text-slate-900">
+                    {formatCurrency(totaisPorLoja.get(loja.id) || 0)}
+                  </td>
+                ))}
+                <td className="px-4 py-2.5 text-sm text-right font-bold text-emerald-600">
+                  {formatCurrency(total)}
+                </td>
+                {showPercent && (
+                  <td className="px-4 py-2.5 text-sm text-right font-bold text-slate-600">
+                    {valorTotalVendas ? formatPercent((total / valorTotalVendas) * 100) : '-'}
+                  </td>
+                )}
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderizacao padrao (sem multi-loja)
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
       <div className="bg-slate-900 px-4 py-2.5 flex items-center justify-between">
@@ -198,68 +310,33 @@ function BalancoTable({
         )}
       </div>
       <div className="divide-y divide-slate-100 overflow-x-auto">
-        <div
-          className={cn(
-            'grid gap-2 bg-slate-100 px-4 py-2 text-xs font-medium uppercase text-slate-500 min-w-[500px]',
-            showLoja ? 'grid-cols-[1fr_100px_100px_80px]' : 'grid-cols-[1fr_100px_80px]'
-          )}
-        >
+        <div className="grid grid-cols-[1fr_100px_80px] gap-2 bg-slate-100 px-4 py-2 text-xs font-medium uppercase text-slate-500 min-w-[400px]">
           <div>Descricao</div>
-          {showLoja && <div className="text-center">Loja</div>}
           <div className="text-right">Valor</div>
           {showPercent && <div className="text-right">% Venda</div>}
         </div>
-        {itemsComAnalise.map((item, i) => (
-          <div
-            key={i}
-            className={cn(
-              'grid gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 min-w-[500px]',
-              showLoja ? 'grid-cols-[1fr_100px_100px_80px]' : 'grid-cols-[1fr_100px_80px]'
-            )}
-          >
-            <div className="text-slate-700">{item.descricao}</div>
-            {showLoja && (
-              <div className="text-center">
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                  <Store className="h-3 w-3" />
-                  {item.lojaNome || '-'}
-                </span>
-              </div>
-            )}
-            <div className="text-right font-medium text-slate-900">{formatCurrency(item.valor)}</div>
-            {showPercent && (
-              <div
-                className={cn(
-                  'text-right font-medium',
-                  'percentualVenda' in item && item.percentualVenda
-                    ? (item.percentualVenda as number) > 10
-                      ? 'text-red-600'
-                      : (item.percentualVenda as number) > 5
-                        ? 'text-amber-600'
-                        : 'text-emerald-600'
-                    : 'text-slate-500'
-                )}
-              >
-                {formatPercent(
-                  'percentualVenda' in item && item.percentualVenda
-                    ? (item.percentualVenda as number)
-                    : item.percentual
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-        <div
-          className={cn(
-            'grid gap-2 bg-slate-100 px-4 py-2.5 text-sm font-semibold min-w-[500px]',
-            showLoja ? 'grid-cols-[1fr_100px_100px_80px]' : 'grid-cols-[1fr_100px_80px]'
-          )}
-        >
+        {items.map((item, i) => {
+          const percentual = valorTotalVendas ? (item.valor / valorTotalVendas) * 100 : item.percentual;
+          return (
+            <div
+              key={i}
+              className="grid grid-cols-[1fr_100px_80px] gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 min-w-[400px]"
+            >
+              <div className="text-slate-700">{item.descricao}</div>
+              <div className="text-right font-medium text-slate-900">{formatCurrency(item.valor)}</div>
+              {showPercent && (
+                <div className="text-right font-medium text-slate-600">
+                  {formatPercent(percentual)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <div className="grid grid-cols-[1fr_100px_80px] gap-2 bg-slate-100 px-4 py-2.5 text-sm font-semibold min-w-[400px]">
           <div className="text-slate-900">TOTAL</div>
-          {showLoja && <div></div>}
           <div className="text-right text-slate-900">{formatCurrency(total)}</div>
           {showPercent && (
-            <div className="text-right text-slate-700">
+            <div className="text-right text-slate-600">
               {valorTotalVendas ? formatPercent((total / valorTotalVendas) * 100) : '-'}
             </div>
           )}
@@ -461,6 +538,7 @@ export function BalancoGeralPage() {
           total={filteredData.despesas.total}
           showLoja={isMultiLoja && !lojaFiltro}
           valorTotalVendas={filteredData.vendas.total}
+          lojas={lojas}
         />
 
         {/* Vendas */}
@@ -469,6 +547,7 @@ export function BalancoGeralPage() {
           items={filteredData.vendas.items}
           total={filteredData.vendas.total}
           showLoja={isMultiLoja && !lojaFiltro}
+          lojas={lojas}
         />
       </div>
 

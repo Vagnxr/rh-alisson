@@ -24,22 +24,28 @@ const mockTenants: Tenant[] = [
   {
     id: 'tenant-001',
     name: 'Empresa Alpha Ltda',
+    nomeFantasia: 'ALPHA COMERCIO',
     cnpj: '12.345.678/0001-90',
     isActive: true,
+    isMultiloja: true,
     createdAt: '2025-01-01T00:00:00Z',
   },
   {
     id: 'tenant-002',
     name: 'Beta Comercio SA',
+    nomeFantasia: 'BETA STORE',
     cnpj: '98.765.432/0001-10',
     isActive: true,
+    isMultiloja: false,
     createdAt: '2025-02-15T00:00:00Z',
   },
   {
     id: 'tenant-003',
     name: 'Gamma Servicos ME',
+    nomeFantasia: 'GAMMA SERVICOS',
     cnpj: '11.222.333/0001-44',
     isActive: true,
+    isMultiloja: true,
     createdAt: '2025-03-20T00:00:00Z',
   },
 ];

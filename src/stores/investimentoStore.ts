@@ -17,9 +17,9 @@ interface InvestimentoActions {
 type InvestimentoStore = InvestimentoState & InvestimentoActions;
 
 const mockData: DespesaBase[] = [
-  { id: '1', data: '2026-01-02', descricao: 'CDB Banco Inter', valor: 5000.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-08', descricao: 'Tesouro Selic', valor: 3000.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-15', descricao: 'Fundo Imobiliario XPML11', valor: 2500.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '1', data: '2026-01-02', tipo: 'CDB', descricao: 'CDB Banco Inter', valor: 5000.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '2', data: '2026-01-08', tipo: 'TESOURO DIRETO', descricao: 'Tesouro Selic', valor: 3000.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '3', data: '2026-01-15', tipo: 'FUNDOS', descricao: 'Fundo Imobiliario XPML11', valor: 2500.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
 ];
 
 export const useInvestimentoStore = create<InvestimentoStore>((set) => ({

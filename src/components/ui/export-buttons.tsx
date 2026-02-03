@@ -46,20 +46,26 @@ export function ExportButtons({
 
     try {
       // Prepara os dados
-      const headers = columns.map((col) => col.label);
+      const headers = columns.map((col) => col.label.toUpperCase());
       const rows = data.map((item) =>
         columns.map((col) => {
           const value = item[col.key];
-          return col.format ? col.format(value) : String(value ?? '');
+          const formatted = col.format ? col.format(value) : String(value ?? '');
+          return formatted.toUpperCase();
         })
       );
 
       // Cria conteúdo CSV (compatível com Excel)
       const csvContent = [
-        // Cabeçalho com informações da empresa
-        [`${tenant?.name || 'Empresa'}`],
-        [`Relatório: ${title || filename}`],
-        [`Data/Hora: ${formatDate()}`],
+        // Cabeçalho com logo/nome centralizado
+        [''],
+        ['MSYSTEM - PLATAFORMA FINANCEIRA'],
+        [''],
+        // Informações da empresa
+        [`EMPRESA: ${(tenant?.nomeFantasia || tenant?.name || 'EMPRESA').toUpperCase()}`],
+        [`RELATORIO: ${(title || filename).toUpperCase()}`],
+        [`DATA/HORA: ${formatDate()}`],
+        [`TOTAL DE REGISTROS: ${data.length}`],
         [''],
         // Cabeçalhos das colunas
         headers,
@@ -97,7 +103,22 @@ export function ExportButtons({
     try {
       // Calcula totais de páginas (estimativa)
       const itemsPerPage = 25;
-      const totalPages = Math.ceil(data.length / itemsPerPage);
+      const totalPages = Math.ceil(data.length / itemsPerPage) || 1;
+
+      // Logo MSystem em SVG (centralizado)
+      const logoSVG = `
+        <svg width="180" height="50" viewBox="0 0 180 50" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#10b981"/>
+              <stop offset="100%" style="stop-color:#059669"/>
+            </linearGradient>
+          </defs>
+          <rect x="2" y="10" width="30" height="30" rx="6" fill="url(#logoGrad)"/>
+          <text x="10" y="32" fill="white" font-family="Arial" font-size="18" font-weight="bold">$</text>
+          <text x="40" y="33" fill="#1e293b" font-family="Arial" font-size="22" font-weight="bold">MSystem</text>
+        </svg>
+      `;
 
       // Cria conteúdo HTML para impressão/PDF
       const printContent = `
@@ -118,40 +139,32 @@ export function ExportButtons({
               margin: 0;
               padding: 0;
             }
+            .logo-container {
+              text-align: center;
+              padding: 15px 0;
+              border-bottom: 3px solid #10b981;
+              margin-bottom: 15px;
+            }
             .header {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              border-bottom: 2px solid #10b981;
               padding-bottom: 10px;
               margin-bottom: 15px;
             }
             .header-left {
-              display: flex;
-              align-items: center;
-              gap: 15px;
-            }
-            .logo-placeholder {
-              width: 60px;
-              height: 60px;
-              background: #f1f5f9;
-              border-radius: 8px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: #64748b;
-              font-weight: bold;
-              font-size: 10px;
+              text-align: left;
             }
             .company-name {
-              font-size: 16px;
+              font-size: 14px;
               font-weight: bold;
               color: #1e293b;
             }
             .report-title {
-              font-size: 14px;
-              color: #64748b;
-              margin-top: 2px;
+              font-size: 18px;
+              font-weight: bold;
+              color: #10b981;
+              margin-top: 4px;
             }
             .header-right {
               text-align: right;
@@ -164,12 +177,11 @@ export function ExportButtons({
               margin-top: 10px;
             }
             th {
-              background: #f1f5f9;
-              color: #1e293b;
+              background: #10b981;
+              color: white;
               font-weight: 600;
               text-align: left;
               padding: 10px 8px;
-              border-bottom: 2px solid #e2e8f0;
               font-size: 10px;
               text-transform: uppercase;
             }
@@ -177,12 +189,10 @@ export function ExportButtons({
               padding: 8px;
               border-bottom: 1px solid #e2e8f0;
               vertical-align: top;
+              text-transform: uppercase;
             }
             tr:nth-child(even) {
               background: #f8fafc;
-            }
-            tr:hover {
-              background: #f1f5f9;
             }
             .footer {
               position: fixed;
@@ -194,24 +204,32 @@ export function ExportButtons({
               color: #94a3b8;
               padding: 10px;
               border-top: 1px solid #e2e8f0;
+              background: white;
+            }
+            .total-row {
+              font-weight: bold;
+              background: #f1f5f9 !important;
             }
             @media print {
               .no-print { display: none; }
+              .footer { position: fixed; }
             }
           </style>
         </head>
         <body>
+          <div class="logo-container">
+            ${logoSVG}
+          </div>
+          
           <div class="header">
             <div class="header-left">
-              <div class="logo-placeholder">LOGO</div>
-              <div>
-                <div class="company-name">${tenant?.name || 'Empresa'}</div>
-                <div class="report-title">${title || filename}</div>
-              </div>
+              <div class="company-name">${tenant?.nomeFantasia || tenant?.name || 'Empresa'}</div>
+              <div class="report-title">${title || filename}</div>
             </div>
             <div class="header-right">
-              <div>Data: ${formatDate()}</div>
-              <div>Página 1/${totalPages}</div>
+              <div><strong>Data:</strong> ${formatDate()}</div>
+              <div><strong>Total de registros:</strong> ${data.length}</div>
+              <div>Página 1 de ${totalPages}</div>
             </div>
           </div>
           
@@ -241,7 +259,7 @@ export function ExportButtons({
           </table>
           
           <div class="footer">
-            ${tenant?.name || 'Empresa'} - Relatório gerado em ${formatDate()}
+            <strong>MSystem</strong> - Plataforma Financeira | ${tenant?.nomeFantasia || tenant?.name || 'Empresa'} | Gerado em ${formatDate()}
           </div>
         </body>
         </html>

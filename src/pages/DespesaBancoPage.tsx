@@ -1,6 +1,5 @@
-import { DespesaPage } from '@/components/despesa/DespesaPage';
+import { DespesaBancoPageComponent } from '@/components/despesa/DespesaBancoPage';
 import { useDespesaBancoStore } from '@/stores/despesaStore';
-import { DESPESA_CATEGORIAS } from '@/types/despesa';
 
 export function DespesaBancoPage() {
   const items = useDespesaBancoStore((s) => s.items);
@@ -11,8 +10,7 @@ export function DespesaBancoPage() {
   const deleteItem = useDespesaBancoStore((s) => s.deleteItem);
 
   return (
-    <DespesaPage
-      config={DESPESA_CATEGORIAS['despesa-banco']}
+    <DespesaBancoPageComponent
       items={items}
       isLoading={isLoading}
       fetchItems={fetchItems}

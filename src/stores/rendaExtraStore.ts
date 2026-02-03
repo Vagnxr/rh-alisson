@@ -17,9 +17,9 @@ interface RendaExtraActions {
 type RendaExtraStore = RendaExtraState & RendaExtraActions;
 
 const mockData: DespesaBase[] = [
-  { id: '1', data: '2026-01-03', descricao: 'Consultoria Externa', valor: 2500.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-10', descricao: 'Venda de Equipamento Usado', valor: 850.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-18', descricao: 'Comissao Parceria', valor: 1200.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '1', data: '2026-01-03', tipo: 'CONSULTORIA', descricao: 'Consultoria Externa', valor: 2500.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '2', data: '2026-01-10', tipo: 'VENDA', descricao: 'Venda de Equipamento Usado', valor: 850.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
+  { id: '3', data: '2026-01-18', tipo: 'COMISSAO', descricao: 'Comissao Parceria', valor: 1200.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
 ];
 
 export const useRendaExtraStore = create<RendaExtraStore>((set) => ({

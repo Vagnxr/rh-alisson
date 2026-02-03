@@ -71,6 +71,7 @@ export const useAuthStore = create<AuthState>()(
             tenantStore.setCurrentTenant({
               id: mockNormalUser.tenantId!,
               name: 'Empresa Alpha Ltda',
+              nomeFantasia: 'Alpha',
               cnpj: '12.345.678/0001-90',
               isActive: true,
               createdAt: '2025-01-01T00:00:00Z',
@@ -105,6 +106,7 @@ export const useAuthStore = create<AuthState>()(
           tenantStore.setCurrentTenant({
             id: 'tenant-001',
             name: 'Empresa Alpha Ltda',
+            nomeFantasia: 'Alpha',
             cnpj: '12.345.678/0001-90',
             isActive: true,
             createdAt: '2025-01-01T00:00:00Z',
