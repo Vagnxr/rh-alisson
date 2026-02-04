@@ -41,11 +41,14 @@ import { useAdminTenantsStore } from '@/stores/adminTenantsStore';
 import type { AdminUser, AdminUserFormData } from '@/types/admin';
 import { ROLE_LABELS, ROLE_COLORS } from '@/types/admin';
 import { cn } from '@/lib/cn';
+import { buildTableColumns } from '@/lib/buildTableColumns';
 import { InputCelular } from '@/components/ui/input-masked';
 import { InputPassword } from '@/components/ui/input-password';
 
+const ADMIN_USERS_TABLE_DEFAULT_ORDER = ['nome', 'tenantName', 'role', 'isActive', 'lastLogin'];
+
 export function AdminUsersPage() {
-  const { users, isLoading, fetchUsers, addUser, updateUser, deleteUser, toggleUserStatus } =
+  const { users, columns: columnsFromApi, isLoading, fetchUsers, addUser, updateUser, deleteUser, toggleUserStatus } =
     useAdminUsersStore();
   const { tenants, fetchTenants } = useAdminTenantsStore();
 
@@ -71,9 +74,9 @@ export function AdminUsersPage() {
     fetchTenants();
   }, [fetchUsers, fetchTenants]);
 
-  const columns = useMemo<ColumnDef<AdminUser>[]>(
-    () => [
-      {
+  const columnDefsByKey = useMemo<Record<string, ColumnDef<AdminUser>>>(
+    () => ({
+      nome: {
         accessorKey: 'nome',
         header: ({ column }) => (
           <button
@@ -91,14 +94,14 @@ export function AdminUsersPage() {
           </div>
         ),
       },
-      {
+      tenantName: {
         accessorKey: 'tenantName',
         header: 'Empresa',
         cell: ({ row }) => (
           <span className="text-slate-600">{row.original.tenantName || '-'}</span>
         ),
       },
-      {
+      role: {
         accessorKey: 'role',
         header: 'Perfil',
         cell: ({ row }) => (
@@ -107,23 +110,21 @@ export function AdminUsersPage() {
           </span>
         ),
       },
-      {
+      isActive: {
         accessorKey: 'isActive',
         header: 'Status',
         cell: ({ row }) => (
           <span
             className={cn(
               'rounded-full px-2.5 py-1 text-xs font-medium',
-              row.original.isActive
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-red-100 text-red-700'
+              row.original.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
             )}
           >
             {row.original.isActive ? 'Ativo' : 'Inativo'}
           </span>
         ),
       },
-      {
+      lastLogin: {
         accessorKey: 'lastLogin',
         header: 'Ultimo Acesso',
         cell: ({ row }) =>
@@ -131,46 +132,50 @@ export function AdminUsersPage() {
             ? new Date(row.original.lastLogin).toLocaleDateString('pt-BR')
             : '-',
       },
-      {
-        id: 'actions',
-        header: 'Acoes',
-        cell: ({ row }) => (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => handleToggleStatus(row.original)}
-              className={cn(
-                'rounded-lg p-2 transition-colors',
-                row.original.isActive
-                  ? 'text-amber-600 hover:bg-amber-50'
-                  : 'text-emerald-600 hover:bg-emerald-50'
-              )}
-              title={row.original.isActive ? 'Desativar' : 'Ativar'}
-            >
-              {row.original.isActive ? (
-                <PowerOff className="h-4 w-4" />
-              ) : (
-                <Power className="h-4 w-4" />
-              )}
-            </button>
-            <button
-              onClick={() => handleEdit(row.original)}
-              className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50"
-              title="Editar"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => handleDeleteClick(row.original)}
-              className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
-              title="Excluir"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ),
-      },
-    ],
+    }),
     []
+  );
+
+  const columns = useMemo(
+    () =>
+      buildTableColumns<AdminUser>(
+        columnDefsByKey,
+        columnsFromApi ?? null,
+        ADMIN_USERS_TABLE_DEFAULT_ORDER,
+        {
+          id: 'actions',
+          header: 'Acoes',
+          cell: ({ row }) => (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => handleToggleStatus(row.original)}
+                className={cn(
+                  'rounded-lg p-2 transition-colors',
+                  row.original.isActive ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'
+                )}
+                title={row.original.isActive ? 'Desativar' : 'Ativar'}
+              >
+                {row.original.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => handleEdit(row.original)}
+                className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50"
+                title="Editar"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => handleDeleteClick(row.original)}
+                className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
+                title="Excluir"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ),
+        }
+      ),
+    [columnDefsByKey, columnsFromApi]
   );
 
   const table = useReactTable({

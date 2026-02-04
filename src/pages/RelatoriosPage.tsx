@@ -1,21 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   BarChart3,
   TrendingUp,
   TrendingDown,
   DollarSign,
-  Download,
-  Filter,
-  Calendar,
+  PieChart,
   Store,
   FileText,
-  PieChart,
+  Loader2,
 } from 'lucide-react';
-import { DateFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { cn } from '@/lib/cn';
+import { useRelatoriosStore } from '@/stores/relatoriosStore';
+import { useLojaStore } from '@/stores/lojaStore';
 
-// Tipos de relatorio
 type TipoRelatorio =
   | 'despesas'
   | 'vendas'
@@ -34,93 +34,19 @@ interface RelatorioConfig {
 }
 
 const RELATORIOS: RelatorioConfig[] = [
-  {
-    id: 'despesas',
-    titulo: 'Despesas por Categoria',
-    descricao: 'Analise detalhada de todas as despesas',
-    icon: TrendingDown,
-    cor: 'bg-red-100 text-red-600',
-  },
-  {
-    id: 'vendas',
-    titulo: 'Vendas por Periodo',
-    descricao: 'Evolucao das vendas ao longo do tempo',
-    icon: TrendingUp,
-    cor: 'bg-emerald-100 text-emerald-600',
-  },
-  {
-    id: 'lucro',
-    titulo: 'Lucro Liquido',
-    descricao: 'Analise de lucratividade mensal',
-    icon: DollarSign,
-    cor: 'bg-blue-100 text-blue-600',
-  },
-  {
-    id: 'fluxo-caixa',
-    titulo: 'Fluxo de Caixa',
-    descricao: 'Entradas e saidas consolidadas',
-    icon: BarChart3,
-    cor: 'bg-purple-100 text-purple-600',
-  },
-  {
-    id: 'por-tipo',
-    titulo: 'Por Tipo de Despesa',
-    descricao: 'Distribuicao por tipo de gasto',
-    icon: PieChart,
-    cor: 'bg-amber-100 text-amber-600',
-  },
-  {
-    id: 'por-loja',
-    titulo: 'Por Loja',
-    descricao: 'Comparativo entre unidades',
-    icon: Store,
-    cor: 'bg-cyan-100 text-cyan-600',
-  },
-  {
-    id: 'comparativo',
-    titulo: 'Comparativo Mensal',
-    descricao: 'Comparacao mes a mes',
-    icon: FileText,
-    cor: 'bg-slate-100 text-slate-600',
-  },
-];
-
-// Mock de dados para graficos
-const MOCK_DESPESAS_CATEGORIA = [
-  { categoria: 'DESPESA FIXA', valor: 15000, percentual: 25 },
-  { categoria: 'FUNCIONARIOS', valor: 20000, percentual: 33 },
-  { categoria: 'IMPOSTOS', valor: 8000, percentual: 13 },
-  { categoria: 'VEICULOS', valor: 5000, percentual: 8 },
-  { categoria: 'BANCARIAS', valor: 3000, percentual: 5 },
-  { categoria: 'EXTRAS', valor: 9000, percentual: 16 },
-];
-
-const MOCK_VENDAS_MENSAL = [
-  { mes: 'JAN', valor: 45000 },
-  { mes: 'FEV', valor: 52000 },
-  { mes: 'MAR', valor: 48000 },
-  { mes: 'ABR', valor: 61000 },
-  { mes: 'MAI', valor: 55000 },
-  { mes: 'JUN', valor: 58000 },
-];
-
-const MOCK_FLUXO_CAIXA = [
-  { mes: 'JAN', entradas: 45000, saidas: 35000 },
-  { mes: 'FEV', entradas: 52000, saidas: 40000 },
-  { mes: 'MAR', entradas: 48000, saidas: 42000 },
-  { mes: 'ABR', entradas: 61000, saidas: 45000 },
-  { mes: 'MAI', entradas: 55000, saidas: 48000 },
-  { mes: 'JUN', entradas: 58000, saidas: 44000 },
+  { id: 'despesas', titulo: 'Despesas por Categoria', descricao: 'Analise detalhada de todas as despesas', icon: TrendingDown, cor: 'bg-red-100 text-red-600' },
+  { id: 'vendas', titulo: 'Vendas por Periodo', descricao: 'Evolucao das vendas ao longo do tempo', icon: TrendingUp, cor: 'bg-emerald-100 text-emerald-600' },
+  { id: 'lucro', titulo: 'Lucro Liquido', descricao: 'Analise de lucratividade mensal', icon: DollarSign, cor: 'bg-blue-100 text-blue-600' },
+  { id: 'fluxo-caixa', titulo: 'Fluxo de Caixa', descricao: 'Entradas e saidas consolidadas', icon: BarChart3, cor: 'bg-purple-100 text-purple-600' },
+  { id: 'por-tipo', titulo: 'Por Tipo de Despesa', descricao: 'Distribuicao por tipo de gasto', icon: PieChart, cor: 'bg-amber-100 text-amber-600' },
+  { id: 'por-loja', titulo: 'Por Loja', descricao: 'Comparativo entre unidades', icon: Store, cor: 'bg-cyan-100 text-cyan-600' },
+  { id: 'comparativo', titulo: 'Comparativo Mensal', descricao: 'Comparacao mes a mes', icon: FileText, cor: 'bg-slate-100 text-slate-600' },
 ];
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-// Componente de grafico de barras simples
 function BarraHorizontal({
   label,
   valor,
@@ -132,7 +58,7 @@ function BarraHorizontal({
   max: number;
   cor: string;
 }) {
-  const percentual = (valor / max) * 100;
+  const percentual = max > 0 ? (valor / max) * 100 : 0;
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-sm">
@@ -140,16 +66,12 @@ function BarraHorizontal({
         <span className="font-medium text-slate-900">{formatCurrency(valor)}</span>
       </div>
       <div className="h-3 w-full rounded-full bg-slate-100">
-        <div
-          className={cn('h-3 rounded-full transition-all', cor)}
-          style={{ width: `${percentual}%` }}
-        />
+        <div className={cn('h-3 rounded-full transition-all', cor)} style={{ width: `${percentual}%` }} />
       </div>
     </div>
   );
 }
 
-// Componente de grafico de barras verticais
 function GraficoBarras({
   dados,
   titulo,
@@ -157,23 +79,22 @@ function GraficoBarras({
   dados: { label: string; valor: number; valor2?: number }[];
   titulo: string;
 }) {
-  const max = Math.max(...dados.map((d) => Math.max(d.valor, d.valor2 || 0)));
-
+  const max = dados.length ? Math.max(...dados.map((d) => Math.max(d.valor, d.valor2 || 0))) : 1;
   return (
     <div className="space-y-4">
       <h4 className="text-sm font-medium text-slate-700">{titulo}</h4>
-      <div className="flex items-end justify-between gap-2 h-48">
+      <div className="flex h-48 items-end justify-between gap-2">
         {dados.map((item, i) => (
-          <div key={i} className="flex flex-col items-center gap-1 flex-1">
-            <div className="flex gap-1 items-end h-40 w-full">
+          <div key={i} className="flex flex-1 flex-col items-center gap-1">
+            <div className="flex w-full items-end gap-1">
               <div
-                className="flex-1 bg-emerald-500 rounded-t transition-all"
+                className="flex-1 rounded-t bg-emerald-500 transition-all"
                 style={{ height: `${(item.valor / max) * 100}%` }}
                 title={formatCurrency(item.valor)}
               />
               {item.valor2 !== undefined && (
                 <div
-                  className="flex-1 bg-red-400 rounded-t transition-all"
+                  className="flex-1 rounded-t bg-red-400 transition-all"
                   style={{ height: `${(item.valor2 / max) * 100}%` }}
                   title={formatCurrency(item.valor2)}
                 />
@@ -197,7 +118,6 @@ function GraficoBarras({
   );
 }
 
-// Componente de card de relatorio
 function RelatorioCard({
   config,
   isSelected,
@@ -213,9 +133,7 @@ function RelatorioCard({
       onClick={onClick}
       className={cn(
         'flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all hover:shadow-md',
-        isSelected
-          ? 'border-emerald-500 bg-emerald-50'
-          : 'border-slate-200 bg-white hover:border-slate-300'
+        isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white hover:border-slate-300'
       )}
     >
       <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg', config.cor)}>
@@ -230,42 +148,71 @@ function RelatorioCard({
 }
 
 export function RelatoriosPage() {
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>();
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   const [tipoRelatorio, setTipoRelatorio] = useState<TipoRelatorio>('despesas');
   const [tipoFiltro, setTipoFiltro] = useState<string>('');
 
+  const { lojaAtual } = useLojaStore();
+  const {
+    despesasPorCategoria,
+    vendasPorPeriodo,
+    fluxoCaixa,
+    lucro,
+    isLoading,
+    error,
+    fetchDespesasPorCategoria,
+    fetchVendasPorPeriodo,
+    fetchFluxoCaixa,
+    fetchLucro,
+  } = useRelatoriosStore();
+
+  const filtros = useMemo(() => ({
+    dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
+    dataFim: formatDateToLocalYYYYMMDD(dateFilter.endDate),
+    lojaId: lojaAtual?.id,
+  }), [dateFilter.startDate, dateFilter.endDate, lojaAtual?.id]);
+
+  // Cards: buscar fluxo-caixa para totais
+  useEffect(() => {
+    fetchFluxoCaixa(filtros);
+  }, [filtros.dataInicio, filtros.dataFim, filtros.lojaId, fetchFluxoCaixa]);
+
+  // Grafico/tabela: buscar relatorio do tipo selecionado (apenas os 4 com endpoint)
+  useEffect(() => {
+    if (tipoRelatorio === 'despesas') fetchDespesasPorCategoria(filtros);
+    else if (tipoRelatorio === 'vendas') fetchVendasPorPeriodo(filtros);
+    else if (tipoRelatorio === 'fluxo-caixa') fetchFluxoCaixa(filtros);
+    else if (tipoRelatorio === 'lucro') fetchLucro(filtros);
+  }, [filtros.dataInicio, filtros.dataFim, filtros.lojaId, tipoRelatorio, fetchDespesasPorCategoria, fetchVendasPorPeriodo, fetchFluxoCaixa, fetchLucro]);
+
   const totalDespesas = useMemo(
-    () => MOCK_DESPESAS_CATEGORIA.reduce((acc, d) => acc + d.valor, 0),
-    []
+    () => (fluxoCaixa?.itens ? fluxoCaixa.itens.reduce((acc, d) => acc + d.saidas, 0) : 0),
+    [fluxoCaixa]
   );
-
   const totalVendas = useMemo(
-    () => MOCK_VENDAS_MENSAL.reduce((acc, d) => acc + d.valor, 0),
-    []
+    () => (fluxoCaixa?.itens ? fluxoCaixa.itens.reduce((acc, d) => acc + d.entradas, 0) : 0),
+    [fluxoCaixa]
   );
+  const lucroTotal = useMemo(() => totalVendas - totalDespesas, [totalVendas, totalDespesas]);
+  const margemPercentual = totalVendas > 0 ? (lucroTotal / totalVendas) * 100 : 0;
 
-  const lucroTotal = useMemo(() => {
-    const entradas = MOCK_FLUXO_CAIXA.reduce((acc, d) => acc + d.entradas, 0);
-    const saidas = MOCK_FLUXO_CAIXA.reduce((acc, d) => acc + d.saidas, 0);
-    return entradas - saidas;
-  }, []);
+  const despesasItens = despesasPorCategoria?.itens ?? [];
+  const vendasItens = vendasPorPeriodo?.itens ?? [];
+  const fluxoItens = fluxoCaixa?.itens ?? [];
+  const lucroItens = lucro?.itens ?? [];
 
-  // Dados para exportacao
   const dadosExportacao = useMemo(() => {
     switch (tipoRelatorio) {
       case 'despesas':
-        return MOCK_DESPESAS_CATEGORIA.map((d) => ({
+        return despesasItens.map((d) => ({
           categoria: d.categoria,
           valor: formatCurrency(d.valor),
-          percentual: `${d.percentual}%`,
+          percentual: `${d.percentual.toFixed(1)}%`,
         }));
       case 'vendas':
-        return MOCK_VENDAS_MENSAL.map((d) => ({
-          mes: d.mes,
-          valor: formatCurrency(d.valor),
-        }));
+        return vendasItens.map((d) => ({ mes: d.mes, valor: formatCurrency(d.valor) }));
       case 'fluxo-caixa':
-        return MOCK_FLUXO_CAIXA.map((d) => ({
+        return fluxoItens.map((d) => ({
           mes: d.mes,
           entradas: formatCurrency(d.entradas),
           saidas: formatCurrency(d.saidas),
@@ -274,7 +221,7 @@ export function RelatoriosPage() {
       default:
         return [];
     }
-  }, [tipoRelatorio]);
+  }, [tipoRelatorio, despesasItens, vendasItens, fluxoItens]);
 
   const colunasExportacao = useMemo(() => {
     switch (tipoRelatorio) {
@@ -301,15 +248,23 @@ export function RelatoriosPage() {
     }
   }, [tipoRelatorio]);
 
+  const temDadosGrafico =
+    tipoRelatorio === 'despesas'
+      ? despesasItens.length > 0
+      : tipoRelatorio === 'vendas'
+        ? vendasItens.length > 0
+        : tipoRelatorio === 'fluxo-caixa'
+          ? fluxoItens.length > 0
+          : tipoRelatorio === 'lucro'
+            ? lucroItens.length > 0
+            : false;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Relatorios</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Analise detalhada dos dados financeiros
-          </p>
+          <p className="mt-1 text-sm text-slate-500">Analise detalhada dos dados financeiros</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
@@ -333,7 +288,10 @@ export function RelatoriosPage() {
         </div>
       </div>
 
-      {/* Cards de resumo */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-3">
@@ -346,7 +304,6 @@ export function RelatoriosPage() {
             </div>
           </div>
         </div>
-
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
@@ -358,7 +315,6 @@ export function RelatoriosPage() {
             </div>
           </div>
         </div>
-
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
@@ -372,7 +328,6 @@ export function RelatoriosPage() {
             </div>
           </div>
         </div>
-
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
@@ -380,15 +335,12 @@ export function RelatoriosPage() {
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500">Margem</p>
-              <p className="text-lg font-bold text-slate-900">
-                {((lucroTotal / totalVendas) * 100).toFixed(1)}%
-              </p>
+              <p className="text-lg font-bold text-slate-900">{margemPercentual.toFixed(1)}%</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Seletor de tipo de relatorio */}
       <div>
         <h2 className="mb-3 text-sm font-medium text-slate-700">Selecione o Relatorio</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -403,79 +355,72 @@ export function RelatoriosPage() {
         </div>
       </div>
 
-      {/* Conteudo do relatorio selecionado */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Grafico principal */}
         <div className="rounded-xl border border-slate-200 bg-white p-6">
-          <h3 className="mb-4 text-sm font-semibold text-slate-900 uppercase">
+          <h3 className="mb-4 text-sm font-semibold uppercase text-slate-900">
             {RELATORIOS.find((r) => r.id === tipoRelatorio)?.titulo}
           </h3>
 
-          {tipoRelatorio === 'despesas' && (
+          {isLoading && !temDadosGrafico ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            </div>
+          ) : tipoRelatorio === 'despesas' && despesasItens.length > 0 ? (
             <div className="space-y-4">
-              {MOCK_DESPESAS_CATEGORIA.map((item, i) => (
+              {despesasItens.map((item, i) => (
                 <BarraHorizontal
                   key={i}
                   label={item.categoria}
                   valor={item.valor}
-                  max={totalDespesas}
+                  max={despesasPorCategoria?.total ?? 1}
                   cor="bg-red-500"
                 />
               ))}
             </div>
-          )}
-
-          {tipoRelatorio === 'vendas' && (
+          ) : tipoRelatorio === 'vendas' && vendasItens.length > 0 ? (
             <GraficoBarras
               titulo="Evolucao Mensal"
-              dados={MOCK_VENDAS_MENSAL.map((d) => ({ label: d.mes, valor: d.valor }))}
+              dados={vendasItens.map((d) => ({ label: d.mes, valor: d.valor }))}
             />
-          )}
-
-          {tipoRelatorio === 'fluxo-caixa' && (
+          ) : tipoRelatorio === 'fluxo-caixa' && fluxoItens.length > 0 ? (
             <GraficoBarras
               titulo="Fluxo de Caixa"
-              dados={MOCK_FLUXO_CAIXA.map((d) => ({
-                label: d.mes,
-                valor: d.entradas,
-                valor2: d.saidas,
-              }))}
+              dados={fluxoItens.map((d) => ({ label: d.mes, valor: d.entradas, valor2: d.saidas }))}
             />
-          )}
-
-          {tipoRelatorio === 'lucro' && (
+          ) : tipoRelatorio === 'lucro' && lucroItens.length > 0 ? (
             <div className="space-y-4">
-              {MOCK_FLUXO_CAIXA.map((item, i) => {
-                const lucro = item.entradas - item.saidas;
-                return (
-                  <div key={i} className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <span className="text-sm text-slate-600">{item.mes}</span>
-                    <div className="text-right">
-                      <p className={cn('font-medium', lucro >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                        {formatCurrency(lucro)}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {((lucro / item.entradas) * 100).toFixed(1)}% margem
-                      </p>
-                    </div>
+              {lucroItens.map((item, i) => (
+                <div key={i} className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <span className="text-sm text-slate-600">{item.mes}</span>
+                  <div className="text-right">
+                    <p className={cn('font-medium', item.lucro >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                      {formatCurrency(item.lucro)}
+                    </p>
+                    <p className="text-xs text-slate-500">{item.margemPercentual.toFixed(1)}% margem</p>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
+          ) : (tipoRelatorio === 'por-tipo' || tipoRelatorio === 'por-loja' || tipoRelatorio === 'comparativo') ? (
+            <p className="text-sm text-slate-500">Relatorio em breve.</p>
+          ) : (
+            <p className="text-sm text-slate-500">Nenhum dado no periodo.</p>
           )}
         </div>
 
-        {/* Tabela detalhada */}
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
           <div className="bg-slate-900 px-4 py-3">
-            <h3 className="text-sm font-semibold text-white uppercase">Detalhamento</h3>
+            <h3 className="text-sm font-semibold uppercase text-white">Detalhamento</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-100">
                 <tr>
                   {colunasExportacao.map((col) => (
-                    <th key={col.key} className="px-4 py-2 text-left text-xs font-medium uppercase text-slate-500">
+                    <th
+                      key={col.key}
+                      className="px-4 py-2 text-left text-xs font-medium uppercase text-slate-500"
+                    >
                       {col.label}
                     </th>
                   ))}
@@ -494,6 +439,9 @@ export function RelatoriosPage() {
               </tbody>
             </table>
           </div>
+          {dadosExportacao.length === 0 && (
+            <div className="px-4 py-8 text-center text-sm text-slate-500">Nenhum dado para exibir</div>
+          )}
         </div>
       </div>
     </div>

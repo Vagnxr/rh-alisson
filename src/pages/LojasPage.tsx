@@ -26,9 +26,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { cn } from '@/lib/cn';
+import { buildTableColumns } from '@/lib/buildTableColumns';
+
+const LOJA_TABLE_DEFAULT_ORDER = ['apelido', 'razaoSocial', 'cnpj', 'endereco', 'contato', 'isAtiva'];
 
 export function LojasPage() {
-  const { lojas, isLoading, error, fetchLojas, addLoja, updateLoja, deleteLoja } = useLojaStore();
+  const { lojas, columns: columnsFromApi, isLoading, error, fetchLojas, addLoja, updateLoja, deleteLoja } = useLojaStore();
   const { currentTenant } = useTenantStore();
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -41,10 +44,10 @@ export function LojasPage() {
     fetchLojas();
   }, [fetchLojas]);
 
-  // Filtra lojas pelo tenant atual
+  // Filtra lojas pelo tenant atual (API pode nao retornar tenantId; nesse caso considera do tenant atual)
   const lojasDoTenant = useMemo(() => {
     if (!currentTenant) return lojas;
-    return lojas.filter((l) => l.tenantId === currentTenant.id);
+    return lojas.filter((l) => l.tenantId === currentTenant.id || l.tenantId == null);
   }, [lojas, currentTenant]);
 
   const handleOpenDialog = (loja?: Loja) => {
@@ -90,9 +93,9 @@ export function LojasPage() {
     }
   };
 
-  const columns = useMemo<ColumnDef<Loja>[]>(
-    () => [
-      {
+  const columnDefsByKey = useMemo<Record<string, ColumnDef<Loja>>>(
+    () => ({
+      apelido: {
         accessorKey: 'apelido',
         header: ({ column }) => (
           <button
@@ -120,7 +123,7 @@ export function LojasPage() {
           );
         },
       },
-      {
+      razaoSocial: {
         accessorKey: 'razaoSocial',
         header: ({ column }) => (
           <button
@@ -141,7 +144,7 @@ export function LojasPage() {
           );
         },
       },
-      {
+      cnpj: {
         accessorKey: 'cnpj',
         header: ({ column }) => (
           <button
@@ -156,37 +159,43 @@ export function LojasPage() {
           <span className="text-sm text-slate-600">{row.getValue('cnpj')}</span>
         ),
       },
-      {
+      endereco: {
         accessorKey: 'endereco',
         header: 'Endereco',
         cell: ({ row }) => {
           const endereco = row.original.endereco;
+          const text =
+            typeof endereco === 'string'
+              ? endereco
+              : `${(endereco as { cidade?: string; uf?: string }).cidade ?? ''} / ${(endereco as { cidade?: string; uf?: string }).uf ?? ''}`.trim() || '-';
           return (
             <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-slate-400" />
-              <span className="text-sm text-slate-600">
-                {endereco.cidade} / {endereco.uf}
-              </span>
+              <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
+              <span className="text-sm text-slate-600">{text}</span>
             </div>
           );
         },
       },
-      {
+      contato: {
         accessorKey: 'contato',
         header: 'Contato',
         cell: ({ row }) => {
           const contato = row.original.contato;
+          if (typeof contato === 'string') {
+            return <span className="text-sm text-slate-600">{contato}</span>;
+          }
+          const c = contato as { emailPrincipal?: string; telefonePrincipal?: string };
           return (
             <div className="text-sm">
-              <div className="text-slate-900">{contato.emailPrincipal}</div>
-              {contato.telefonePrincipal && (
-                <div className="text-xs text-slate-500">{contato.telefonePrincipal}</div>
+              {c.emailPrincipal && <div className="text-slate-900">{c.emailPrincipal}</div>}
+              {c.telefonePrincipal && (
+                <div className="text-xs text-slate-500">{c.telefonePrincipal}</div>
               )}
             </div>
           );
         },
       },
-      {
+      isAtiva: {
         accessorKey: 'isAtiva',
         header: 'Status',
         cell: ({ row }) => {
@@ -203,35 +212,45 @@ export function LojasPage() {
           );
         },
       },
-      {
-        id: 'actions',
-        header: () => <span className="sr-only">Acoes</span>,
-        cell: ({ row }) => {
-          const loja = row.original;
-          return (
-            <div className="flex items-center justify-end gap-1">
-              <button
-                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                title="Editar"
-                onClick={() => handleOpenDialog(loja)}
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-              {!loja.isMatriz && (
-                <button
-                  className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                  title="Excluir"
-                  onClick={() => setDeleteLojaId(loja.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          );
-        },
-      },
-    ],
+    }),
     []
+  );
+
+  const columns = useMemo(
+    () =>
+      buildTableColumns<Loja>(
+        columnDefsByKey,
+        columnsFromApi ?? null,
+        LOJA_TABLE_DEFAULT_ORDER,
+        {
+          id: 'actions',
+          header: () => <span className="sr-only">Acoes</span>,
+          cell: ({ row }) => {
+            const loja = row.original;
+            return (
+              <div className="flex items-center justify-end gap-1">
+                <button
+                  className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  title="Editar"
+                  onClick={() => handleOpenDialog(loja)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                {!loja.isMatriz && (
+                  <button
+                    className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    title="Excluir"
+                    onClick={() => setDeleteLojaId(loja.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            );
+          },
+        }
+      ),
+    [columnDefsByKey, columnsFromApi, handleOpenDialog, setDeleteLojaId]
   );
 
   const table = useReactTable({
@@ -277,18 +296,26 @@ export function LojasPage() {
           />
           {/* Exportacao */}
           <ExportButtons
-            data={lojasDoTenant.map((l) => ({
-              apelido: l.apelido,
-              razaoSocial: l.razaoSocial,
-              nomeFantasia: l.nomeFantasia,
-              cnpj: l.cnpj,
-              cidade: l.endereco.cidade,
-              uf: l.endereco.uf,
-              email: l.contato.emailPrincipal,
-              telefone: l.contato.telefonePrincipal,
-              tipo: l.isMatriz ? 'MATRIZ' : 'FILIAL',
-              status: l.isAtiva ? 'ATIVA' : 'INATIVA',
-            }))}
+            data={lojasDoTenant.map((l) => {
+              const endereco = l.endereco;
+              const contato = l.contato;
+              const cidade = typeof endereco === 'string' ? '' : endereco?.cidade ?? '';
+              const uf = typeof endereco === 'string' ? '' : endereco?.uf ?? '';
+              const email = typeof contato === 'string' ? '' : contato?.emailPrincipal ?? '';
+              const telefone = typeof contato === 'string' ? '' : contato?.telefonePrincipal ?? '';
+              return {
+                apelido: l.apelido,
+                razaoSocial: l.razaoSocial,
+                nomeFantasia: l.nomeFantasia,
+                cnpj: l.cnpj,
+                cidade,
+                uf,
+                email,
+                telefone,
+                tipo: l.isMatriz ? 'MATRIZ' : 'FILIAL',
+                status: l.isAtiva ? 'ATIVA' : 'INATIVA',
+              };
+            })}
             columns={[
               { key: 'apelido', label: 'Apelido' },
               { key: 'razaoSocial', label: 'Razao Social' },
@@ -428,7 +455,9 @@ export function LojasPage() {
                       </div>
                       <div className="mt-1 text-xs text-slate-500">{loja.cnpj}</div>
                       <div className="mt-1 text-xs text-slate-500">
-                        {loja.endereco.cidade} / {loja.endereco.uf}
+                        {typeof loja.endereco === 'string'
+                          ? loja.endereco
+                          : `${loja.endereco?.cidade ?? ''} / ${loja.endereco?.uf ?? ''}`.trim() || '-'}
                       </div>
                     </div>
                     <div className="ml-4 flex gap-1">

@@ -2,162 +2,144 @@
 
 ## Visao Geral
 
-Documentacao dos endpoints esperados pela aplicacao.
+**Resumo de referencia.** A documentacao **completa** (payloads, query params, formato de resposta com `columns`, regras de negocio) esta em **01-contrato-frontend-backend.md**. Use o contrato como fonte de verdade para implementacao.
+
+**Convencoes:**
+- Resposta de sucesso: `{ success: true, data: ... }` ou com paginacao `{ success: true, data: [], meta: { total, page, perPage, totalPages } }`.
+- **Listagens que alimentam tabelas:** incluir na resposta o campo **`columns`** (array de `{ id, label, order, isRequired? }`) conforme secao "Colunas de tabela" do contrato.
+- Erro: `{ success: false, error: { code, message, details? } }`.
+- Header: `Authorization: Bearer <accessToken>`; Super Admin pode usar `X-Tenant-Id`.
+
+---
 
 ## Autenticacao
 
-### POST /api/auth/login
-```typescript
-// Request
-{ email: string; password: string }
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| POST | /auth/login | Login (email, password) -> tokens + user |
+| POST | /auth/register | Cadastro (nome, email, password, confirmPassword) |
+| POST | /auth/refresh | Renovar access token |
+| POST | /auth/logout | Invalidar refresh token (opcional) |
 
-// Response
-{
-  token: string;
-  user: {
-    id: string;
-    nome: string;
-    email: string;
-    tenantId: string;
-    lojas: string[];
-    permissoes: string[];
-  }
-}
-```
+Detalhes em 01-contrato (Login, Cadastro) e api-specification.md.
 
-### POST /api/auth/logout
-```typescript
-// Request
-Authorization: Bearer {token}
+---
 
-// Response
-{ success: true }
-```
+## Tenants (disponiveis para Super Admin)
 
-## Financeiro
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | /tenants/available ou /auth/tenants | Lista tenants que o usuario pode acessar |
 
-### GET /api/financeiro
-```typescript
-// Query params
-?lojaId=xxx&page=1&limit=20&sort=createdAt&order=desc
-
-// Response
-{
-  data: FinanceiroItem[];
-  meta: { page, limit, total, totalPages }
-}
-```
-
-### POST /api/financeiro
-```typescript
-// Request
-FinanceiroInput
-
-// Response
-{ data: FinanceiroItem }
-```
-
-### PUT /api/financeiro/:id
-```typescript
-// Request
-Partial<FinanceiroInput>
-
-// Response
-{ data: FinanceiroItem }
-```
-
-### DELETE /api/financeiro/:id
-```typescript
-// Response
-{ success: true }
-```
-
-## Despesas
-
-### GET /api/despesas
-```typescript
-// Query params
-?lojaId=xxx&status=pendente&page=1&limit=20
-
-// Response
-{
-  data: DespesaItem[];
-  meta: { page, limit, total, totalPages }
-}
-```
-
-### POST /api/despesas
-### PUT /api/despesas/:id
-### DELETE /api/despesas/:id
-
-## Fluxo de Caixa
-
-### GET /api/fluxo-caixa
-```typescript
-// Query params
-?lojaId=xxx&dataInicio=2024-01-01&dataFim=2024-01-31
-
-// Response
-{
-  data: FluxoCaixaItem[];
-  meta: { page, limit, total, totalPages }
-}
-```
-
-### POST /api/fluxo-caixa
-### PUT /api/fluxo-caixa/:id
-### DELETE /api/fluxo-caixa/:id
-
-## Consolidacao
-
-### GET /api/consolidacao
-```typescript
-// Query params
-?periodo=2024-01
-
-// Response
-{
-  data: ConsolidacaoItem[];
-  totais: {
-    receitas: number;
-    despesas: number;
-    saldo: number;
-  }
-}
-```
-
-## Relatorios
-
-### POST /api/relatorios/gerar
-```typescript
-// Request
-{
-  tipo: 'financeiro' | 'despesas' | 'fluxo-caixa' | 'consolidado';
-  periodoInicio: string;
-  periodoFim: string;
-  lojaIds?: string[];
-  formato: 'json' | 'pdf' | 'excel' | 'csv';
-}
-
-// Response
-// Se formato = json: dados direto
-// Outros: URL para download
-```
+---
 
 ## Lojas
 
-### GET /api/lojas
-```typescript
-// Response
-{ data: Loja[] }
-```
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | /lojas | Lista (resposta deve incluir `columns`) |
+| POST | /lojas | Criar |
+| PATCH | /lojas/:id | Atualizar |
+| DELETE | /lojas/:id | Excluir (nao permitir se matriz) |
 
-## Usuarios
+---
 
-### GET /api/usuarios
-### POST /api/usuarios
-### PUT /api/usuarios/:id
-### DELETE /api/usuarios/:id
+## Despesas
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | /despesas | Lista (query: categoria, dataInicio, dataFim, lojaId, page, perPage). Resposta com `columns` (tabelaId = categoria) |
+| GET | /despesas/:id | Uma despesa |
+| POST | /despesas | Criar (body + categoria) |
+| PATCH | /despesas/:id | Atualizar |
+| DELETE | /despesas/:id | Excluir |
+
+---
+
+## Fornecedores
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | /fornecedores | Lista (resposta com `columns`, tabelaId `fornecedores`) |
+| GET | /fornecedores/:id | Um fornecedor |
+| POST | /fornecedores | Criar |
+| PATCH | /fornecedores/:id | Atualizar |
+| DELETE | /fornecedores/:id | Excluir |
+| PATCH | /fornecedores/:id/toggle-status | Ativar/desativar |
+
+---
+
+## Socios e Movimentacoes
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | /socios | Lista (resposta com `columns`, tabelaId `socios`) |
+| GET | /socios/resumo | Resumo por socio (totais) |
+| GET | /socios/:id/movimentacoes ou /movimentacoes-socios?socioId= | Movimentacoes |
+| GET | /movimentacoes-socios | Lista (resposta com `columns`, tabelaId `movimentacoes-socios`) |
+| POST/PATCH/DELETE | /socios, /movimentacoes-socios | CRUD |
+
+---
+
+## Parcelamentos
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | /parcelamentos | Lista (resposta com `columns`, tabelaId `parcelamento`) |
+| GET | /parcelamentos/:id | Um registro |
+| POST | /parcelamentos | Criar |
+| PATCH | /parcelamentos/:id | Atualizar |
+| DELETE | /parcelamentos/:id | Excluir |
+
+---
+
+## Receitas (Renda Extra) e Investimentos
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET/POST/PATCH/DELETE | /receitas | CRUD (resposta GET com `columns`, tabelaId `renda-extra`) |
+| GET/POST/PATCH/DELETE | /investimentos | CRUD (resposta GET com `columns`, tabelaId `investimento`) |
+
+---
+
+## Configuracoes
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | /configuracoes/tabelas | Todas as configuracoes de colunas do usuario |
+| GET | /configuracoes/tabelas/:tabelaId | Uma tabela |
+| PUT | /configuracoes/tabelas/:tabelaId | Atualizar colunas |
+| POST ou PUT | /configuracoes/tabelas/:tabelaId/reset | Restaurar padrao |
+
+---
+
+## Lembretes
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | /lembretes | Lista (query: status, dataInicio, dataFim) |
+| POST | /lembretes | Criar |
+| PATCH | /lembretes/:id | Atualizar / marcar concluido |
+| DELETE | /lembretes/:id | Excluir |
+
+---
+
+## Admin (Super Admin)
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET/POST/PATCH/DELETE | /admin/tenants | CRUD empresas (GET com `columns`, tabelaId `admin-tenants`) |
+| PATCH | /admin/tenants/:id/toggle-status | Ativar/desativar |
+| GET/POST/PATCH/DELETE | /admin/users | CRUD usuarios (GET com `columns`, tabelaId `admin-users`) |
+| PATCH | /admin/users/:id/toggle-status | Ativar/desativar |
+
+---
+
+## Modulo Financeiro (Futuro – nao implementar agora)
+
+Dashboard (resumo, transacoes-recentes), Balanco (/balanco/mensal), Relatorios. Ver 01-contrato secoes marcadas FUTURO.
+
+---
 
 ## Codigos de Erro
 

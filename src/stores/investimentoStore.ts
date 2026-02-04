@@ -1,8 +1,24 @@
 import { create } from 'zustand';
+import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import type { DespesaBase, DespesaInput } from '@/types/despesa';
+import { api } from '@/lib/api';
+
+function normalizeItem(item: Record<string, unknown>): DespesaBase {
+  return {
+    id: String(item.id),
+    data: typeof item.data === 'string' ? item.data : (item.data as Date)?.toString?.()?.slice(0, 10) ?? '',
+    tipo: String(item.tipo ?? ''),
+    descricao: String(item.descricao ?? ''),
+    valor: Number(item.valor ?? 0),
+    comunicarAgenda: Boolean(item.comunicarAgenda),
+    createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
+    updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
+  };
+}
 
 interface InvestimentoState {
   items: DespesaBase[];
+  columns: TableColumnConfigFromApi[] | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -16,61 +32,70 @@ interface InvestimentoActions {
 
 type InvestimentoStore = InvestimentoState & InvestimentoActions;
 
-const mockData: DespesaBase[] = [
-  { id: '1', data: '2026-01-02', tipo: 'CDB', descricao: 'CDB Banco Inter', valor: 5000.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-08', tipo: 'TESOURO DIRETO', descricao: 'Tesouro Selic', valor: 3000.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-15', tipo: 'FUNDOS', descricao: 'Fundo Imobiliario XPML11', valor: 2500.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-];
-
 export const useInvestimentoStore = create<InvestimentoStore>((set) => ({
   items: [],
+  columns: null,
   isLoading: false,
   error: null,
 
   fetchItems: async () => {
     set({ isLoading: true, error: null });
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    set({ items: mockData, isLoading: false });
+    try {
+      const res = await api.get<DespesaBase[]>('investimentos');
+      const list = Array.isArray(res.data) ? res.data : [];
+      set({ items: list.map((x) => normalizeItem(x as unknown as Record<string, unknown>)), columns: res.columns ?? null, isLoading: false });
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao carregar investimentos',
+        isLoading: false,
+      });
+    }
   },
 
   addItem: async (data: DespesaInput) => {
     set({ isLoading: true, error: null });
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    const newItem: DespesaBase = {
-      id: Date.now().toString(),
-      ...data,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    set((state) => ({
-      items: [...state.items, newItem],
-      isLoading: false,
-    }));
+    try {
+      const res = await api.post<DespesaBase>('investimentos', data);
+      const newItem = normalizeItem(res.data as unknown as Record<string, unknown>);
+      set((state) => ({ items: [...state.items, newItem], isLoading: false }));
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao salvar',
+        isLoading: false,
+      });
+      throw err;
+    }
   },
 
   updateItem: async (id: string, data: Partial<DespesaInput>) => {
     set({ isLoading: true, error: null });
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    set((state) => ({
-      items: state.items.map((item) =>
-        item.id === id
-          ? { ...item, ...data, updatedAt: new Date().toISOString() }
-          : item
-      ),
-      isLoading: false,
-    }));
+    try {
+      const res = await api.patch<DespesaBase>(`investimentos/${id}`, data);
+      const updated = normalizeItem(res.data as unknown as Record<string, unknown>);
+      set((state) => ({
+        items: state.items.map((item) => (item.id === id ? updated : item)),
+        isLoading: false,
+      }));
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao atualizar',
+        isLoading: false,
+      });
+      throw err;
+    }
   },
 
   deleteItem: async (id: string) => {
     set({ isLoading: true, error: null });
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    set((state) => ({
-      items: state.items.filter((item) => item.id !== id),
-      isLoading: false,
-    }));
+    try {
+      await api.delete(`investimentos/${id}`);
+      set((state) => ({ items: state.items.filter((item) => item.id !== id), isLoading: false }));
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao excluir',
+        isLoading: false,
+      });
+      throw err;
+    }
   },
 }));

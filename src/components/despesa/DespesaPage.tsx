@@ -11,8 +11,11 @@ import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DespesaBase, DespesaInput, DespesaCategoriaConfig, DespesaCategoria } from '@/types/despesa';
 import { TIPOS_DESPESA } from '@/types/despesa';
+import type { TableColumnConfigFromApi } from '@/types/configuracao';
+import { buildTableColumns } from '@/lib/buildTableColumns';
 import { ExportButtons } from '@/components/ui/export-buttons';
-import { DateFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import {
   Dialog,
   DialogContent,
@@ -32,11 +35,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+const DESPESA_TABLE_DEFAULT_ORDER = ['data', 'tipo', 'descricao', 'valor'];
+
 interface DespesaPageProps {
   config: DespesaCategoriaConfig;
   items: DespesaBase[];
+  columns?: TableColumnConfigFromApi[] | null;
   isLoading: boolean;
-  fetchItems: () => Promise<void>;
+  fetchItems: (params?: { dataInicio?: string; dataFim?: string }) => Promise<void>;
   addItem: (data: DespesaInput) => Promise<void>;
   updateItem: (id: string, data: Partial<DespesaInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
@@ -60,6 +66,7 @@ function formatDateForInput(date: string) {
 export function DespesaPage({
   config,
   items,
+  columns: columnsFromApi,
   isLoading,
   fetchItems,
   addItem,
@@ -70,7 +77,7 @@ export function DespesaPage({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<DespesaBase | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>();
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
 
   const [formData, setFormData] = useState<DespesaInput>({
     data: '',
@@ -83,19 +90,17 @@ export function DespesaPage({
   // Tipos disponiveis para esta categoria
   const tiposDisponiveis = TIPOS_DESPESA[config.key as DespesaCategoria] || ['OUTROS'];
 
+  const dateParams = useMemo(() => ({
+    dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
+    dataFim: formatDateToLocalYYYYMMDD(dateFilter.endDate),
+  }), [dateFilter.startDate, dateFilter.endDate]);
+
   useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+    fetchItems(dateParams);
+  }, [fetchItems, dateParams.dataInicio, dateParams.dataFim]);
 
-  // Filtra items por data
-  const filteredItems = useMemo(() => {
-    if (!dateFilter || !items) return items;
-
-    return items.filter((item) => {
-      const itemDate = new Date(item.data);
-      return itemDate >= dateFilter.startDate && itemDate <= dateFilter.endDate;
-    });
-  }, [items, dateFilter]);
+  // Backend ja retorna itens filtrados por dataInicio/dataFim; nao filtrar de novo no cliente
+  const filteredItems = items ?? [];
 
   const handleOpenDialog = (item?: DespesaBase) => {
     if (item) {
@@ -170,9 +175,9 @@ export function DespesaPage({
     }
   };
 
-  const columns = useMemo<ColumnDef<DespesaBase>[]>(
-    () => [
-      {
+  const columnDefsByKey = useMemo<Record<string, ColumnDef<DespesaBase>>>(
+    () => ({
+      data: {
         accessorKey: 'data',
         header: ({ column }) => (
           <button
@@ -185,7 +190,7 @@ export function DespesaPage({
         ),
         cell: ({ row }) => formatDate(row.getValue('data')),
       },
-      {
+      tipo: {
         accessorKey: 'tipo',
         header: ({ column }) => (
           <button
@@ -202,7 +207,7 @@ export function DespesaPage({
           </span>
         ),
       },
-      {
+      descricao: {
         accessorKey: 'descricao',
         header: ({ column }) => (
           <button
@@ -214,7 +219,7 @@ export function DespesaPage({
           </button>
         ),
       },
-      {
+      valor: {
         accessorKey: 'valor',
         header: ({ column }) => (
           <button
@@ -231,30 +236,45 @@ export function DespesaPage({
           </span>
         ),
       },
-      {
-        id: 'actions',
-        header: () => <span className="sr-only">Acoes</span>,
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1">
-            <button
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              title="Editar"
-              onClick={() => handleOpenDialog(row.original)}
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-              title="Excluir"
-              onClick={() => setDeleteItemId(row.original.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ),
-      },
-    ],
+    }),
     []
+  );
+
+  const actionsColumn: ColumnDef<DespesaBase> = useMemo(
+    () => ({
+      id: 'actions',
+      header: () => <span className="sr-only">Acoes</span>,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
+          <button
+            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            title="Editar"
+            onClick={() => handleOpenDialog(row.original)}
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+            title="Excluir"
+            onClick={() => setDeleteItemId(row.original.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      ),
+    }),
+    []
+  );
+
+  const columns = useMemo(
+    () =>
+      buildTableColumns<DespesaBase>(
+        columnDefsByKey,
+        columnsFromApi ?? null,
+        DESPESA_TABLE_DEFAULT_ORDER,
+        actionsColumn
+      ),
+    [columnDefsByKey, columnsFromApi, actionsColumn]
   );
 
   const table = useReactTable({
@@ -373,7 +393,7 @@ export function DespesaPage({
               <tfoot className="border-t border-slate-200 bg-slate-50">
                 <tr>
                   <td
-                    colSpan={3}
+                    colSpan={Math.max(1, columns.length - 2)}
                     className="px-6 py-3 text-right text-sm font-medium text-slate-900"
                   >
                     Total:

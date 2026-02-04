@@ -1,57 +1,41 @@
 # Estrategia de Backend
 
-## Fase Atual: Frontend Mockado
+## Fase Atual: Backend a Implementar
 
-Neste momento, o frontend e desenvolvido **100% mockado**, utilizando:
-- JSONs estaticos em `src/mocks/`
-- Dados representativos da planilha real
-- Simulacao completa de fluxos
+O frontend ja esta preparado para consumir a API (stores com `columns`, paginas usando contrato). A pasta **docs/05-backend/** e a fonte de verdade para o agent implementar o backend.
 
-### Objetivos desta Fase
-1. Validar UX com usuarios
-2. Validar regras de calculo
-3. Definir contratos de API
-4. Reduzir retrabalho no backend
+### Stack Definida
+- **Runtime:** Node.js 18+
+- **Framework:** NestJS
+- **ORM:** Prisma
+- **Banco:** PostgreSQL 14+
+- **Auth:** JWT (access + refresh token)
 
-### Estrutura de Mocks
-```text
-src/mocks/
-├── financeiro.mock.json
-├── despesas.mock.json
-├── fluxo-caixa.mock.json
-├── consolidacao.mock.json
-├── dashboard.mock.json
-└── usuarios.mock.json
-```
+### Documentos da Pasta 05-backend (ordem para o agent)
+1. **01-contrato-frontend-backend.md** – Contrato por pagina (endpoints, request/response, colunas de tabela).
+2. **02-prisma-nestjs-implementacao.md** – Schema Prisma completo e ordem de implementacao dos modulos.
+3. **api-specification.md** – Padroes gerais (resposta, erros, auth, multi-tenancy).
+4. **dtos-e-tipos.md** – DTOs e tipos para validacao e resposta.
+5. **endpoints.md** – Resumo historico; detalhes em 01-contrato.
+6. **modelo-de-dados.md** – Visao conceitual; schema de implementacao no 02-prisma.
 
-## Fase Futura: Backend Real
+---
 
-### Opcoes de Tecnologia
-A definir com base em requisitos:
-- Node.js + Express/Fastify
-- Supabase (Postgres + Auth + Edge Functions)
-- Firebase
-- Outro
+## Fase Anterior: Frontend Mockado
 
-### Requisitos do Backend
-- API REST ou GraphQL
-- Autenticacao e autorizacao
-- Multi-tenant (isolamento por empresa)
-- Multi-loja (dados por loja)
-- Permissoes granulares
+O frontend foi desenvolvido mockado (stores com dados locais). Objetivos cumpridos:
+- Validar UX e regras
+- Definir contratos de API (01-contrato)
+- Reduzir retrabalho no backend
 
-## Contratos de API
+## Requisitos do Backend
 
-O frontend e a **fonte de verdade da UX**. Apos validacao:
-- Cada tela gera um contrato esperado
-- Payloads e responses sao documentados
-- O backend sera implementado com base nesses contratos
-
-Ver: [04-arquitetura/contratos-api.md](../04-arquitetura/contratos-api.md)
+- API REST (padrao success/data/error conforme api-specification.md)
+- Autenticacao JWT e autorizacao por role/tenant
+- Multi-tenant (isolamento por empresa; Super Admin com X-Tenant-Id)
+- Multi-loja (dados por loja quando aplicavel)
+- **Colunas de tabela:** listagens que alimentam tabelas devem retornar `columns` (configuracao do usuario) – ver 01-contrato.
 
 ## Consideracoes sobre Offline (Futuro)
 
-O sistema sera preparado para evolucao offline:
-- Cache de dados
-- Prevencao de perda de informacoes
-- Estrategia futura com Service Workers
+O sistema sera preparado para evolucao offline (cache, Service Workers). Nao e requisito da implementacao inicial.

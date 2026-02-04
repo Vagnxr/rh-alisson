@@ -1,151 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, Package, Building2, Store, Filter } from 'lucide-react';
-import { DateFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { TrendingUp, TrendingDown, DollarSign, Package, Building2, Store, Loader2 } from 'lucide-react';
+import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { useLojaStore } from '@/stores/lojaStore';
+import { useBalancoStore } from '@/stores/balancoStore';
 import type { Loja } from '@/types/loja';
+import type { BalancoItem, BalancoSecao } from '@/types/balanco';
 import { cn } from '@/lib/cn';
-
-// Tipos para o balanco
-interface BalancoItem {
-  descricao: string;
-  valor: number;
-  percentual: number;
-  lojaId?: string;
-  lojaNome?: string;
-}
-
-interface BalancoSecao {
-  items: BalancoItem[];
-  total: number;
-}
-
-interface MockBalancoData {
-  mes: string;
-  ano: number;
-  valorTotal: number;
-  despesas: BalancoSecao;
-  vendas: BalancoSecao;
-  outrosValores: BalancoSecao;
-  mercadoriaEntrada: BalancoSecao;
-  mercadoriaSaida: BalancoSecao;
-  ativoImobilizado: { entrada: number; saida: number };
-  investimento: number;
-  rendaExtra: number;
-}
-
-// Mock data baseado na planilha - COM SUPORTE A MULTI-LOJA
-function getMockBalanco(isMultiLoja: boolean): MockBalancoData {
-  const baseItems = [
-    { descricao: 'DESP - FIXA', valor: 3369.9, percentual: 6.32 },
-    { descricao: 'DESP - EXTRA', valor: 1050.0, percentual: 1.97 },
-    { descricao: 'DESP - FUNCIONARIO', valor: 7620.0, percentual: 14.29 },
-    { descricao: 'DESP - IMPOSTO', valor: 3360.0, percentual: 6.3 },
-    { descricao: 'DESP - PARCELAMENTO', valor: 1600.0, percentual: 3.0 },
-    { descricao: 'DESP - VEICULO', valor: 1930.0, percentual: 3.62 },
-    { descricao: 'DESP - BANCO', valor: 229.5, percentual: 0.43 },
-    { descricao: 'DESP - SOCIOS', valor: 5000.0, percentual: 9.37 },
-    { descricao: 'DESP - CARTOES - TAXAS', valor: 5066.16, percentual: 9.5 },
-  ];
-
-  // Se multi-loja, adiciona loja a cada item
-  const despesasItems = isMultiLoja
-    ? [
-        ...baseItems.map((item) => ({ ...item, lojaId: 'loja-1', lojaNome: 'Loja Centro' })),
-        ...baseItems.map((item) => ({
-          ...item,
-          valor: item.valor * 0.7,
-          lojaId: 'loja-2',
-          lojaNome: 'Loja Shopping',
-        })),
-      ]
-    : baseItems;
-
-  const vendasItems = isMultiLoja
-    ? [
-        { descricao: 'DINHEIRO - DEPOSITO', valor: 30000.0, percentual: 56.24, lojaId: 'loja-1', lojaNome: 'Loja Centro' },
-        { descricao: 'PIX', valor: 5000.0, percentual: 9.37, lojaId: 'loja-1', lojaNome: 'Loja Centro' },
-        { descricao: 'CREDITO', valor: 3000.0, percentual: 5.62, lojaId: 'loja-1', lojaNome: 'Loja Centro' },
-        { descricao: 'DEBITO', valor: 2000.0, percentual: 3.75, lojaId: 'loja-1', lojaNome: 'Loja Centro' },
-        { descricao: 'DINHEIRO - DEPOSITO', valor: 21000.0, percentual: 39.37, lojaId: 'loja-2', lojaNome: 'Loja Shopping' },
-        { descricao: 'PIX', valor: 3000.0, percentual: 5.62, lojaId: 'loja-2', lojaNome: 'Loja Shopping' },
-        { descricao: 'CREDITO', valor: 2000.0, percentual: 3.75, lojaId: 'loja-2', lojaNome: 'Loja Shopping' },
-        { descricao: 'DEBITO', valor: 1340.0, percentual: 2.51, lojaId: 'loja-2', lojaNome: 'Loja Shopping' },
-      ]
-    : [
-        { descricao: 'DINHEIRO - DEPOSITO', valor: 51000.0, percentual: 95.61 },
-        { descricao: 'DINHEIRO - SOBRA', valor: 300.0, percentual: 0.56 },
-        { descricao: 'PAGAMENTO PDV', valor: 200.0, percentual: 0.37 },
-        { descricao: 'PIX', valor: 100.0, percentual: 0.19 },
-        { descricao: 'CREDITO', valor: 350.0, percentual: 0.66 },
-        { descricao: 'DEBITO', valor: 800.0, percentual: 1.5 },
-        { descricao: 'VOUCHER', valor: 140.0, percentual: 0.26 },
-        { descricao: 'IFOOD', valor: 450.0, percentual: 0.84 },
-      ];
-
-  const totalDespesas = despesasItems.reduce((acc, item) => acc + item.valor, 0);
-  const totalVendas = vendasItems.reduce((acc, item) => acc + item.valor, 0);
-
-  // Recalcula percentuais baseado no total de vendas
-  const despesasComPercentual = despesasItems.map((item) => ({
-    ...item,
-    percentual: (item.valor / totalVendas) * 100,
-  }));
-
-  const vendasComPercentual = vendasItems.map((item) => ({
-    ...item,
-    percentual: (item.valor / totalVendas) * 100,
-  }));
-
-  return {
-    mes: 'Janeiro',
-    ano: 2026,
-    valorTotal: totalVendas,
-    despesas: {
-      items: despesasComPercentual,
-      total: totalDespesas,
-    },
-    vendas: {
-      items: vendasComPercentual,
-      total: totalVendas,
-    },
-    outrosValores: {
-      items: [
-        { descricao: 'DESC. IFOOD', valor: 0, percentual: 0 },
-        { descricao: 'DESC. LOJISTA', valor: 0, percentual: 0 },
-        { descricao: 'DESC. SOCIOS', valor: 0, percentual: 0 },
-      ],
-      total: 0,
-    },
-    mercadoriaEntrada: {
-      items: [
-        { descricao: 'INDUSTRIALIZACAO', valor: 0, percentual: 0 },
-        { descricao: 'COMERCIALIZACAO', valor: 0, percentual: 0 },
-        { descricao: 'EMBALAGEM', valor: 0, percentual: 0 },
-        { descricao: 'MATERIAL USO/CONS', valor: 0, percentual: 0 },
-        { descricao: 'MERCADORIA USO/CONS', valor: 0, percentual: 0 },
-        { descricao: 'GAS', valor: 0, percentual: 0 },
-      ],
-      total: 0,
-    },
-    mercadoriaSaida: {
-      items: [
-        { descricao: 'INDUSTRIALIZACAO', valor: 0, percentual: 0 },
-        { descricao: 'COMERCIALIZACAO', valor: 0, percentual: 0 },
-        { descricao: 'EMBALAGEM', valor: 0, percentual: 0 },
-        { descricao: 'MATERIAL USO/CONS', valor: 0, percentual: 0 },
-        { descricao: 'MERCADORIA USO/CONS', valor: 0, percentual: 0 },
-        { descricao: 'GAS', valor: 0, percentual: 0 },
-      ],
-      total: 0,
-    },
-    ativoImobilizado: {
-      entrada: 10000.0,
-      saida: 5000.0,
-    },
-    investimento: 10500.0,
-    rendaExtra: 4550.0,
-  };
-}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -386,47 +246,72 @@ function LojaSelector({ lojas, lojaAtual, onChange }: LojaSelectorProps) {
   );
 }
 
+function getMesAnoFromFilter(dateFilter: DateFilterValue | undefined): { mes: number; ano: number } {
+  const d = dateFilter?.startDate ?? new Date();
+  return { mes: d.getMonth() + 1, ano: d.getFullYear() };
+}
+
 export function BalancoGeralPage() {
-  const { lojas, isMultiLoja, fetchLojas, lojaAtual, setLojaAtual } = useLojaStore();
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>();
+  const { lojas, isMultiLoja, fetchLojas } = useLojaStore();
+  const { balanco, isLoading, error, fetchBalanco } = useBalancoStore();
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   const [lojaFiltro, setLojaFiltro] = useState<string | null>(null);
+
+  const { mes, ano } = useMemo(() => getMesAnoFromFilter(dateFilter), [dateFilter]);
 
   useEffect(() => {
     fetchLojas();
   }, [fetchLojas]);
 
-  const data = useMemo(() => getMockBalanco(isMultiLoja), [isMultiLoja]);
+  useEffect(() => {
+    fetchBalanco({ mes, ano, lojaId: lojaFiltro ?? undefined });
+  }, [fetchBalanco, mes, ano, lojaFiltro]);
 
-  // Filtra items por loja se necessario
-  const filteredData = useMemo(() => {
-    if (!lojaFiltro || !isMultiLoja) return data;
+  const filteredData = balanco;
+  const lucroLiquido = filteredData
+    ? filteredData.vendas.total - filteredData.despesas.total
+    : 0;
+  const totalVendas = filteredData?.vendas.total ?? 0;
+  const margemLucro = totalVendas > 0 ? (lucroLiquido / totalVendas) * 100 : 0;
 
-    return {
-      ...data,
-      despesas: {
-        ...data.despesas,
-        items: data.despesas.items.filter((item) => item.lojaId === lojaFiltro),
-        total: data.despesas.items
-          .filter((item) => item.lojaId === lojaFiltro)
-          .reduce((acc, item) => acc + item.valor, 0),
-      },
-      vendas: {
-        ...data.vendas,
-        items: data.vendas.items.filter((item) => item.lojaId === lojaFiltro),
-        total: data.vendas.items
-          .filter((item) => item.lojaId === lojaFiltro)
-          .reduce((acc, item) => acc + item.valor, 0),
-      },
-    };
-  }, [data, lojaFiltro, isMultiLoja]);
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Balanco Mensal</h1>
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
-  const lucroLiquido = filteredData.vendas.total - filteredData.despesas.total;
-  const margemLucro =
-    filteredData.vendas.total > 0 ? (lucroLiquido / filteredData.vendas.total) * 100 : 0;
+  if (isLoading && !balanco) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+      </div>
+    );
+  }
+
+  if (!filteredData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Balanco Mensal</h1>
+            <p className="mt-1 text-sm text-slate-500">Resumo financeiro consolidado do periodo</p>
+          </div>
+          <DateFilter value={dateFilter} onChange={setDateFilter} />
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-12 text-center text-sm text-slate-500">
+          Nenhum dado disponivel para o periodo. Ajuste o filtro de data.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Balanco Mensal</h1>
@@ -438,16 +323,9 @@ export function BalancoGeralPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Filtro de data */}
           <DateFilter value={dateFilter} onChange={setDateFilter} />
-
-          {/* Seletor de loja (apenas se multi-loja) */}
           {isMultiLoja && (
-            <LojaSelector
-              lojas={lojas}
-              lojaAtual={lojaFiltro}
-              onChange={setLojaFiltro}
-            />
+            <LojaSelector lojas={lojas} lojaAtual={lojaFiltro} onChange={setLojaFiltro} />
           )}
         </div>
       </div>

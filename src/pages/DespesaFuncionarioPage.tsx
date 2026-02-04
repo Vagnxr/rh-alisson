@@ -4,6 +4,7 @@ import { DESPESA_CATEGORIAS } from '@/types/despesa';
 
 export function DespesaFuncionarioPage() {
   const items = useDespesaFuncionarioStore((s) => s.items);
+  const columns = useDespesaFuncionarioStore((s) => s.columns);
   const isLoading = useDespesaFuncionarioStore((s) => s.isLoading);
   const fetchItems = useDespesaFuncionarioStore((s) => s.fetchItems);
   const addItem = useDespesaFuncionarioStore((s) => s.addItem);
@@ -14,6 +15,7 @@ export function DespesaFuncionarioPage() {
     <DespesaPage
       config={DESPESA_CATEGORIAS['despesa-funcionario']}
       items={items}
+      columns={columns}
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}

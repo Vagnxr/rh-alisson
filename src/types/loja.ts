@@ -1,4 +1,5 @@
 // Tipos para suporte multi-loja
+import type { TableColumnConfigFromApi } from './configuracao';
 
 // Tipo de logradouro (compartilhado com fornecedor)
 export type TipoLogradouro = 'RUA' | 'AVENIDA' | 'TRAVESSA' | 'ALAMEDA' | 'PRACA' | 'RODOVIA' | 'ESTRADA';
@@ -95,11 +96,13 @@ export interface UpdateLojaDTO extends Partial<Omit<CreateLojaDTO, 'tenantId'>> 
 // Estado do store
 export interface LojaState {
   lojas: Loja[];
+  /** Colunas da tabela vindas da API (GET /lojas). Quando null, a pagina usa ordem padrao. */
+  columns: TableColumnConfigFromApi[] | null;
   lojaAtual: Loja | null;
   isMultiLoja: boolean;
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   fetchLojas: () => Promise<void>;
   setLojaAtual: (lojaId: string | null) => void;

@@ -1,14 +1,17 @@
 import { create } from 'zustand';
+import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import type { Parcelamento, ParcelamentoInput } from '@/types/parcelamento';
+import { api } from '@/lib/api';
 
 interface ParcelamentoState {
   items: Parcelamento[];
+  columns: TableColumnConfigFromApi[] | null;
   isLoading: boolean;
   error: string | null;
 }
 
 interface ParcelamentoActions {
-  fetchItems: () => Promise<void>;
+  fetchItems: (params?: { dataInicio?: string; dataFim?: string }) => Promise<void>;
   addItem: (data: ParcelamentoInput) => Promise<void>;
   updateItem: (id: string, data: Partial<ParcelamentoInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
@@ -16,62 +19,75 @@ interface ParcelamentoActions {
 
 type ParcelamentoStore = ParcelamentoState & ParcelamentoActions;
 
-const mockData: Parcelamento[] = [
-  { id: '1', data: '2026-01-05', descricao: 'Notebook Dell', parcela: '3/12', valor: 450.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-10', descricao: 'Ar Condicionado', parcela: '5/10', valor: 320.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-15', descricao: 'Impressora Multifuncional', parcela: '2/6', valor: 180.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '4', data: '2026-01-20', descricao: 'Moveis Escritorio', parcela: '8/24', valor: 650.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-];
-
-export const useParcelamentoStore = create<ParcelamentoStore>((set) => ({
+export const useParcelamentoStore = create<ParcelamentoStore>((set, get) => ({
   items: [],
+  columns: null,
   isLoading: false,
   error: null,
 
-  fetchItems: async () => {
+  fetchItems: async (params?: { dataInicio?: string; dataFim?: string }) => {
     set({ isLoading: true, error: null });
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    set({ items: mockData, isLoading: false });
+    try {
+      const search = new URLSearchParams();
+      if (params?.dataInicio) search.set('dataInicio', params.dataInicio);
+      if (params?.dataFim) search.set('dataFim', params.dataFim);
+      const path = search.toString() ? `parcelamentos?${search.toString()}` : 'parcelamentos';
+      const res = await api.get<Parcelamento[]>(path);
+      const list = Array.isArray(res.data) ? res.data : [];
+      set({ items: list, columns: res.columns ?? null, isLoading: false });
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao carregar parcelamentos',
+        isLoading: false,
+      });
+    }
   },
 
   addItem: async (data: ParcelamentoInput) => {
     set({ isLoading: true, error: null });
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    const newItem: Parcelamento = {
-      id: Date.now().toString(),
-      ...data,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    set((state) => ({
-      items: [...state.items, newItem],
-      isLoading: false,
-    }));
+    try {
+      const res = await api.post<Parcelamento>('parcelamentos', data);
+      set((state) => ({ items: [...state.items, res.data], isLoading: false }));
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao salvar',
+        isLoading: false,
+      });
+      throw err;
+    }
   },
 
   updateItem: async (id: string, data: Partial<ParcelamentoInput>) => {
     set({ isLoading: true, error: null });
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    set((state) => ({
-      items: state.items.map((item) =>
-        item.id === id
-          ? { ...item, ...data, updatedAt: new Date().toISOString() }
-          : item
-      ),
-      isLoading: false,
-    }));
+    try {
+      const res = await api.patch<Parcelamento>(`parcelamentos/${id}`, data);
+      set((state) => ({
+        items: state.items.map((item) => (item.id === id ? res.data : item)),
+        isLoading: false,
+      }));
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao atualizar',
+        isLoading: false,
+      });
+      throw err;
+    }
   },
 
   deleteItem: async (id: string) => {
     set({ isLoading: true, error: null });
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    set((state) => ({
-      items: state.items.filter((item) => item.id !== id),
-      isLoading: false,
-    }));
+    try {
+      await api.delete(`parcelamentos/${id}`);
+      set((state) => ({
+        items: state.items.filter((item) => item.id !== id),
+        isLoading: false,
+      }));
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao excluir',
+        isLoading: false,
+      });
+      throw err;
+    }
   },
 }));

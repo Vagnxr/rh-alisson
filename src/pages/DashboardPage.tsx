@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -6,9 +6,13 @@ import {
   Wallet,
   ArrowUpRight,
   ArrowDownRight,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { DateFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { formatDateToLocalYYYYMMDD } from '@/lib/date';
+import { useDashboardStore } from '@/stores/dashboardStore';
+import { useLojaStore } from '@/stores/lojaStore';
 
 interface StatCardProps {
   label: string;
@@ -59,100 +63,13 @@ function StatCard({
             isPositive ? 'text-emerald-500' : 'text-red-500'
           )}
         >
-          {Math.abs(change)}%
+          {Math.abs(change).toFixed(1)}%
         </span>
         <span className="text-sm text-slate-400">vs mes anterior</span>
       </div>
     </div>
   );
 }
-
-const stats: StatCardProps[] = [
-  {
-    label: 'Receita Total',
-    value: 'R$ 45.230,00',
-    change: 12.5,
-    icon: TrendingUp,
-    iconColor: 'text-emerald-600',
-    iconBg: 'bg-emerald-50',
-  },
-  {
-    label: 'Despesas',
-    value: 'R$ 28.450,00',
-    change: -3.2,
-    icon: TrendingDown,
-    iconColor: 'text-red-600',
-    iconBg: 'bg-red-50',
-  },
-  {
-    label: 'Saldo Atual',
-    value: 'R$ 16.780,00',
-    change: 8.1,
-    icon: DollarSign,
-    iconColor: 'text-blue-600',
-    iconBg: 'bg-blue-50',
-  },
-  {
-    label: 'Investimentos',
-    value: 'R$ 32.100,00',
-    change: 5.4,
-    icon: Wallet,
-    iconColor: 'text-purple-600',
-    iconBg: 'bg-purple-50',
-  },
-];
-
-interface Transaction {
-  id: string;
-  description: string;
-  category: string;
-  value: number;
-  date: string;
-  type: 'income' | 'expense';
-}
-
-const recentTransactions: Transaction[] = [
-  {
-    id: '1',
-    description: 'Aluguel Loja Centro',
-    category: 'Despesa Fixa',
-    value: -3500,
-    date: '13/01/2026',
-    type: 'expense',
-  },
-  {
-    id: '2',
-    description: 'Venda Produtos',
-    category: 'Receita',
-    value: 12500,
-    date: '12/01/2026',
-    type: 'income',
-  },
-  {
-    id: '3',
-    description: 'Folha Pagamento',
-    category: 'Funcionarios',
-    value: -8200,
-    date: '10/01/2026',
-    type: 'expense',
-  },
-  {
-    id: '4',
-    description: 'Servico Consultoria',
-    category: 'Renda Extra',
-    value: 4500,
-    date: '08/01/2026',
-    type: 'income',
-  },
-  {
-    id: '5',
-    description: 'Conta de Luz',
-    category: 'Despesa Fixa',
-    value: -890,
-    date: '05/01/2026',
-    type: 'expense',
-  },
-];
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -161,12 +78,70 @@ function formatCurrency(value: number) {
   }).format(Math.abs(value));
 }
 
+function formatDateDisplay(iso: string): string {
+  const [y, m, day] = iso.split('-');
+  return `${day}/${m}/${y}`;
+}
+
 export function DashboardPage() {
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>();
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
+  const { resumo, transacoes, isLoadingResumo, isLoadingTransacoes, errorResumo, errorTransacoes, fetchAll } =
+    useDashboardStore();
+  const { lojaAtual } = useLojaStore();
+
+  const filtros = useMemo(() => ({
+    dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
+    dataFim: formatDateToLocalYYYYMMDD(dateFilter.endDate),
+    lojaId: lojaAtual?.id,
+  }), [dateFilter.startDate, dateFilter.endDate, lojaAtual?.id]);
+
+  useEffect(() => {
+    fetchAll(filtros);
+  }, [fetchAll, filtros.dataInicio, filtros.dataFim, filtros.lojaId]);
+
+  const stats = useMemo(() => {
+    if (!resumo) return null;
+    return [
+      {
+        label: 'Receita Total',
+        value: formatCurrency(resumo.receitaTotal.valor),
+        change: resumo.receitaTotal.variacaoPercentual,
+        icon: TrendingUp,
+        iconColor: 'text-emerald-600',
+        iconBg: 'bg-emerald-50',
+      },
+      {
+        label: 'Despesas',
+        value: formatCurrency(resumo.despesas.valor),
+        change: resumo.despesas.variacaoPercentual,
+        icon: TrendingDown,
+        iconColor: 'text-red-600',
+        iconBg: 'bg-red-50',
+      },
+      {
+        label: 'Saldo Atual',
+        value: formatCurrency(resumo.saldoAtual.valor),
+        change: resumo.saldoAtual.variacaoPercentual,
+        icon: DollarSign,
+        iconColor: 'text-blue-600',
+        iconBg: 'bg-blue-50',
+      },
+      {
+        label: 'Investimentos',
+        value: formatCurrency(resumo.investimentos.valor),
+        change: resumo.investimentos.variacaoPercentual,
+        icon: Wallet,
+        iconColor: 'text-purple-600',
+        iconBg: 'bg-purple-50',
+      },
+    ];
+  }, [resumo]);
+
+  const isLoading = isLoadingResumo || isLoadingTransacoes;
+  const hasError = errorResumo || errorTransacoes;
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Titulo */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
@@ -179,94 +154,116 @@ export function DashboardPage() {
         <DateFilter value={dateFilter} onChange={setDateFilter} />
       </div>
 
-      {/* Cards de Estatisticas */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </div>
-
-      {/* Transacoes Recentes */}
-      <div className="rounded-xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 px-4 py-3 sm:px-6 sm:py-4">
-          <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
-            Transacoes Recentes
-          </h2>
+      {hasError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {errorResumo || errorTransacoes}
         </div>
+      )}
 
-        {/* Tabela Desktop */}
-        <div className="hidden sm:block">
-          <table className="w-full">
-            <thead className="border-b border-slate-200 bg-slate-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                  Descricao
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                  Categoria
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                  Data
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">
-                  Valor
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {recentTransactions.map((tx) => (
-                <tr key={tx.id} className="hover:bg-slate-50">
-                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">
-                    {tx.description}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
-                    {tx.category}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
-                    {tx.date}
-                  </td>
-                  <td
-                    className={cn(
-                      'whitespace-nowrap px-6 py-4 text-right text-sm font-medium',
-                      tx.type === 'income'
-                        ? 'text-emerald-600'
-                        : 'text-red-600'
-                    )}
-                  >
-                    {tx.type === 'income' ? '+' : '-'}
-                    {formatCurrency(tx.value)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {isLoading && !resumo && !transacoes.length ? (
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
         </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+            {stats?.map((stat) => (
+              <StatCard key={stat.label} {...stat} />
+            ))}
+          </div>
 
-        {/* Lista Mobile */}
-        <div className="divide-y divide-slate-200 sm:hidden">
-          {recentTransactions.map((tx) => (
-            <div key={tx.id} className="flex items-center justify-between p-4">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-900">
-                  {tx.description}
-                </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  {tx.category} - {tx.date}
-                </p>
-              </div>
-              <span
-                className={cn(
-                  'ml-4 text-sm font-semibold',
-                  tx.type === 'income' ? 'text-emerald-600' : 'text-red-600'
-                )}
-              >
-                {tx.type === 'income' ? '+' : '-'}
-                {formatCurrency(tx.value)}
-              </span>
+          <div className="rounded-xl border border-slate-200 bg-white">
+            <div className="border-b border-slate-200 px-4 py-3 sm:px-6 sm:py-4">
+              <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
+                Transacoes Recentes
+              </h2>
             </div>
-          ))}
-        </div>
-      </div>
+
+            {isLoadingTransacoes && transacoes.length === 0 ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+              </div>
+            ) : transacoes.length === 0 ? (
+              <div className="px-4 py-12 text-center text-sm text-slate-500">
+                Nenhuma transacao no periodo
+              </div>
+            ) : (
+              <>
+                <div className="hidden sm:block">
+                  <table className="w-full">
+                    <thead className="border-b border-slate-200 bg-slate-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                          Descricao
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                          Categoria
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                          Data
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">
+                          Valor
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {transacoes.map((tx) => (
+                        <tr key={tx.id} className="hover:bg-slate-50">
+                          <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">
+                            {tx.description}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
+                            {tx.category}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
+                            {formatDateDisplay(tx.date)}
+                          </td>
+                          <td
+                            className={cn(
+                              'whitespace-nowrap px-6 py-4 text-right text-sm font-medium',
+                              tx.type === 'income'
+                                ? 'text-emerald-600'
+                                : 'text-red-600'
+                            )}
+                          >
+                            {tx.type === 'income' ? '+' : '-'}
+                            {formatCurrency(tx.value)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="divide-y divide-slate-200 sm:hidden">
+                  {transacoes.map((tx) => (
+                    <div key={tx.id} className="flex items-center justify-between p-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-slate-900">
+                          {tx.description}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {tx.category} - {formatDateDisplay(tx.date)}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          'ml-4 text-sm font-semibold',
+                          tx.type === 'income' ? 'text-emerald-600' : 'text-red-600'
+                        )}
+                      >
+                        {tx.type === 'income' ? '+' : '-'}
+                        {formatCurrency(tx.value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

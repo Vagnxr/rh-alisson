@@ -2,171 +2,199 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, LoginCredentials, RegisterData } from '@/types/auth';
 import { useTenantStore } from './tenantStore';
+import { api } from '@/lib/api';
 
 interface AuthState {
   user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
 
-  // Actions
   login: (credentials: LoginCredentials) => Promise<boolean>;
   register: (data: RegisterData) => Promise<boolean>;
   logout: () => void;
   clearError: () => void;
 }
 
-// Mock de usuario normal (tem tenantId fixo)
-const mockNormalUser: User = {
-  id: '1',
-  nome: 'Usuario Teste',
-  email: 'teste@email.com',
-  tenantId: 'tenant-001', // Usuario normal ja tem tenant associado
-  lojas: ['loja-1'],
-  permissoes: ['*'],
-  isSuperAdmin: false,
-};
-
-// Mock de super admin (nao tem tenantId, precisa selecionar)
-const mockSuperAdmin: User = {
-  id: '0',
-  nome: 'Super Admin',
-  email: 'admin@msystem.com',
-  tenantId: null, // Super admin precisa selecionar tenant
-  lojas: [],
-  permissoes: ['*'],
-  isSuperAdmin: true,
-};
+function mapUser(u: {
+  id: string;
+  nome: string;
+  email: string;
+  tenantId?: string | null;
+  lojas?: string[];
+  permissoes?: string[];
+  isSuperAdmin?: boolean;
+}): User {
+  return {
+    id: u.id,
+    nome: u.nome,
+    email: u.email,
+    tenantId: u.tenantId ?? null,
+    lojas: Array.isArray(u.lojas) ? u.lojas : [],
+    permissoes: Array.isArray(u.permissoes) ? u.permissoes : [],
+    isSuperAdmin: Boolean(u.isSuperAdmin),
+  };
+}
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
+      accessToken: null,
+      refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
 
       login: async (credentials: LoginCredentials) => {
         set({ isLoading: true, error: null });
+        try {
+          const res = await api.post<{
+            accessToken: string;
+            refreshToken: string;
+            expiresIn: number;
+            user: {
+              id: string;
+              nome: string;
+              email: string;
+              tenantId?: string | null;
+              lojas?: string[];
+              permissoes?: string[];
+              isSuperAdmin?: boolean;
+            };
+          }>('auth/login', {
+            email: credentials.email,
+            password: credentials.password,
+          });
 
-        // Simula delay de API
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+          const data = res.data;
+          const user = mapUser(data.user);
 
-        // Mock: verifica tipo de usuario
-        if (credentials.email && credentials.password) {
-          // Se email contem "admin" = super admin
-          const isSuperAdmin = credentials.email.toLowerCase().includes('admin@msystem');
-          
-          if (isSuperAdmin) {
-            // Super admin - nao seta tenant automaticamente
-            set({
-              user: { ...mockSuperAdmin, email: credentials.email },
-              isAuthenticated: true,
-              isLoading: false,
-            });
-          } else {
-            // Usuario normal - ja tem tenant associado
-            // Seta o tenant automaticamente baseado no retorno do login
+          set({
+            user,
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+
+          if (user.tenantId) {
             const tenantStore = useTenantStore.getState();
-            tenantStore.setCurrentTenant({
-              id: mockNormalUser.tenantId!,
-              name: 'Empresa Alpha Ltda',
-              nomeFantasia: 'Alpha',
-              cnpj: '12.345.678/0001-90',
+            const tenants = tenantStore.availableTenants;
+            const tenant = tenants.find((t) => t.id === user.tenantId!) ?? {
+              id: user.tenantId,
+              name: 'Empresa',
+              nomeFantasia: '',
+              cnpj: '',
               isActive: true,
-              createdAt: '2025-01-01T00:00:00Z',
-            });
-            
-            set({
-              user: { ...mockNormalUser, email: credentials.email },
-              isAuthenticated: true,
-              isLoading: false,
-            });
+              isMultiloja: false,
+              createdAt: new Date().toISOString(),
+            };
+            tenantStore.setCurrentTenant(tenant);
           }
-          return true;
-        }
 
-        set({
-          error: 'Email ou senha invalidos',
-          isLoading: false,
-        });
-        return false;
+          return true;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Email ou senha invalidos';
+          set({ error: message, isLoading: false });
+          return false;
+        }
       },
 
       register: async (data: RegisterData) => {
         set({ isLoading: true, error: null });
-
-        // Simula delay de API
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Mock: aceita qualquer registro (como usuario normal)
-        if (data.email && data.password && data.nome) {
-          // Seta tenant padrao para novo usuario
-          const tenantStore = useTenantStore.getState();
-          tenantStore.setCurrentTenant({
-            id: 'tenant-001',
-            name: 'Empresa Alpha Ltda',
-            nomeFantasia: 'Alpha',
-            cnpj: '12.345.678/0001-90',
-            isActive: true,
-            createdAt: '2025-01-01T00:00:00Z',
+        try {
+          const res = await api.post<{
+            accessToken: string;
+            refreshToken: string;
+            expiresIn: number;
+            user: {
+              id: string;
+              nome: string;
+              email: string;
+              tenantId?: string | null;
+              lojas?: string[];
+              permissoes?: string[];
+              isSuperAdmin?: boolean;
+            };
+          }>('auth/register', {
+            nome: data.nome,
+            email: data.email,
+            password: data.password,
+            confirmPassword: data.confirmPassword,
           });
+
+          const responseData = res.data;
+          const user = mapUser(responseData.user);
 
           set({
-            user: { 
-              ...mockNormalUser, 
-              email: data.email, 
-              nome: data.nome,
-              tenantId: 'tenant-001',
-            },
+            user,
+            accessToken: responseData.accessToken,
+            refreshToken: responseData.refreshToken,
             isAuthenticated: true,
             isLoading: false,
+            error: null,
           });
-          return true;
-        }
 
-        set({
-          error: 'Erro ao criar conta',
-          isLoading: false,
-        });
-        return false;
+          if (user.tenantId) {
+            const tenantStore = useTenantStore.getState();
+            const tenants = tenantStore.availableTenants;
+            const tenant = tenants.find((t) => t.id === user.tenantId!) ?? {
+              id: user.tenantId,
+              name: 'Empresa',
+              nomeFantasia: '',
+              cnpj: '',
+              isActive: true,
+              isMultiloja: false,
+              createdAt: new Date().toISOString(),
+            };
+            tenantStore.setCurrentTenant(tenant);
+          }
+
+          return true;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Erro ao criar conta';
+          set({ error: message, isLoading: false });
+          return false;
+        }
       },
 
       logout: () => {
-        // Limpa tenant ao fazer logout
+        const { refreshToken: rt } = get();
+        if (rt) {
+          api.post('auth/logout', { refreshToken: rt }).catch(() => {});
+        }
         const tenantStore = useTenantStore.getState();
         tenantStore.clearTenant();
-
         set({
           user: null,
+          accessToken: null,
+          refreshToken: null,
           isAuthenticated: false,
           error: null,
         });
       },
 
-      clearError: () => {
-        set({ error: null });
-      },
+      clearError: () => set({ error: null }),
     }),
     {
       name: 'auth-storage',
       partialize: (state) => ({
         user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
     }
   )
 );
 
-// Helper para verificar se precisa selecionar tenant
 export function needsTenantSelection(): boolean {
   const authStore = useAuthStore.getState();
   const tenantStore = useTenantStore.getState();
-  
-  // Precisa selecionar tenant se:
-  // 1. Usuario esta autenticado
-  // 2. Usuario e super admin (isSuperAdmin = true)
-  // 3. Nenhum tenant foi selecionado
   return (
     authStore.isAuthenticated &&
     authStore.user?.isSuperAdmin === true &&

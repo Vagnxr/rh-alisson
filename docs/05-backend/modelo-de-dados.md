@@ -1,5 +1,9 @@
 # Modelo de Dados
 
+**Nota:** Este documento descreve as entidades em nivel conceitual. Para o **schema de implementacao** (Prisma), use **02-prisma-nestjs-implementacao.md**. Os nomes de campos e relacionamentos do contrato frontend (01-contrato-frontend-backend.md) e do schema Prisma prevalecem sobre este doc.
+
+---
+
 ## Entidades Principais
 
 ### Tenant (Empresa)

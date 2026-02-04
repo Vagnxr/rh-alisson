@@ -11,7 +11,8 @@ import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Parcelamento, ParcelamentoInput } from '@/types/parcelamento';
 import { useParcelamentoStore } from '@/stores/parcelamentoStore';
-import { DateFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { buildTableColumns } from '@/lib/buildTableColumns';
+
+const PARCELAMENTO_TABLE_DEFAULT_ORDER = ['data', 'descricao', 'parcela', 'valor'];
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -48,6 +52,7 @@ function formatDateForInput(date: string) {
 
 export function ParcelamentoPage() {
   const items = useParcelamentoStore((s) => s.items);
+  const columnsFromApi = useParcelamentoStore((s) => s.columns);
   const isLoading = useParcelamentoStore((s) => s.isLoading);
   const fetchItems = useParcelamentoStore((s) => s.fetchItems);
   const addItem = useParcelamentoStore((s) => s.addItem);
@@ -58,7 +63,7 @@ export function ParcelamentoPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Parcelamento | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>();
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
 
   const [formData, setFormData] = useState<ParcelamentoInput>({
     data: '',
@@ -67,19 +72,17 @@ export function ParcelamentoPage() {
     valor: 0,
   });
 
+  const dateParams = useMemo(() => ({
+    dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
+    dataFim: formatDateToLocalYYYYMMDD(dateFilter.endDate),
+  }), [dateFilter.startDate, dateFilter.endDate]);
+
   useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+    fetchItems(dateParams);
+  }, [fetchItems, dateParams.dataInicio, dateParams.dataFim]);
 
-  // Filtra items por data
-  const filteredItems = useMemo(() => {
-    if (!dateFilter || !items) return items;
-
-    return items.filter((item) => {
-      const itemDate = new Date(item.data);
-      return itemDate >= dateFilter.startDate && itemDate <= dateFilter.endDate;
-    });
-  }, [items, dateFilter]);
+  // Backend ja retorna itens filtrados por dataInicio/dataFim; nao filtrar de novo no cliente
+  const filteredItems = items ?? [];
 
   const handleOpenDialog = (item?: Parcelamento) => {
     if (item) {
@@ -152,9 +155,9 @@ export function ParcelamentoPage() {
     }
   };
 
-  const columns = useMemo<ColumnDef<Parcelamento>[]>(
-    () => [
-      {
+  const columnDefsByKey = useMemo<Record<string, ColumnDef<Parcelamento>>>(
+    () => ({
+      data: {
         accessorKey: 'data',
         header: ({ column }) => (
           <button
@@ -167,7 +170,7 @@ export function ParcelamentoPage() {
         ),
         cell: ({ row }) => formatDate(row.getValue('data')),
       },
-      {
+      descricao: {
         accessorKey: 'descricao',
         header: ({ column }) => (
           <button
@@ -179,7 +182,7 @@ export function ParcelamentoPage() {
           </button>
         ),
       },
-      {
+      parcela: {
         accessorKey: 'parcela',
         header: ({ column }) => (
           <button
@@ -196,7 +199,7 @@ export function ParcelamentoPage() {
           </span>
         ),
       },
-      {
+      valor: {
         accessorKey: 'valor',
         header: ({ column }) => (
           <button
@@ -213,30 +216,40 @@ export function ParcelamentoPage() {
           </span>
         ),
       },
-      {
-        id: 'actions',
-        header: () => <span className="sr-only">Acoes</span>,
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1">
-            <button
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              title="Editar"
-              onClick={() => handleOpenDialog(row.original)}
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-              title="Excluir"
-              onClick={() => setDeleteItemId(row.original.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ),
-      },
-    ],
+    }),
     []
+  );
+
+  const columns = useMemo(
+    () =>
+      buildTableColumns<Parcelamento>(
+        columnDefsByKey,
+        columnsFromApi ?? null,
+        PARCELAMENTO_TABLE_DEFAULT_ORDER,
+        {
+          id: 'actions',
+          header: () => <span className="sr-only">Acoes</span>,
+          cell: ({ row }) => (
+            <div className="flex items-center justify-end gap-1">
+              <button
+                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                title="Editar"
+                onClick={() => handleOpenDialog(row.original)}
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                title="Excluir"
+                onClick={() => setDeleteItemId(row.original.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ),
+        }
+      ),
+    [columnDefsByKey, columnsFromApi]
   );
 
   const table = useReactTable({
@@ -341,7 +354,7 @@ export function ParcelamentoPage() {
               <tfoot className="border-t border-slate-200 bg-slate-50">
                 <tr>
                   <td
-                    colSpan={3}
+                    colSpan={Math.max(1, columns.length - 2)}
                     className="px-6 py-3 text-right text-sm font-medium text-slate-900"
                   >
                     Total:

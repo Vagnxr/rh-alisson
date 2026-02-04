@@ -1,14 +1,17 @@
 import { create } from 'zustand';
+import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import type { DespesaBase, DespesaInput, DespesaCategoria } from '@/types/despesa';
+import { api } from '@/lib/api';
 
 interface DespesaState {
   items: DespesaBase[];
+  columns: TableColumnConfigFromApi[] | null;
   isLoading: boolean;
   error: string | null;
 }
 
 interface DespesaActions {
-  fetchItems: () => Promise<void>;
+  fetchItems: (params?: { dataInicio?: string; dataFim?: string }) => Promise<void>;
   addItem: (data: DespesaInput) => Promise<void>;
   updateItem: (id: string, data: Partial<DespesaInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
@@ -16,114 +19,103 @@ interface DespesaActions {
 
 type DespesaStore = DespesaState & DespesaActions;
 
-// Factory para criar stores de despesa
-function createDespesaStore(categoria: DespesaCategoria, mockData: DespesaBase[]) {
-  return create<DespesaStore>((set) => ({
+function normalizeDespesa(item: Record<string, unknown>): DespesaBase {
+  return {
+    id: String(item.id),
+    data: typeof item.data === 'string' ? item.data : (item.data as Date)?.toString?.()?.slice(0, 10) ?? '',
+    tipo: String(item.tipo ?? ''),
+    descricao: String(item.descricao ?? ''),
+    valor: Number(item.valor ?? 0),
+    comunicarAgenda: Boolean(item.comunicarAgenda),
+    createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
+    updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
+  };
+}
+
+function createDespesaStore(categoria: DespesaCategoria) {
+  return create<DespesaStore>((set, get) => ({
     items: [],
+    columns: null,
     isLoading: false,
     error: null,
 
-    fetchItems: async () => {
+    fetchItems: async (params?: { dataInicio?: string; dataFim?: string }) => {
       set({ isLoading: true, error: null });
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      set({ items: mockData, isLoading: false });
+      try {
+        const requestParams: Record<string, string> = { categoria };
+        if (params?.dataInicio) requestParams.dataInicio = params.dataInicio;
+        if (params?.dataFim) requestParams.dataFim = params.dataFim;
+        const res = await api.get<DespesaBase[]>('despesas', {
+          params: requestParams,
+        });
+        const list = Array.isArray(res.data) ? res.data : [];
+        const items = list.map((x) => normalizeDespesa(x as unknown as Record<string, unknown>));
+        const columns = res.columns ?? null;
+        set({ items, columns, isLoading: false });
+      } catch (err) {
+        set({
+          error: err instanceof Error ? err.message : 'Erro ao carregar despesas',
+          isLoading: false,
+        });
+      }
     },
 
     addItem: async (data: DespesaInput) => {
       set({ isLoading: true, error: null });
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      const newItem: DespesaBase = {
-        id: Date.now().toString(),
-        ...data,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      set((state) => ({
-        items: [...state.items, newItem],
-        isLoading: false,
-      }));
+      try {
+        const res = await api.post<DespesaBase>('despesas', { ...data, categoria });
+        const newItem = normalizeDespesa(res.data as unknown as Record<string, unknown>);
+        set((state) => ({ items: [...state.items, newItem], isLoading: false }));
+      } catch (err) {
+        set({
+          error: err instanceof Error ? err.message : 'Erro ao salvar',
+          isLoading: false,
+        });
+        throw err;
+      }
     },
 
     updateItem: async (id: string, data: Partial<DespesaInput>) => {
       set({ isLoading: true, error: null });
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      set((state) => ({
-        items: state.items.map((item) =>
-          item.id === id
-            ? { ...item, ...data, updatedAt: new Date().toISOString() }
-            : item
-        ),
-        isLoading: false,
-      }));
+      try {
+        const res = await api.patch<DespesaBase>(`despesas/${id}`, data);
+        const updated = normalizeDespesa(res.data as unknown as Record<string, unknown>);
+        set((state) => ({
+          items: state.items.map((item) => (item.id === id ? updated : item)),
+          isLoading: false,
+        }));
+      } catch (err) {
+        set({
+          error: err instanceof Error ? err.message : 'Erro ao atualizar',
+          isLoading: false,
+        });
+        throw err;
+      }
     },
 
     deleteItem: async (id: string) => {
       set({ isLoading: true, error: null });
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      set((state) => ({
-        items: state.items.filter((item) => item.id !== id),
-        isLoading: false,
-      }));
+      try {
+        await api.delete(`despesas/${id}`);
+        set((state) => ({ items: state.items.filter((item) => item.id !== id), isLoading: false }));
+      } catch (err) {
+        set({
+          error: err instanceof Error ? err.message : 'Erro ao excluir',
+          isLoading: false,
+        });
+        throw err;
+      }
     },
   }));
 }
 
-// Mock data para cada categoria
-const mockDespesaFixa: DespesaBase[] = [
-  { id: '1', data: '2026-01-05', tipo: 'ALUGUEL', descricao: 'Aluguel', valor: 2500.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-10', tipo: 'INTERNET', descricao: 'Internet', valor: 150.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-15', tipo: 'LUZ', descricao: 'Energia Eletrica', valor: 450.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '4', data: '2026-01-20', tipo: 'AGUA', descricao: 'Agua', valor: 180.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '5', data: '2026-01-25', tipo: 'TELEFONE', descricao: 'Telefone', valor: 89.9, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-];
+export const useDespesaFixaStore = createDespesaStore('despesa-fixa');
+export const useDespesaExtraStore = createDespesaStore('despesa-extra');
+export const useDespesaFuncionarioStore = createDespesaStore('despesa-funcionario');
+export const useDespesaImpostoStore = createDespesaStore('despesa-imposto');
+export const useDespesaVeiculoStore = createDespesaStore('despesa-veiculo');
+export const useDespesaBancoStore = createDespesaStore('despesa-banco');
 
-const mockDespesaExtra: DespesaBase[] = [
-  { id: '1', data: '2026-01-03', tipo: 'MATERIAL', descricao: 'Material de Escritorio', valor: 320.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-08', tipo: 'MANUTENCAO', descricao: 'Manutencao Ar Condicionado', valor: 450.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-12', tipo: 'SERVICO', descricao: 'Limpeza Especializada', valor: 280.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-];
-
-const mockDespesaFuncionario: DespesaBase[] = [
-  { id: '1', data: '2026-01-05', tipo: 'SALARIO', descricao: 'Salario - Joao Silva', valor: 3500.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-05', tipo: 'SALARIO', descricao: 'Salario - Maria Santos', valor: 2800.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-10', tipo: 'VALE TRANSPORTE', descricao: 'Vale Transporte', valor: 440.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '4', data: '2026-01-10', tipo: 'VALE ALIMENTACAO', descricao: 'Vale Alimentacao', valor: 880.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-];
-
-const mockDespesaImposto: DespesaBase[] = [
-  { id: '1', data: '2026-01-15', tipo: 'ICMS', descricao: 'ICMS', valor: 1250.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-20', tipo: 'ISS', descricao: 'ISS', valor: 580.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-20', tipo: 'INSS', descricao: 'INSS', valor: 890.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '4', data: '2026-01-20', tipo: 'FGTS', descricao: 'FGTS', valor: 640.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-];
-
-const mockDespesaVeiculo: DespesaBase[] = [
-  { id: '1', data: '2026-01-02', tipo: 'COMBUSTIVEL', descricao: 'Combustivel - Gol', valor: 350.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-08', tipo: 'COMBUSTIVEL', descricao: 'Combustivel - Fiorino', valor: 420.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-12', tipo: 'MANUTENCAO', descricao: 'Troca de Oleo - Gol', valor: 180.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '4', data: '2026-01-18', tipo: 'IPVA', descricao: 'IPVA - Gol', valor: 980.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-];
-
-const mockDespesaBanco: DespesaBase[] = [
-  { id: '1', data: '2026-01-05', tipo: 'TARIFA MENSAL', descricao: 'Tarifa Mensal - Bradesco', valor: 45.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '2', data: '2026-01-05', tipo: 'TARIFA MENSAL', descricao: 'Tarifa Mensal - Itau', valor: 52.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '3', data: '2026-01-10', tipo: 'TED', descricao: 'TED para Fornecedor', valor: 12.5, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-  { id: '4', data: '2026-01-15', tipo: 'TAXA CARTAO', descricao: 'Anuidade Cartao', valor: 120.0, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' },
-];
-
-// Exportar stores
-export const useDespesaFixaStore = createDespesaStore('despesa-fixa', mockDespesaFixa);
-export const useDespesaExtraStore = createDespesaStore('despesa-extra', mockDespesaExtra);
-export const useDespesaFuncionarioStore = createDespesaStore('despesa-funcionario', mockDespesaFuncionario);
-export const useDespesaImpostoStore = createDespesaStore('despesa-imposto', mockDespesaImposto);
-export const useDespesaVeiculoStore = createDespesaStore('despesa-veiculo', mockDespesaVeiculo);
-export const useDespesaBancoStore = createDespesaStore('despesa-banco', mockDespesaBanco);
-
-// Mapeamento de stores por categoria
 export const despesaStores = {
   'despesa-fixa': useDespesaFixaStore,
   'despesa-extra': useDespesaExtraStore,

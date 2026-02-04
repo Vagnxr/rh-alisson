@@ -4,6 +4,7 @@ import { DESPESA_CATEGORIAS } from '@/types/despesa';
 
 export function DespesaExtraPage() {
   const items = useDespesaExtraStore((s) => s.items);
+  const columns = useDespesaExtraStore((s) => s.columns);
   const isLoading = useDespesaExtraStore((s) => s.isLoading);
   const fetchItems = useDespesaExtraStore((s) => s.fetchItems);
   const addItem = useDespesaExtraStore((s) => s.addItem);
@@ -14,6 +15,7 @@ export function DespesaExtraPage() {
     <DespesaPage
       config={DESPESA_CATEGORIAS['despesa-extra']}
       items={items}
+      columns={columns}
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}

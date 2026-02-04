@@ -1,6 +1,44 @@
 # DTOs e Tipos - API Backend
 
-Este documento detalha todos os DTOs (Data Transfer Objects) e tipos utilizados na API.
+Este documento detalha todos os DTOs (Data Transfer Objects) e tipos utilizados na API. Os payloads e nomes de campos devem estar alinhados ao **01-contrato-frontend-backend.md**.
+
+---
+
+## 0. Tipos de Configuracao de Colunas (respostas de listagem)
+
+Todo GET de listagem que alimenta uma tabela deve incluir na resposta o campo **`columns`**. Formato esperado pelo frontend:
+
+```typescript
+/** Item do array `columns` retornado nas listagens (colunas visiveis, ordenadas). */
+interface TableColumnConfigFromApi {
+  id: string;      // ex: "apelido", "data", "valor"
+  label: string;   // ex: "Apelido", "Data", "Valor"
+  order: number;  // ordem de exibicao
+  isRequired?: boolean;  // coluna obrigatoria (nao pode ser ocultada)
+}
+```
+
+Para configuracoes completas (GET/PUT `/configuracoes/tabelas`), use `ColunaConfig` com `isVisible`:
+
+```typescript
+interface ColunaConfig {
+  id: string;
+  label: string;
+  isVisible: boolean;
+  order: number;
+  width?: number;
+  isRequired?: boolean;
+}
+
+interface TabelaConfig {
+  id: string;       // tabelaId: lojas, despesa-fixa, fornecedores, etc.
+  nome: string;
+  descricao: string;
+  colunas: ColunaConfig[];
+}
+```
+
+O mapeamento endpoint -> tabelaId esta em 01-contrato-frontend-backend.md, secao "Colunas de tabela".
 
 ---
 

@@ -4,6 +4,7 @@ import { DESPESA_CATEGORIAS } from '@/types/despesa';
 
 export function DespesaFixaPage() {
   const items = useDespesaFixaStore((s) => s.items);
+  const columns = useDespesaFixaStore((s) => s.columns);
   const isLoading = useDespesaFixaStore((s) => s.isLoading);
   const fetchItems = useDespesaFixaStore((s) => s.fetchItems);
   const addItem = useDespesaFixaStore((s) => s.addItem);
@@ -14,6 +15,7 @@ export function DespesaFixaPage() {
     <DespesaPage
       config={DESPESA_CATEGORIAS['despesa-fixa']}
       items={items}
+      columns={columns}
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}

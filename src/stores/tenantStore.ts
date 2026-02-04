@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Tenant } from '@/types/tenant';
+import { api } from '@/lib/api';
 
 interface TenantState {
   currentTenant: Tenant | null;
@@ -18,37 +19,6 @@ interface TenantActions {
 }
 
 type TenantStore = TenantState & TenantActions;
-
-// Mock de tenants para desenvolvimento
-const mockTenants: Tenant[] = [
-  {
-    id: 'tenant-001',
-    name: 'Empresa Alpha Ltda',
-    nomeFantasia: 'ALPHA COMERCIO',
-    cnpj: '12.345.678/0001-90',
-    isActive: true,
-    isMultiloja: true,
-    createdAt: '2025-01-01T00:00:00Z',
-  },
-  {
-    id: 'tenant-002',
-    name: 'Beta Comercio SA',
-    nomeFantasia: 'BETA STORE',
-    cnpj: '98.765.432/0001-10',
-    isActive: true,
-    isMultiloja: false,
-    createdAt: '2025-02-15T00:00:00Z',
-  },
-  {
-    id: 'tenant-003',
-    name: 'Gamma Servicos ME',
-    nomeFantasia: 'GAMMA SERVICOS',
-    cnpj: '11.222.333/0001-44',
-    isActive: true,
-    isMultiloja: true,
-    createdAt: '2025-03-20T00:00:00Z',
-  },
-];
 
 export const useTenantStore = create<TenantStore>()(
   persist(
@@ -68,14 +38,15 @@ export const useTenantStore = create<TenantStore>()(
 
       fetchAvailableTenants: async () => {
         set({ isLoading: true, error: null });
-        
-        // Simula chamada API
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        
-        set({ 
-          availableTenants: mockTenants, 
-          isLoading: false 
-        });
+        try {
+          const res = await api.get<Tenant[]>('tenants/available');
+          set({ availableTenants: res.data ?? [], isLoading: false });
+        } catch (err) {
+          set({
+            error: err instanceof Error ? err.message : 'Erro ao carregar empresas',
+            isLoading: false,
+          });
+        }
       },
 
       clearTenant: () => {

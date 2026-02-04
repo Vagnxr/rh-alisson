@@ -21,7 +21,7 @@ const MONTHS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-function getDefaultFilter(): DateFilterValue {
+export function getDefaultFilter(): DateFilterValue {
   const now = new Date();
   return {
     period: 'month',

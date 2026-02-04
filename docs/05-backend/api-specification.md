@@ -114,6 +114,29 @@ src/
 }
 ```
 
+#### Listagens que alimentam tabelas (colunas configuráveis)
+
+Todo GET de listagem que alimenta uma tela com tabela (lojas, despesas, fornecedores, parcelamentos, socios, movimentacoes-socios, receitas, investimentos, admin/tenants, admin/users) deve incluir na resposta o campo **`columns`**, para o front montar as colunas conforme a configuracao do usuario.
+
+Formato de cada item em `columns`:
+```json
+{ "id": "string", "label": "string", "order": number, "isRequired": boolean (opcional) }
+```
+
+Exemplo de resposta GET /lojas:
+```json
+{
+  "success": true,
+  "data": [ ... ],
+  "columns": [
+    { "id": "apelido", "label": "Apelido", "order": 1 },
+    { "id": "razaoSocial", "label": "Razao Social", "order": 2 }
+  ]
+}
+```
+
+O mapeamento endpoint -> tabelaId (para buscar a configuracao do usuario) esta em **01-contrato-frontend-backend.md**, secao "Colunas de tabela".
+
 #### Erro (4xx/5xx)
 ```json
 {

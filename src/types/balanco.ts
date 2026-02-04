@@ -1,32 +1,35 @@
-// Tipos para Balanço Geral
-
+/** Item de uma secao do balanco (despesas, vendas, etc.) */
 export interface BalancoItem {
   descricao: string;
   valor: number;
   percentual: number;
+  lojaId?: string;
+  lojaNome?: string;
 }
 
 export interface BalancoSecao {
-  titulo: string;
   items: BalancoItem[];
   total: number;
 }
 
-export interface AtivoImobilizado {
-  entrada: number;
-  saida: number;
-}
-
+/** Resposta do GET /balanco/mensal */
 export interface BalancoMensal {
   mes: string;
+  mesNumero: number;
   ano: number;
-  valorTotal: number;
+  valorTotalVendas: number;
   despesas: BalancoSecao;
   vendas: BalancoSecao;
   outrosValores: BalancoSecao;
   mercadoriaEntrada: BalancoSecao;
   mercadoriaSaida: BalancoSecao;
-  ativoImobilizado: AtivoImobilizado;
+  ativoImobilizado: { entrada: number; saida: number };
   investimento: number;
   rendaExtra: number;
+}
+
+export interface BalancoFiltros {
+  mes?: number;
+  ano?: number;
+  lojaId?: string;
 }

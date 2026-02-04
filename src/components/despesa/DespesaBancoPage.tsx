@@ -13,7 +13,8 @@ import { toast } from 'sonner';
 import type { DespesaBase, DespesaInput } from '@/types/despesa';
 import { TIPOS_DESPESA } from '@/types/despesa';
 import { BANCOS_PADRAO, getBancoIcon, type Banco } from '@/types/banco';
-import { DateFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import {
   Dialog,
@@ -47,7 +48,7 @@ interface DespesaBancoInput extends DespesaInput {
 interface DespesaBancoPageProps {
   items: DespesaBanco[];
   isLoading: boolean;
-  fetchItems: () => Promise<void>;
+  fetchItems: (params?: { dataInicio?: string; dataFim?: string }) => Promise<void>;
   addItem: (data: DespesaBancoInput) => Promise<void>;
   updateItem: (id: string, data: Partial<DespesaBancoInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
@@ -140,7 +141,7 @@ export function DespesaBancoPageComponent({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<DespesaBanco | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>();
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   const [bancoFilter, setBancoFilter] = useState<string>('');
 
   const [formData, setFormData] = useState<DespesaBancoInput>({
@@ -154,27 +155,21 @@ export function DespesaBancoPageComponent({
 
   const tiposDisponiveis = TIPOS_DESPESA['despesa-banco'] || ['OUTROS'];
 
+  const dateParams = useMemo(() => ({
+    dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
+    dataFim: formatDateToLocalYYYYMMDD(dateFilter.endDate),
+  }), [dateFilter.startDate, dateFilter.endDate]);
+
   useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+    fetchItems(dateParams);
+  }, [fetchItems, dateParams.dataInicio, dateParams.dataFim]);
 
-  // Filtra items por data e banco
+  // Backend ja retorna itens filtrados por data; so filtrar no cliente apenas por banco
   const filteredItems = useMemo(() => {
-    let result = items;
-
-    if (dateFilter) {
-      result = result.filter((item) => {
-        const itemDate = new Date(item.data);
-        return itemDate >= dateFilter.startDate && itemDate <= dateFilter.endDate;
-      });
-    }
-
-    if (bancoFilter) {
-      result = result.filter((item) => item.bancoId === bancoFilter);
-    }
-
-    return result;
-  }, [items, dateFilter, bancoFilter]);
+    if (!items) return [];
+    if (!bancoFilter) return items;
+    return items.filter((item) => item.bancoId === bancoFilter);
+  }, [items, bancoFilter]);
 
   const handleOpenDialog = (item?: DespesaBanco) => {
     if (item) {

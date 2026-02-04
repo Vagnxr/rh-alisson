@@ -21,6 +21,22 @@ import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminTenantsPage } from '@/pages/admin/AdminTenantsPage';
 import { RelatoriosPage } from '@/pages/RelatoriosPage';
 import { LembretesPage } from '@/pages/LembretesPage';
+import {
+  CaixaPage,
+  ControleCartoesPage,
+  VendasPage,
+  ControleDinheiroPage,
+  ControleDepositoPage,
+  VendaCartoesPage,
+  AtivoImobilizadoPage,
+  EntradaPage,
+  SaidaPage,
+  PagoDinheiroPage,
+  CalculadoraMargemPage,
+  PedidoVendaPage,
+  AReceberPage,
+  VendaPerdaPage,
+} from '@/pages/financeiro';
 import { ProtectedRoute, AuthOnlyRoute, SuperAdminRoute } from '@/components/ProtectedRoute';
 import { Toaster } from '@/components/ui/sonner';
 import '@/index.css';
@@ -67,18 +83,20 @@ function App() {
           
           {/* Financeiro - Submenus */}
           <Route path="/financeiro" element={<Navigate to="/financeiro/caixa" replace />} />
-          <Route path="/financeiro/caixa" element={<PlaceholderPage title="Caixa" />} />
-          <Route path="/financeiro/controle-cartoes" element={<PlaceholderPage title="Controle Cartoes" />} />
-          <Route path="/financeiro/vendas" element={<PlaceholderPage title="Vendas" />} />
-          <Route path="/financeiro/controle-dinheiro" element={<PlaceholderPage title="Controle Dinheiro" />} />
-          <Route path="/financeiro/controle-deposito" element={<PlaceholderPage title="Controle Deposito" />} />
-          <Route path="/financeiro/venda-cartoes" element={<PlaceholderPage title="Venda Cartoes" />} />
-          <Route path="/financeiro/ativo-imobiliario" element={<PlaceholderPage title="Ativo Imobiliario" />} />
-          <Route path="/financeiro/entrada" element={<PlaceholderPage title="Entrada" />} />
-          <Route path="/financeiro/saida" element={<PlaceholderPage title="Saida" />} />
-          <Route path="/financeiro/pago-dinheiro" element={<PlaceholderPage title="Pago em Dinheiro" />} />
-          <Route path="/financeiro/calculadora-margem" element={<PlaceholderPage title="Calculadora de Margem" />} />
-          <Route path="/financeiro/pedido-venda" element={<PlaceholderPage title="Pedido de Venda" />} />
+          <Route path="/financeiro/caixa" element={<CaixaPage />} />
+          <Route path="/financeiro/controle-cartoes" element={<ControleCartoesPage />} />
+          <Route path="/financeiro/vendas" element={<VendasPage />} />
+          <Route path="/financeiro/controle-dinheiro" element={<ControleDinheiroPage />} />
+          <Route path="/financeiro/controle-deposito" element={<ControleDepositoPage />} />
+          <Route path="/financeiro/venda-cartoes" element={<VendaCartoesPage />} />
+          <Route path="/financeiro/ativo-imobilizado" element={<AtivoImobilizadoPage />} />
+          <Route path="/financeiro/entrada" element={<EntradaPage />} />
+          <Route path="/financeiro/saida" element={<SaidaPage />} />
+          <Route path="/financeiro/pago-dinheiro" element={<PagoDinheiroPage />} />
+          <Route path="/financeiro/calculadora-margem" element={<CalculadoraMargemPage />} />
+          <Route path="/financeiro/pedido-venda" element={<PedidoVendaPage />} />
+          <Route path="/financeiro/outras-funcoes/a-receber" element={<AReceberPage />} />
+          <Route path="/financeiro/outras-funcoes/venda-perda" element={<VendaPerdaPage />} />
           <Route path="/financeiro/agenda" element={<PlaceholderPage title="Agenda" />} />
 
           <Route path="/recursos-humanos" element={<PlaceholderPage title="Recursos Humanos" />} />

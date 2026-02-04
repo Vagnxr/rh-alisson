@@ -25,7 +25,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { cn } from '@/lib/cn';
+import { buildTableColumns } from '@/lib/buildTableColumns';
 import type { CreateFornecedorDto, UpdateFornecedorDto } from '@/types/fornecedor';
+
+const FORNECEDOR_TABLE_DEFAULT_ORDER = ['tipo', 'nome', 'documento', 'contatoEmpresa', 'endereco', 'isAtivo'];
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString('pt-BR');
@@ -34,6 +37,7 @@ function formatDate(date: string) {
 export function FornecedoresPage() {
   const {
     fornecedores,
+    columns: columnsFromApi,
     isLoading,
     fetchFornecedores,
     addFornecedor,
@@ -92,9 +96,9 @@ export function FornecedoresPage() {
     }
   };
 
-  const columns = useMemo<ColumnDef<Fornecedor>[]>(
-    () => [
-      {
+  const columnDefsByKey = useMemo<Record<string, ColumnDef<Fornecedor>>>(
+    () => ({
+      tipo: {
         accessorKey: 'tipo',
         header: ({ column }) => (
           <button
@@ -119,20 +123,15 @@ export function FornecedoresPage() {
           );
         },
       },
-      {
-        accessorFn: (row) => {
-          if (row.tipo === 'cnpj') {
-            return row.razaoSocial;
-          }
-          return row.nomeCompleto;
-        },
+      nome: {
+        accessorFn: (row) => (row.tipo === 'cnpj' ? row.razaoSocial : row.nomeCompleto),
         id: 'nome',
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
-            Nome / Razão Social
+            Nome / Razao Social
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
@@ -156,7 +155,7 @@ export function FornecedoresPage() {
           );
         },
       },
-      {
+      documento: {
         accessorFn: (row) => (row.tipo === 'cnpj' ? row.cnpj : row.cpf),
         id: 'documento',
         header: ({ column }) => (
@@ -173,7 +172,7 @@ export function FornecedoresPage() {
           return <span className="text-sm text-slate-600">{fornecedor.tipo === 'cnpj' ? fornecedor.cnpj : fornecedor.cpf}</span>;
         },
       },
-      {
+      contatoEmpresa: {
         accessorKey: 'contatoEmpresa',
         header: 'Contato',
         cell: ({ row }) => {
@@ -188,7 +187,7 @@ export function FornecedoresPage() {
           );
         },
       },
-      {
+      endereco: {
         accessorKey: 'endereco',
         header: 'Cidade / UF',
         cell: ({ row }) => {
@@ -200,7 +199,7 @@ export function FornecedoresPage() {
           );
         },
       },
-      {
+      isAtivo: {
         accessorKey: 'isAtivo',
         header: 'Status',
         cell: ({ row }) => {
@@ -209,9 +208,7 @@ export function FornecedoresPage() {
             <span
               className={cn(
                 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                isAtivo
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'bg-slate-100 text-slate-600'
+                isAtivo ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
               )}
             >
               {isAtivo ? 'Ativo' : 'Inativo'}
@@ -219,30 +216,40 @@ export function FornecedoresPage() {
           );
         },
       },
-      {
-        id: 'actions',
-        header: () => <span className="sr-only">Ações</span>,
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1">
-            <button
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              title="Editar"
-              onClick={() => handleOpenDialog(row.original)}
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-              title="Excluir"
-              onClick={() => setDeleteFornecedorId(row.original.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ),
-      },
-    ],
+    }),
     []
+  );
+
+  const columns = useMemo(
+    () =>
+      buildTableColumns<Fornecedor>(
+        columnDefsByKey,
+        columnsFromApi ?? null,
+        FORNECEDOR_TABLE_DEFAULT_ORDER,
+        {
+          id: 'actions',
+          header: () => <span className="sr-only">Acoes</span>,
+          cell: ({ row }) => (
+            <div className="flex items-center justify-end gap-1">
+              <button
+                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                title="Editar"
+                onClick={() => handleOpenDialog(row.original)}
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                title="Excluir"
+                onClick={() => setDeleteFornecedorId(row.original.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ),
+        }
+      ),
+    [columnDefsByKey, columnsFromApi]
   );
 
   const table = useReactTable({

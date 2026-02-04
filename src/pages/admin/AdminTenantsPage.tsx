@@ -40,10 +40,13 @@ import {
 import { useAdminTenantsStore } from '@/stores/adminTenantsStore';
 import type { AdminTenant, AdminTenantFormData } from '@/types/admin';
 import { cn } from '@/lib/cn';
+import { buildTableColumns } from '@/lib/buildTableColumns';
 import { InputCNPJ, InputTelefone } from '@/components/ui/input-masked';
 
+const ADMIN_TENANTS_TABLE_DEFAULT_ORDER = ['name', 'responsavel', 'telefone', 'usersCount', 'isActive', 'createdAt'];
+
 export function AdminTenantsPage() {
-  const { tenants, isLoading, fetchTenants, addTenant, updateTenant, deleteTenant, toggleTenantStatus } =
+  const { tenants, columns: columnsFromApi, isLoading, fetchTenants, addTenant, updateTenant, deleteTenant, toggleTenantStatus } =
     useAdminTenantsStore();
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -67,9 +70,9 @@ export function AdminTenantsPage() {
     fetchTenants();
   }, [fetchTenants]);
 
-  const columns = useMemo<ColumnDef<AdminTenant>[]>(
-    () => [
-      {
+  const columnDefsByKey = useMemo<Record<string, ColumnDef<AdminTenant>>>(
+    () => ({
+      name: {
         accessorKey: 'name',
         header: ({ column }) => (
           <button
@@ -89,7 +92,7 @@ export function AdminTenantsPage() {
           </div>
         ),
       },
-      {
+      responsavel: {
         accessorKey: 'responsavel',
         header: 'Responsavel',
         cell: ({ row }) => (
@@ -101,14 +104,14 @@ export function AdminTenantsPage() {
           </div>
         ),
       },
-      {
+      telefone: {
         accessorKey: 'telefone',
         header: 'Telefone',
         cell: ({ row }) => (
           <span className="text-slate-600">{row.original.telefone || '-'}</span>
         ),
       },
-      {
+      usersCount: {
         accessorKey: 'usersCount',
         header: 'Usuarios',
         cell: ({ row }) => (
@@ -118,69 +121,71 @@ export function AdminTenantsPage() {
           </div>
         ),
       },
-      {
+      isActive: {
         accessorKey: 'isActive',
         header: 'Status',
         cell: ({ row }) => (
           <span
             className={cn(
               'rounded-full px-2.5 py-1 text-xs font-medium',
-              row.original.isActive
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-red-100 text-red-700'
+              row.original.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
             )}
           >
             {row.original.isActive ? 'Ativa' : 'Inativa'}
           </span>
         ),
       },
-      {
+      createdAt: {
         accessorKey: 'createdAt',
         header: 'Criada em',
         cell: ({ row }) =>
           new Date(row.original.createdAt).toLocaleDateString('pt-BR'),
       },
-      {
-        id: 'actions',
-        header: 'Acoes',
-        cell: ({ row }) => (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => handleToggleStatus(row.original)}
-              className={cn(
-                'rounded-lg p-2 transition-colors',
-                row.original.isActive
-                  ? 'text-amber-600 hover:bg-amber-50'
-                  : 'text-emerald-600 hover:bg-emerald-50'
-              )}
-              title={row.original.isActive ? 'Desativar' : 'Ativar'}
-            >
-              {row.original.isActive ? (
-                <PowerOff className="h-4 w-4" />
-              ) : (
-                <Power className="h-4 w-4" />
-              )}
-            </button>
-            <button
-              onClick={() => handleEdit(row.original)}
-              className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50"
-              title="Editar"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => handleDeleteClick(row.original)}
-              className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
-              title="Excluir"
-              disabled={(row.original.usersCount ?? 0) > 0}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ),
-      },
-    ],
+    }),
     []
+  );
+
+  const columns = useMemo(
+    () =>
+      buildTableColumns<AdminTenant>(
+        columnDefsByKey,
+        columnsFromApi ?? null,
+        ADMIN_TENANTS_TABLE_DEFAULT_ORDER,
+        {
+          id: 'actions',
+          header: 'Acoes',
+          cell: ({ row }) => (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => handleToggleStatus(row.original)}
+                className={cn(
+                  'rounded-lg p-2 transition-colors',
+                  row.original.isActive ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'
+                )}
+                title={row.original.isActive ? 'Desativar' : 'Ativar'}
+              >
+                {row.original.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => handleEdit(row.original)}
+                className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50"
+                title="Editar"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => handleDeleteClick(row.original)}
+                className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
+                title="Excluir"
+                disabled={(row.original.usersCount ?? 0) > 0}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ),
+        }
+      ),
+    [columnDefsByKey, columnsFromApi]
   );
 
   const table = useReactTable({

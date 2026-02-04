@@ -10,6 +10,7 @@ const config = {
 
 export function RendaExtraPage() {
   const items = useRendaExtraStore((s) => s.items);
+  const columns = useRendaExtraStore((s) => s.columns);
   const isLoading = useRendaExtraStore((s) => s.isLoading);
   const fetchItems = useRendaExtraStore((s) => s.fetchItems);
   const addItem = useRendaExtraStore((s) => s.addItem);
@@ -20,6 +21,7 @@ export function RendaExtraPage() {
     <DespesaPage
       config={config}
       items={items}
+      columns={columns}
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}

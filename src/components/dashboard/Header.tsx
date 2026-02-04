@@ -22,10 +22,10 @@ export function Header() {
   const lojaMenuRef = useRef<HTMLDivElement>(null);
   const adminMenuRef = useRef<HTMLDivElement>(null);
 
-  // Lojas do tenant atual
+  // Lojas do tenant atual (API pode nao retornar tenantId; nesse caso considera do tenant atual)
   const lojasDoTenant = useMemo(() => {
     if (!currentTenant) return [];
-    return lojas.filter((l) => l.tenantId === currentTenant.id && l.isAtiva);
+    return lojas.filter((l) => (l.tenantId === currentTenant.id || l.tenantId == null) && l.isAtiva);
   }, [lojas, currentTenant]);
 
   // Verifica se o tenant permite multiloja

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Bell,
   Plus,
@@ -30,61 +30,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/cn';
-
-// Tipos
-interface Lembrete {
-  id: string;
-  titulo: string;
-  descricao?: string;
-  data: string;
-  hora?: string;
-  prioridade: 'baixa' | 'media' | 'alta';
-  status: 'pendente' | 'concluido' | 'cancelado';
-  createdAt: string;
-}
+import { useLembretesStore, type Lembrete } from '@/stores/lembretesStore';
 
 type FiltroStatus = 'todos' | 'pendente' | 'concluido' | 'cancelado';
-
-// Mock de lembretes
-const MOCK_LEMBRETES: Lembrete[] = [
-  {
-    id: '1',
-    titulo: 'PAGAR FORNECEDOR ALPHA',
-    descricao: 'Boleto vence dia 15',
-    data: '2026-02-15',
-    hora: '09:00',
-    prioridade: 'alta',
-    status: 'pendente',
-    createdAt: '2026-02-01T10:00:00Z',
-  },
-  {
-    id: '2',
-    titulo: 'RENOVAR CONTRATO DE ALUGUEL',
-    descricao: 'Verificar reajuste anual',
-    data: '2026-02-20',
-    prioridade: 'media',
-    status: 'pendente',
-    createdAt: '2026-02-01T11:00:00Z',
-  },
-  {
-    id: '3',
-    titulo: 'REUNIAO COM CONTADOR',
-    data: '2026-02-10',
-    hora: '14:30',
-    prioridade: 'baixa',
-    status: 'concluido',
-    createdAt: '2026-01-28T08:00:00Z',
-  },
-  {
-    id: '4',
-    titulo: 'ENVIAR NOTAS FISCAIS',
-    descricao: 'Notas do mes anterior',
-    data: '2026-02-05',
-    prioridade: 'alta',
-    status: 'pendente',
-    createdAt: '2026-02-01T09:00:00Z',
-  },
-];
 
 const PRIORIDADE_CONFIG = {
   baixa: { label: 'BAIXA', cor: 'bg-slate-100 text-slate-600' },
@@ -107,7 +55,16 @@ function isOverdue(dateStr: string) {
 }
 
 export function LembretesPage() {
-  const [lembretes, setLembretes] = useState<Lembrete[]>(MOCK_LEMBRETES);
+  const {
+    lembretes,
+    isLoading,
+    fetchLembretes,
+    createLembrete,
+    updateLembrete,
+    toggleStatus,
+    deleteLembrete,
+  } = useLembretesStore();
+
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>('todos');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLembrete, setEditingLembrete] = useState<Lembrete | null>(null);
@@ -120,6 +77,10 @@ export function LembretesPage() {
     hora: '',
     prioridade: 'media' as 'baixa' | 'media' | 'alta',
   });
+
+  useEffect(() => {
+    fetchLembretes();
+  }, [fetchLembretes]);
 
   // Filtra lembretes
   const lembretesFiltrados = useMemo(() => {
@@ -164,7 +125,7 @@ export function LembretesPage() {
     setEditingLembrete(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.titulo.trim()) {
@@ -177,55 +138,45 @@ export function LembretesPage() {
       return;
     }
 
-    if (editingLembrete) {
-      setLembretes(
-        lembretes.map((l) =>
-          l.id === editingLembrete.id
-            ? {
-                ...l,
-                titulo: formData.titulo.toUpperCase(),
-                descricao: formData.descricao.toUpperCase() || undefined,
-                data: formData.data,
-                hora: formData.hora || undefined,
-                prioridade: formData.prioridade,
-              }
-            : l
-        )
-      );
-      toast.success('Lembrete atualizado!');
-    } else {
-      const novoLembrete: Lembrete = {
-        id: Date.now().toString(),
-        titulo: formData.titulo.toUpperCase(),
-        descricao: formData.descricao.toUpperCase() || undefined,
-        data: formData.data,
-        hora: formData.hora || undefined,
-        prioridade: formData.prioridade,
-        status: 'pendente',
-        createdAt: new Date().toISOString(),
-      };
-      setLembretes([novoLembrete, ...lembretes]);
-      toast.success('Lembrete criado!');
+    try {
+      if (editingLembrete) {
+        await updateLembrete(editingLembrete.id, {
+          titulo: formData.titulo.toUpperCase(),
+          descricao: formData.descricao?.trim() ? formData.descricao.toUpperCase() : undefined,
+          data: formData.data,
+          hora: formData.hora?.trim() || undefined,
+          prioridade: formData.prioridade,
+        });
+        toast.success('Lembrete atualizado!');
+      } else {
+        await createLembrete({
+          titulo: formData.titulo.toUpperCase(),
+          descricao: formData.descricao?.trim() ? formData.descricao.toUpperCase() : undefined,
+          data: formData.data,
+          hora: formData.hora?.trim() || undefined,
+          prioridade: formData.prioridade,
+        });
+        toast.success('Lembrete criado!');
+      }
+      handleCloseDialog();
+    } catch {
+      toast.error(editingLembrete ? 'Erro ao atualizar lembrete' : 'Erro ao criar lembrete');
     }
-
-    handleCloseDialog();
   };
 
   const handleToggleStatus = (id: string) => {
-    setLembretes(
-      lembretes.map((l) =>
-        l.id === id
-          ? { ...l, status: l.status === 'pendente' ? 'concluido' : 'pendente' }
-          : l
-      )
-    );
+    toggleStatus(id).catch(() => toast.error('Erro ao alterar status'));
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteId) return;
-    setLembretes(lembretes.filter((l) => l.id !== deleteId));
-    toast.success('Lembrete excluido!');
-    setDeleteId(null);
+    try {
+      await deleteLembrete(deleteId);
+      toast.success('Lembrete excluido!');
+      setDeleteId(null);
+    } catch {
+      toast.error('Erro ao excluir lembrete');
+    }
   };
 
   return (
@@ -304,7 +255,11 @@ export function LembretesPage() {
 
       {/* Lista de lembretes */}
       <div className="space-y-3">
-        {lembretesFiltrados.length === 0 ? (
+        {isLoading ? (
+          <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
+            <p className="text-sm text-slate-500">Carregando lembretes...</p>
+          </div>
+        ) : lembretesFiltrados.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
             <Bell className="mx-auto h-12 w-12 text-slate-300" />
             <p className="mt-4 text-sm text-slate-500">Nenhum lembrete encontrado</p>

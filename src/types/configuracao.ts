@@ -1,5 +1,13 @@
 // Tipos para configuracoes de colunas dinamicas
 
+/** Formato retornado pela API no campo `columns` das listagens (colunas visiveis, ordenadas). */
+export interface TableColumnConfigFromApi {
+  id: string;
+  label: string;
+  order: number;
+  isRequired?: boolean;
+}
+
 export interface ColunaConfig {
   id: string;
   label: string;

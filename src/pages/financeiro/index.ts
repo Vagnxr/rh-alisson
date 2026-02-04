@@ -1,0 +1,14 @@
+export { CaixaPage } from './CaixaPage';
+export { ControleCartoesPage } from './ControleCartoesPage';
+export { VendasPage } from './VendasPage';
+export { ControleDinheiroPage } from './ControleDinheiroPage';
+export { ControleDepositoPage } from './ControleDepositoPage';
+export { VendaCartoesPage } from './VendaCartoesPage';
+export { AtivoImobilizadoPage } from './AtivoImobilizadoPage';
+export { EntradaPage } from './EntradaPage';
+export { SaidaPage } from './SaidaPage';
+export { PagoDinheiroPage } from './PagoDinheiroPage';
+export { CalculadoraMargemPage } from './CalculadoraMargemPage';
+export { PedidoVendaPage } from './PedidoVendaPage';
+export { AReceberPage } from './AReceberPage';
+export { VendaPerdaPage } from './VendaPerdaPage';
