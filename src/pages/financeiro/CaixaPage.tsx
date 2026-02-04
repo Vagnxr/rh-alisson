@@ -129,6 +129,7 @@ export function CaixaPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const dia = formData.dia.slice(0, 10);
+    const total = totalFromForm;
     const body = {
       dia,
       dinheiroDeposito: parseNum(formData.dinheiroDeposito),
@@ -138,6 +139,7 @@ export function CaixaPage() {
       debito: parseNum(formData.debito),
       voucher: parseNum(formData.voucher),
       ifood: parseNum(formData.ifood),
+      total,
     };
     if (editingItem) {
       api
