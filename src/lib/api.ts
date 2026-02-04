@@ -5,7 +5,7 @@
  * Em 401 (nao autorizado): limpa localStorage/sessionStorage e redireciona para /login.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3004/api/v1';
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://rh-alisson-api.onrender.com/api/v1';
 
 function clearStorageAndRedirectToLogin(): void {
   try {
