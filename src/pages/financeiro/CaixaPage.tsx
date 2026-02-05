@@ -32,7 +32,11 @@ import {
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { CaixaRow } from '@/types/financeiro';
+import type { TableColumnConfigFromApi } from '@/types/configuracao';
+import type { ColunaConfig } from '@/types/configuracao';
 import { ExportButtons } from '@/components/ui/export-buttons';
+import { useConfiguracaoStore } from '@/stores/configuracaoStore';
+import { buildTableColumns } from '@/lib/buildTableColumns';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -50,6 +54,90 @@ function parseNum(v: string): number {
 const inputClass =
   'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
+const CAIXA_TABLE_DEFAULT_ORDER = [
+  'dia',
+  'dinheiroDeposito',
+  'pagamentoPdv',
+  'pix',
+  'credito',
+  'debito',
+  'voucher',
+  'ifood',
+  'total',
+];
+
+type CaixaRowWithExtras = CaixaRow & Record<string, number>;
+
+const CAIXA_STATIC_COLUMN_DEFS: Record<string, ColumnDef<CaixaRowWithExtras>> = {
+  dia: {
+    accessorKey: 'dia',
+    header: ({ column }) => (
+      <button
+        className="flex items-center gap-1 font-medium"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      >
+        Dia <ArrowUpDown className="h-4 w-4" />
+      </button>
+    ),
+    cell: ({ row }) => formatDate(row.getValue('dia')),
+  },
+  dinheiroDeposito: {
+    accessorKey: 'dinheiroDeposito',
+    header: 'Dinheiro (dep.)',
+    cell: ({ row }) => formatCurrency(Number(row.getValue('dinheiroDeposito'))),
+  },
+  pagamentoPdv: {
+    accessorKey: 'pagamentoPdv',
+    header: 'Pag. (PDV)',
+    cell: ({ row }) => formatCurrency(Number(row.getValue('pagamentoPdv'))),
+  },
+  pix: {
+    accessorKey: 'pix',
+    header: 'PIX',
+    cell: ({ row }) => formatCurrency(Number(row.getValue('pix'))),
+  },
+  credito: {
+    accessorKey: 'credito',
+    header: 'Credito',
+    cell: ({ row }) => formatCurrency(Number(row.getValue('credito'))),
+  },
+  debito: {
+    accessorKey: 'debito',
+    header: 'Debito',
+    cell: ({ row }) => formatCurrency(Number(row.getValue('debito'))),
+  },
+  voucher: {
+    accessorKey: 'voucher',
+    header: 'Voucher',
+    cell: ({ row }) => formatCurrency(Number(row.getValue('voucher'))),
+  },
+  ifood: {
+    accessorKey: 'ifood',
+    header: 'iFood',
+    cell: ({ row }) => formatCurrency(Number(row.getValue('ifood'))),
+  },
+  total: {
+    accessorKey: 'total',
+    header: 'Total',
+    cell: ({ row }) => (
+      <span className="font-semibold text-slate-900">
+        {formatCurrency(Number(row.getValue('total')))}
+      </span>
+    ),
+  },
+};
+
+function columnsApiToColunaConfig(cols: TableColumnConfigFromApi[]): ColunaConfig[] {
+  return cols.map((c) => ({
+    id: c.id,
+    label: c.label,
+    order: c.order,
+    isVisible: true,
+    isRequired: c.id === 'dia' || c.id === 'total',
+    somarNoTotal: c.id !== 'dia' && c.id !== 'total',
+  }));
+}
+
 export function CaixaPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
@@ -58,7 +146,31 @@ export function CaixaPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CaixaRow | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  /** Colunas vindas do GET caixa (prioridade sobre o store) */
+  const [colunasFromApi, setColunasFromApi] = useState<TableColumnConfigFromApi[] | null>(null);
+  const getColunasVisiveis = useConfiguracaoStore((s) => s.getColunasVisiveis);
+  const colunasStore = getColunasVisiveis('caixa');
+  const colunasVisiveis = useMemo<ColunaConfig[]>(() => {
+    if (colunasFromApi && colunasFromApi.length > 0) return columnsApiToColunaConfig(colunasFromApi);
+    return colunasStore;
+  }, [colunasFromApi, colunasStore]);
+  const colunasValor = useMemo(
+    () => colunasVisiveis.filter((c) => c.id !== 'dia' && c.id !== 'total').sort((a, b) => a.order - b.order),
+    [colunasVisiveis]
+  );
+  const apiColumnsFromConfig = useMemo(() => {
+    const list = colunasVisiveis.map((c) => ({
+      id: c.id,
+      label: c.label,
+      order: c.order,
+      isRequired: c.isRequired,
+    }));
+    const maxOrder = Math.max(0, ...list.map((c) => c.order));
+    return list.map((c) =>
+      c.id === 'total' ? { ...c, order: maxOrder + 1 } : c
+    );
+  }, [colunasVisiveis]);
+  const [formData, setFormData] = useState<Record<string, string>>({
     dia: new Date().toISOString().split('T')[0],
     dinheiroDeposito: '',
     pagamentoPdv: '',
@@ -70,21 +182,19 @@ export function CaixaPage() {
   });
 
   const totalFromForm = useMemo(() => {
-    const d = parseNum(formData.dinheiroDeposito);
-    const p = parseNum(formData.pagamentoPdv);
-    const px = parseNum(formData.pix);
-    const c = parseNum(formData.credito);
-    const db = parseNum(formData.debito);
-    const v = parseNum(formData.voucher);
-    const i = parseNum(formData.ifood);
-    return d + p + px + c + db + v + i;
-  }, [formData]);
+    return colunasVisiveis
+      .filter((c) => c.somarNoTotal)
+      .reduce((sum, c) => sum + parseNum(formData[c.id] ?? '0'), 0);
+  }, [colunasVisiveis, formData]);
 
   const fetchList = useCallback(() => {
     setLoading(true);
     api
       .get<CaixaRow[]>('financeiro/caixa', { params: dateFilterToParams(dateFilter) })
-      .then((res) => setItems(Array.isArray(res.data) ? res.data : []))
+      .then((res) => {
+        setItems(Array.isArray(res.data) ? res.data : []);
+        if (res.columns && res.columns.length > 0) setColunasFromApi(res.columns);
+      })
       .catch((err) => toast.error(err?.message ?? 'Erro ao carregar caixa'))
       .finally(() => setLoading(false));
   }, [dateFilter]);
@@ -93,32 +203,18 @@ export function CaixaPage() {
     fetchList();
   }, [fetchList]);
 
-  const handleOpenDialog = (item?: CaixaRow) => {
-    if (item) {
-      setEditingItem(item);
-      setFormData({
-        dia: item.dia.split('T')[0] || item.dia.slice(0, 10),
-        dinheiroDeposito: String(item.dinheiroDeposito),
-        pagamentoPdv: String(item.pagamentoPdv),
-        pix: String(item.pix),
-        credito: String(item.credito),
-        debito: String(item.debito),
-        voucher: String(item.voucher),
-        ifood: String(item.ifood),
-      });
-    } else {
-      setEditingItem(null);
-      setFormData({
-        dia: new Date().toISOString().split('T')[0],
-        dinheiroDeposito: '',
-        pagamentoPdv: '',
-        pix: '',
-        credito: '',
-        debito: '',
-        voucher: '',
-        ifood: '',
-      });
-    }
+  const handleOpenDialog = (item?: CaixaRow & Record<string, unknown>) => {
+    const base: Record<string, string> = {
+      dia: item
+        ? (item.dia ?? '').toString().split('T')[0]?.slice(0, 10) ?? ''
+        : new Date().toISOString().split('T')[0],
+    };
+    colunasValor.forEach((c) => {
+      const val = item != null ? item[c.id] : '';
+      base[c.id] = val !== undefined && val !== null ? String(val) : '';
+    });
+    setFormData(base);
+    setEditingItem(item ?? null);
     setIsDialogOpen(true);
   };
 
@@ -129,19 +225,15 @@ export function CaixaPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const dia = formData.dia.slice(0, 10);
+    const dia = (formData.dia ?? '').slice(0, 10);
     const total = totalFromForm;
-    const body = {
+    const body: Record<string, string | number> = {
       dia,
-      dinheiroDeposito: parseNum(formData.dinheiroDeposito),
-      pagamentoPdv: parseNum(formData.pagamentoPdv),
-      pix: parseNum(formData.pix),
-      credito: parseNum(formData.credito),
-      debito: parseNum(formData.debito),
-      voucher: parseNum(formData.voucher),
-      ifood: parseNum(formData.ifood),
       total,
     };
+    colunasValor.forEach((c) => {
+      body[c.id] = parseNum(formData[c.id] ?? '0');
+    });
     if (editingItem) {
       api
         .patch<CaixaRow>(`financeiro/caixa/${editingItem.id}`, body)
@@ -175,94 +267,67 @@ export function CaixaPage() {
       .catch((err) => toast.error(err?.message ?? 'Erro ao excluir'));
   };
 
-  const columns = useMemo<ColumnDef<CaixaRow>[]>(
-    () => [
-      {
-        accessorKey: 'dia',
-        header: ({ column }) => (
+  const columnDefsByKey = useMemo<Record<string, ColumnDef<CaixaRowWithExtras>>>(
+    () => {
+      const defs = { ...CAIXA_STATIC_COLUMN_DEFS };
+      colunasVisiveis.forEach((col) => {
+        if (defs[col.id]) return;
+        defs[col.id] = {
+          accessorKey: col.id,
+          header: col.label,
+          cell: ({ row }) => {
+            const val = (row.original as Record<string, unknown>)[col.id];
+            const num = typeof val === 'number' ? val : Number(val) || 0;
+            return col.somarNoTotal !== false ? formatCurrency(num) : String(val ?? '');
+          },
+        };
+      });
+      return defs;
+    },
+    [colunasVisiveis]
+  );
+
+  const actionsColumn: ColumnDef<CaixaRowWithExtras> = useMemo(
+    () => ({
+      id: 'actions',
+      header: () => <span className="sr-only">Acoes</span>,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
           <button
-            className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            type="button"
+            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            title="Editar"
+            onClick={() => handleOpenDialog(row.original)}
           >
-            Dia <ArrowUpDown className="h-4 w-4" />
+            <Pencil className="h-4 w-4" />
           </button>
-        ),
-        cell: ({ row }) => formatDate(row.getValue('dia')),
-      },
-      {
-        accessorKey: 'dinheiroDeposito',
-        header: 'Dinheiro (dep.)',
-        cell: ({ row }) => formatCurrency(row.getValue('dinheiroDeposito')),
-      },
-      {
-        accessorKey: 'pagamentoPdv',
-        header: 'Pag. (PDV)',
-        cell: ({ row }) => formatCurrency(row.getValue('pagamentoPdv')),
-      },
-      {
-        accessorKey: 'pix',
-        header: 'PIX',
-        cell: ({ row }) => formatCurrency(row.getValue('pix')),
-      },
-      {
-        accessorKey: 'credito',
-        header: 'Credito',
-        cell: ({ row }) => formatCurrency(row.getValue('credito')),
-      },
-      {
-        accessorKey: 'debito',
-        header: 'Debito',
-        cell: ({ row }) => formatCurrency(row.getValue('debito')),
-      },
-      {
-        accessorKey: 'voucher',
-        header: 'Voucher',
-        cell: ({ row }) => formatCurrency(row.getValue('voucher')),
-      },
-      {
-        accessorKey: 'ifood',
-        header: 'iFood',
-        cell: ({ row }) => formatCurrency(row.getValue('ifood')),
-      },
-      {
-        accessorKey: 'total',
-        header: 'Total',
-        cell: ({ row }) => (
-          <span className="font-semibold text-slate-900">
-            {formatCurrency(row.getValue('total'))}
-          </span>
-        ),
-      },
-      {
-        id: 'actions',
-        header: () => <span className="sr-only">Acoes</span>,
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1">
-            <button
-              type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              title="Editar"
-              onClick={() => handleOpenDialog(row.original)}
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-              title="Excluir"
-              onClick={() => setDeleteId(row.original.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ),
-      },
-    ],
+          <button
+            type="button"
+            className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+            title="Excluir"
+            onClick={() => setDeleteId(row.original.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      ),
+    }),
     []
   );
 
+  const columns = useMemo(
+    () =>
+      buildTableColumns<CaixaRowWithExtras>(
+        columnDefsByKey,
+        apiColumnsFromConfig.length > 0 ? apiColumnsFromConfig : null,
+        CAIXA_TABLE_DEFAULT_ORDER,
+        actionsColumn
+      ),
+    [columnDefsByKey, apiColumnsFromConfig, actionsColumn]
+  );
+
   const table = useReactTable({
-    data: items,
+    data: items as CaixaRowWithExtras[],
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -287,28 +352,21 @@ export function CaixaPage() {
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
           <ExportButtons
-            data={items.map((r) => ({
-              dia: formatDate(r.dia),
-              dinheiroDeposito: formatCurrency(r.dinheiroDeposito),
-              pagamentoPdv: formatCurrency(r.pagamentoPdv),
-              pix: formatCurrency(r.pix),
-              credito: formatCurrency(r.credito),
-              debito: formatCurrency(r.debito),
-              voucher: formatCurrency(r.voucher),
-              ifood: formatCurrency(r.ifood),
-              total: formatCurrency(r.total),
-            }))}
-            columns={[
-              { key: 'dia', label: 'Dia' },
-              { key: 'dinheiroDeposito', label: 'Dinheiro (dep.)' },
-              { key: 'pagamentoPdv', label: 'Pag. (PDV)' },
-              { key: 'pix', label: 'PIX' },
-              { key: 'credito', label: 'Credito' },
-              { key: 'debito', label: 'Debito' },
-              { key: 'voucher', label: 'Voucher' },
-              { key: 'ifood', label: 'iFood' },
-              { key: 'total', label: 'Total' },
-            ]}
+            data={items.map((r) => {
+              const row = r as CaixaRowWithExtras;
+              const out: Record<string, string> = {
+                dia: formatDate(row.dia),
+                total: formatCurrency(row.total),
+              };
+              colunasVisiveis.forEach((c) => {
+                if (c.id !== 'dia' && c.id !== 'total') {
+                  const val = row[c.id];
+                  out[c.id] = typeof val === 'number' ? formatCurrency(val) : String(val ?? '');
+                }
+              });
+              return out;
+            })}
+            columns={colunasVisiveis.map((c) => ({ key: c.id, label: c.label }))}
             filename="caixa"
             title="Caixa"
           />
@@ -407,29 +465,21 @@ export function CaixaPage() {
                   className={inputClass}
                 />
               </div>
-              {[
-                { key: 'dinheiroDeposito', label: 'Dinheiro (deposito)' },
-                { key: 'pagamentoPdv', label: 'Pag. (PDV)' },
-                { key: 'pix', label: 'PIX' },
-                { key: 'credito', label: 'Credito' },
-                { key: 'debito', label: 'Debito' },
-                { key: 'voucher', label: 'Voucher' },
-                { key: 'ifood', label: 'iFood' },
-              ].map(({ key, label }) => (
-                <div key={key} className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{label}</label>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={formData[key as keyof typeof formData]}
-                    onChange={(e) =>
-                      setFormData({ ...formData, [key]: e.target.value })
-                    }
-                    className={inputClass}
-                  />
-                </div>
-              ))}
+              {colunasValor.map((col) => (
+                  <div key={col.id} className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">{col.label}</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0,00"
+                      value={formData[col.id] ?? ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, [col.id]: e.target.value })
+                      }
+                      className={inputClass}
+                    />
+                  </div>
+                ))}
               <p className="text-sm text-slate-500">
                 Total: {formatCurrency(totalFromForm)}
               </p>

@@ -7,6 +7,10 @@ export interface DespesaBase {
   comunicarAgenda?: boolean; // Se deve comunicar a agenda
   createdAt: string;
   updatedAt: string;
+  /** Despesa banco: id do banco (UUID) */
+  bancoId?: string;
+  /** Despesa banco: nome do banco (retorno da API) */
+  bancoNome?: string;
 }
 
 export interface DespesaInput {

@@ -12,16 +12,21 @@ export interface CaixaRow {
   total: number;
 }
 
-/** Linha da tabela Controle Cartoes (header: Prazo, taxa %, data a receber, bruto, desconto, liquido) */
+/** Linha da tabela Controle Cartoes (prazo, taxa %, data a receber, bruto, liquido; a receber calculado pelo backend) */
 export interface ControleCartoesRow {
   id: string;
-  diaSemana: string;
+  diaSemana?: string;
   data: string;
   valor: number;
-  desconto: number;
+  /** Prazo em dias (ex.: 30) */
+  prazo?: number;
+  /** Taxa em percentual (ex.: 2.5) */
+  taxaPercent?: number;
+  /** Apenas credito: a-vista | parcelado-vista | parcelado-prazo */
+  tipoCredito?: 'a-vista' | 'parcelado-vista' | 'parcelado-prazo';
   aReceber: number;
   dataAReceber: string;
-  diaSemanaAReceber: string;
+  diaSemanaAReceber?: string;
 }
 
 /** Bandeiras para Credito/Debito */
@@ -96,17 +101,35 @@ export interface AtivoImobilizadoRow {
   comunicarAgenda?: boolean;
 }
 
+/** Valor por categoria na Entrada */
+export interface EntradaValorItem {
+  categoriaId: string;
+  categoriaNome?: string;
+  valor: number;
+}
+
 /** Linha Entrada */
 export interface EntradaRow {
   id: string;
   data: string;
   fornecedor: string;
-  industrializacao: number;
-  comercializacao: number;
-  embalagem: number;
-  materialUsoCons: number;
-  mercadoriaUsoCons: number;
-  gas: number;
+  /** Modelo da nota: NF-e, NFC-e, etc. */
+  modeloNota?: string;
+  /** Forma de pagamento */
+  formaPagamento?: string;
+  /** Valor informado no pagamento (dinheiro/pix), para conferencia */
+  valorPago?: number;
+  /** Valores por categoria (substitui industrializacao, embalagem, etc.) */
+  valores?: EntradaValorItem[];
+  /** Total da nota (soma dos valores). Backend pode retornar. */
+  total?: number;
+  /** Campos legados (backend pode ainda enviar) */
+  industrializacao?: number;
+  comercializacao?: number;
+  embalagem?: number;
+  materialUsoCons?: number;
+  mercadoriaUsoCons?: number;
+  gas?: number;
 }
 
 /** Linha Saida */

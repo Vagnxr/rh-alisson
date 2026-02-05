@@ -24,13 +24,10 @@ export const useBancoStore = create<BancoState & BancoActions>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await api.get<Banco[]>('bancos');
-      const list = Array.isArray(res.data) ? res.data : [];
+      const list = Array.isArray(res?.data) ? res.data : [];
       set({ bancos: list, isLoading: false });
-    } catch (err) {
-      set({
-        error: err instanceof Error ? err.message : 'Erro ao carregar bancos',
-        isLoading: false,
-      });
+    } catch {
+      set({ bancos: [], isLoading: false });
     }
   },
 

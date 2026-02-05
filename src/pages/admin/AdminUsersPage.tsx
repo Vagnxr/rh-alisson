@@ -372,13 +372,14 @@ export function AdminUsersPage() {
 
       {/* Dialog de Adicionar/Editar */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="flex max-h-[90vh] max-w-md flex-col">
           <DialogHeader>
             <DialogTitle>
               {editingUser ? 'Editar Usuario' : 'Novo Usuario'}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-2">
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">
                 Nome *
@@ -521,8 +522,9 @@ export function AdminUsersPage() {
                 Usuario ativo
               </label>
             </div>
+            </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex shrink-0 gap-3 pt-4">
               <button
                 type="button"
                 onClick={() => setIsDialogOpen(false)}

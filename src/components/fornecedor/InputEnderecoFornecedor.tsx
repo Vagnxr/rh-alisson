@@ -8,11 +8,21 @@ import { InputUppercase } from '@/components/ui/input-uppercase';
 import type { EnderecoFornecedor, TipoLogradouro } from '@/types/fornecedor';
 import { TIPOS_LOGRADOURO } from '@/types/fornecedor';
 
+export interface EnderecoErrors {
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  bairro?: string;
+  cidade?: string;
+  uf?: string;
+}
+
 interface InputEnderecoFornecedorProps {
   value?: EnderecoFornecedor;
   onChange?: (endereco: EnderecoFornecedor) => void;
   disabled?: boolean;
   required?: boolean;
+  errors?: EnderecoErrors;
 }
 
 const initialEndereco: EnderecoFornecedor = {
@@ -31,6 +41,7 @@ export function InputEnderecoFornecedor({
   onChange,
   disabled,
   required,
+  errors,
 }: InputEnderecoFornecedorProps) {
   const [endereco, setEndereco] = useState<EnderecoFornecedor>(value || initialEndereco);
   const { buscar, isLoading, error } = useCEP();
@@ -90,6 +101,7 @@ export function InputEnderecoFornecedor({
             disabled={disabled}
             required={required}
             showValidation={false}
+            error={errors?.cep}
           />
           {isLoading && (
             <div className="absolute right-3 top-8">
@@ -138,6 +150,7 @@ export function InputEnderecoFornecedor({
             onChange={(e) => handleChange('logradouro', e.target.value.toUpperCase())}
             disabled={disabled}
             required={required}
+            error={errors?.logradouro}
             placeholder="Nome da rua, avenida, etc."
           />
         </div>
@@ -152,12 +165,13 @@ export function InputEnderecoFornecedor({
             onChange={(e) => handleChange('numero', e.target.value)}
             disabled={disabled}
             required={required}
+            error={errors?.numero}
             placeholder="123"
           />
         </div>
         <div>
           <InputUppercase
-            label="Complemento"
+            label="Complemento (opcional)"
             value={endereco.complemento || ''}
             onChange={(e) => handleChange('complemento', e.target.value)}
             disabled={disabled}
@@ -174,6 +188,7 @@ export function InputEnderecoFornecedor({
           onChange={(e) => handleChange('bairro', e.target.value)}
           disabled={disabled}
           required={required}
+          error={errors?.bairro}
           placeholder="Bairro"
         />
       </div>
@@ -187,6 +202,7 @@ export function InputEnderecoFornecedor({
             onChange={(e) => handleChange('cidade', e.target.value)}
             disabled={disabled}
             required={required}
+            error={errors?.cidade}
             placeholder="Cidade"
           />
         </div>
@@ -199,8 +215,10 @@ export function InputEnderecoFornecedor({
             value={endereco.uf}
             onChange={(e) => handleChange('uf', e.target.value)}
             disabled={disabled}
+            aria-invalid={!!errors?.uf}
             className={cn(
-              'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900',
+              'w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900',
+              errors?.uf ? 'border-red-500' : 'border-slate-200',
               'focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500',
               'disabled:bg-slate-50 disabled:text-slate-500'
             )}
@@ -234,6 +252,7 @@ export function InputEnderecoFornecedor({
             <option value="SE">SE</option>
             <option value="TO">TO</option>
           </select>
+          {errors?.uf && <p className="mt-1 text-xs text-red-500">{errors.uf}</p>}
         </div>
       </div>
     </div>

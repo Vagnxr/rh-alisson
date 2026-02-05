@@ -26,6 +26,9 @@ export interface TabelaConfig {
   colunas: ColunaConfig[];
 }
 
+/** Id da tabela Caixa (permite adicionar/remover colunas). */
+export const ID_TABELA_CAIXA = 'caixa';
+
 // Configuracoes padrao de cada tabela
 export const TABELAS_CONFIGURACOES: TabelaConfig[] = [
   {
@@ -88,6 +91,22 @@ export const TABELAS_CONFIGURACOES: TabelaConfig[] = [
       { id: 'loja', label: 'Loja', isVisible: true, order: 4 },
     ],
   },
+  {
+    id: 'caixa',
+    nome: 'Caixa',
+    descricao: 'Configuracoes da tabela de caixa (colunas e campos do formulario)',
+    colunas: [
+      { id: 'dia', label: 'Dia', isVisible: true, order: 1, isRequired: true },
+      { id: 'dinheiroDeposito', label: 'Dinheiro (dep.)', isVisible: true, order: 2, somarNoTotal: true },
+      { id: 'pagamentoPdv', label: 'Pag. (PDV)', isVisible: true, order: 3, somarNoTotal: true },
+      { id: 'pix', label: 'PIX', isVisible: true, order: 4, somarNoTotal: true },
+      { id: 'credito', label: 'Credito', isVisible: true, order: 5, somarNoTotal: true },
+      { id: 'debito', label: 'Debito', isVisible: true, order: 6, somarNoTotal: true },
+      { id: 'voucher', label: 'Voucher', isVisible: true, order: 7, somarNoTotal: true },
+      { id: 'ifood', label: 'iFood', isVisible: true, order: 8, somarNoTotal: true },
+      { id: 'total', label: 'Total', isVisible: true, order: 9, isRequired: true, somarNoTotal: false },
+    ],
+  },
 ];
 
 export interface ConfiguracaoState {
@@ -98,4 +117,10 @@ export interface ConfiguracaoState {
   updateColunaOrdem: (tabelaId: string, colunas: ColunaConfig[]) => void;
   resetTabela: (tabelaId: string) => void;
   getColunasVisiveis: (tabelaId: string) => ColunaConfig[];
+  /** Adiciona uma nova coluna (ex.: tabela Caixa). */
+  addColuna: (tabelaId: string, coluna: Omit<ColunaConfig, 'order'> & { order?: number }) => void;
+  /** Remove uma coluna (apenas se !isRequired). */
+  removeColuna: (tabelaId: string, colunaId: string) => void;
+  /** Retorna todas as colunas da tabela (para checar se pode adicionar/remover). */
+  getTabela: (tabelaId: string) => TabelaConfig | undefined;
 }

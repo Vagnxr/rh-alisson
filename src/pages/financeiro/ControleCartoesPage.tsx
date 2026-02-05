@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpDown, Loader2, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import {
@@ -32,6 +32,7 @@ import {
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { ControleCartoesRow, BandeiraCartao } from '@/types/financeiro';
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { ExportButtons } from '@/components/ui/export-buttons';
 
@@ -71,6 +72,12 @@ const BANDEIRAS_DEBITO: { id: BandeiraCartao; label: string }[] = [
 ];
 
 type TabCartao = 'credito' | 'debito' | 'pix' | 'voucher' | 'ifood' | 'outras';
+type TipoCredito = 'a-vista' | 'parcelado-vista' | 'parcelado-prazo';
+const TIPOS_CREDITO: { id: TipoCredito; label: string }[] = [
+  { id: 'a-vista', label: 'A vista' },
+  { id: 'parcelado-vista', label: 'Parcelado a vista' },
+  { id: 'parcelado-prazo', label: 'Parcelado a prazo' },
+];
 
 export function ControleCartoesPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -82,9 +89,12 @@ export function ControleCartoesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ControleCartoesRow | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [tipoCredito, setTipoCredito] = useState<TipoCredito>('a-vista');
   const [formData, setFormData] = useState({
     data: new Date().toISOString().split('T')[0],
     valor: '',
+    prazo: '',
+    taxaPercent: '',
     dataAReceber: new Date().toISOString().split('T')[0],
   });
 
@@ -95,6 +105,7 @@ export function ControleCartoesPage() {
       tipo: tab === 'credito' || tab === 'debito' ? tab : tab,
     };
     if (tab === 'credito' || tab === 'debito') params.bandeira = bandeira;
+    if (tab === 'credito') params.tipoCredito = tipoCredito;
     api
       .get<ControleCartoesRow[]>('financeiro/controle-cartoes', { params })
       .then((res) => {
@@ -111,36 +122,44 @@ export function ControleCartoesPage() {
       })
       .catch((err) => toast.error(err?.message ?? 'Erro ao carregar'))
       .finally(() => setLoading(false));
-  }, [dateFilter, tab, bandeira]);
+  }, [dateFilter, tab, bandeira, tipoCredito]);
 
   useEffect(() => {
     fetchList();
   }, [fetchList]);
 
   const headerResumoFromItems = useMemo(
-    () => ({
-      prazo: '',
-      taxaPercent: 0,
-      dataAReceber: '',
-      bruto: items.reduce((a, r) => a + r.valor, 0),
-      liquido: items.reduce((a, r) => a + r.aReceber, 0),
-    }),
+    () => {
+      const first = items[0];
+      return {
+        prazo: first?.prazo != null ? String(first.prazo) : '',
+        taxaPercent: first?.taxaPercent ?? 0,
+        dataAReceber: first?.dataAReceber ?? '',
+        bruto: items.reduce((a, r) => a + r.valor, 0),
+        liquido: items.reduce((a, r) => a + r.aReceber, 0),
+      };
+    },
     [items]
   );
 
   const handleOpenDialog = (item?: ControleCartoesRow) => {
     if (item) {
       setEditingItem(item);
+      if (item.tipoCredito && tab === 'credito') setTipoCredito(item.tipoCredito);
       setFormData({
-        data: item.data.split('T')[0] || item.data.slice(0, 10),
+        data: (item.data ?? '').toString().split('T')[0]?.slice(0, 10) ?? '',
         valor: String(item.valor),
-        dataAReceber: item.dataAReceber.split('T')[0] || item.dataAReceber.slice(0, 10),
+        prazo: item.prazo != null ? String(item.prazo) : '',
+        taxaPercent: item.taxaPercent != null ? String(item.taxaPercent) : '',
+        dataAReceber: (item.dataAReceber ?? '').toString().split('T')[0]?.slice(0, 10) ?? '',
       });
     } else {
       setEditingItem(null);
       setFormData({
         data: new Date().toISOString().split('T')[0],
         valor: '',
+        prazo: '',
+        taxaPercent: '',
         dataAReceber: new Date().toISOString().split('T')[0],
       });
     }
@@ -157,13 +176,17 @@ export function ControleCartoesPage() {
     const data = formData.data.slice(0, 10);
     const dataAReceber = formData.dataAReceber.slice(0, 10);
     const valor = parseNum(formData.valor);
+    const prazo = formData.prazo.trim() ? parseNum(formData.prazo) : undefined;
+    const taxaPercent = formData.taxaPercent.trim() ? parseNum(formData.taxaPercent) : undefined;
     const body: Record<string, unknown> = {
       tipo: tab === 'credito' || tab === 'debito' ? tab : tab,
       ...((tab === 'credito' || tab === 'debito') && { bandeira }),
+      ...(tab === 'credito' && { tipoCredito }),
       data,
       valor,
       dataAReceber,
-      desconto: 0,
+      ...(prazo != null && { prazo }),
+      ...(taxaPercent != null && { taxaPercent }),
     };
     if (editingItem) {
       api
@@ -229,10 +252,38 @@ export function ControleCartoesPage() {
         ),
         cell: ({ row }) => formatDate(row.getValue('data')),
       },
+      ...(tab === 'credito'
+        ? [
+            {
+              accessorKey: 'tipoCredito' as const,
+              header: 'Tipo',
+              cell: ({ row }: { row: { getValue: (k: string) => unknown } }) => {
+                const v = row.getValue('tipoCredito') as string | undefined;
+                return TIPOS_CREDITO.find((t) => t.id === v)?.label ?? v ?? '-';
+              },
+            } as ColumnDef<ControleCartoesRow>,
+          ]
+        : []),
       {
         accessorKey: 'valor',
         header: 'Valor',
         cell: ({ row }) => formatCurrency(row.getValue('valor')),
+      },
+      {
+        accessorKey: 'prazo',
+        header: 'Prazo',
+        cell: ({ row }) => {
+          const v = row.getValue('prazo') as number | undefined;
+          return v != null ? `${v} d` : '-';
+        },
+      },
+      {
+        accessorKey: 'taxaPercent',
+        header: 'Taxa %',
+        cell: ({ row }) => {
+          const v = row.getValue('taxaPercent') as number | undefined;
+          return v != null ? `${v}%` : '-';
+        },
       },
       {
         accessorKey: 'aReceber',
@@ -269,7 +320,7 @@ export function ControleCartoesPage() {
         ),
       },
     ],
-    []
+    [tab]
   );
 
   const table = useReactTable({
@@ -290,7 +341,7 @@ export function ControleCartoesPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Controle Cartoes</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Credito/Debito, PIX, Voucher, iFood e outras funcoes. Prazo, taxa, bruto, desconto e liquido.
+            Credito/Debito, PIX, Voucher, iFood e outras funcoes. Prazo, taxa, bruto e liquido (a receber calculado pelo sistema).
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -299,12 +350,16 @@ export function ControleCartoesPage() {
             data={items.map((r) => ({
               data: formatDate(r.data),
               valor: formatCurrency(r.valor),
+              prazo: r.prazo != null ? `${r.prazo}` : '-',
+              taxaPercent: r.taxaPercent != null ? `${r.taxaPercent}%` : '-',
               aReceber: formatCurrency(r.aReceber),
               dataAReceber: formatDate(r.dataAReceber),
             }))}
             columns={[
               { key: 'data', label: 'Data' },
               { key: 'valor', label: 'Valor' },
+              { key: 'prazo', label: 'Prazo' },
+              { key: 'taxaPercent', label: 'Taxa %' },
               { key: 'aReceber', label: 'A receber' },
               { key: 'dataAReceber', label: 'Data a receber' },
             ]}
@@ -351,6 +406,26 @@ export function ControleCartoesPage() {
         ))}
       </div>
 
+      {tab === 'credito' && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-slate-600">Tipo:</span>
+          {TIPOS_CREDITO.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTipoCredito(t.id)}
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                tipoCredito === t.id
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
       {showBandeiras && (
         <div className="flex flex-wrap gap-2">
           {bandeirasList.map((b) => (
@@ -371,11 +446,23 @@ export function ControleCartoesPage() {
         </div>
       )}
 
+      {tab === 'outras' && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-3">
+          <Link
+            to="/financeiro/outras-funcoes/a-receber"
+            className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Ver A receber (valores por prazo/bandeira)
+          </Link>
+        </div>
+      )}
+
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
         <p className="text-xs font-medium uppercase text-slate-500 mb-2">Resumo</p>
         <div className="flex flex-wrap gap-6 text-sm">
           <span><strong>Prazo:</strong> {headerResumoFromItems.prazo || '-'}</span>
-          <span><strong>Taxa %:</strong> {headerResumoFromItems.taxaPercent ? `${headerResumoFromItems.taxaPercent}%` : '-'}</span>
+          <span><strong>Taxa %:</strong> {headerResumoFromItems.taxaPercent != null && headerResumoFromItems.taxaPercent > 0 ? `${headerResumoFromItems.taxaPercent}%` : '-'}</span>
           <span><strong>Data a receber:</strong> {headerResumoFromItems.dataAReceber || '-'}</span>
           <span><strong>Bruto:</strong> {formatCurrency(headerResumoFromItems.bruto)}</span>
           <span><strong>Liquido (a receber):</strong> {formatCurrency(headerResumoFromItems.liquido)}</span>
@@ -454,6 +541,22 @@ export function ControleCartoesPage() {
                   required
                 />
               </div>
+              {tab === 'credito' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Tipo credito</label>
+                  <select
+                    value={tipoCredito}
+                    onChange={(e) => setTipoCredito(e.target.value as TipoCredito)}
+                    className={inputClass}
+                  >
+                    {TIPOS_CREDITO.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Valor (R$)</label>
                 <input
@@ -466,6 +569,32 @@ export function ControleCartoesPage() {
                   required
                 />
               </div>
+              {(tab === 'credito' || tab === 'debito' || tab === 'outras') && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Prazo (dias)</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Ex.: 30"
+                      value={formData.prazo}
+                      onChange={(e) => setFormData({ ...formData, prazo: e.target.value })}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Taxa %</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Ex.: 2,5"
+                      value={formData.taxaPercent}
+                      onChange={(e) => setFormData({ ...formData, taxaPercent: e.target.value })}
+                      className={inputClass}
+                    />
+                  </div>
+                </>
+              )}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Data a receber</label>
                 <input

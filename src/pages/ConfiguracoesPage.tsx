@@ -6,14 +6,39 @@ import {
   EyeOff,
   GripVertical,
   RotateCcw,
-  Check,
   Lock,
+  Plus,
+  Trash2,
 } from 'lucide-react';
-import { useConfiguracaoStore } from '@/stores/configuracaoStore';
-import type { TabelaConfig, ColunaConfig } from '@/types/configuracao';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
+import { useConfiguracaoStore } from '@/stores/configuracaoStore';
+import type { TabelaConfig, ColunaConfig } from '@/types/configuracao';
+import { ID_TABELA_CAIXA } from '@/types/configuracao';
+
+/** Gera id unico a partir do label (ex.: "Taxa cartao" -> "taxaCartao"). */
+function slugFromLabel(label: string): string {
+  const base = label
+    .trim()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+    .split(/\s+/)
+    .map((s, i) => (i === 0 ? s : s.charAt(0).toUpperCase() + s.slice(1)))
+    .join('');
+  return base || 'coluna';
+}
 
 interface ColunaItemProps {
   coluna: ColunaConfig;
@@ -21,9 +46,12 @@ interface ColunaItemProps {
   onToggle: (isVisible: boolean) => void;
   onToggleSomarNoTotal?: (somarNoTotal: boolean) => void;
   showSomarNoTotal?: boolean;
+  onRemove?: (colunaId: string) => void;
+  canAddRemoveColunas?: boolean;
 }
 
-function ColunaItem({ coluna, tabelaId, onToggle, onToggleSomarNoTotal, showSomarNoTotal }: ColunaItemProps) {
+function ColunaItem({ coluna, tabelaId, onToggle, onToggleSomarNoTotal, showSomarNoTotal, onRemove, canAddRemoveColunas }: ColunaItemProps) {
+  const podeRemover = canAddRemoveColunas && onRemove && !coluna.isRequired;
   return (
     <div
       className={cn(
@@ -62,20 +90,32 @@ function ColunaItem({ coluna, tabelaId, onToggle, onToggleSomarNoTotal, showSoma
           )}
         </div>
       </div>
-      <button
-        onClick={() => onToggle(!coluna.isVisible)}
-        disabled={coluna.isRequired}
-        className={cn(
-          'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-          coluna.isRequired
-            ? 'cursor-not-allowed bg-slate-100 text-slate-400'
-            : coluna.isVisible
-              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-              : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+      <div className="flex items-center gap-1">
+        {podeRemover && (
+          <button
+            type="button"
+            onClick={() => onRemove(coluna.id)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+            title="Remover coluna"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         )}
-      >
-        {coluna.isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-      </button>
+        <button
+          onClick={() => onToggle(!coluna.isVisible)}
+          disabled={coluna.isRequired}
+          className={cn(
+            'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+            coluna.isRequired
+              ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+              : coluna.isVisible
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+          )}
+        >
+          {coluna.isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+        </button>
+      </div>
     </div>
   );
 }
@@ -85,11 +125,16 @@ interface TabelaConfigCardProps {
   onToggleColuna: (colunaId: string, isVisible: boolean) => void;
   onToggleSomarNoTotal?: (colunaId: string, somarNoTotal: boolean) => void;
   onReset: () => void;
+  onRemoveColuna?: (tabelaId: string, colunaId: string) => void;
 }
 
-function TabelaConfigCard({ tabela, onToggleColuna, onToggleSomarNoTotal, onReset }: TabelaConfigCardProps) {
+function TabelaConfigCard({ tabela, onToggleColuna, onToggleSomarNoTotal, onReset, onRemoveColuna }: TabelaConfigCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [dialogNovaColuna, setDialogNovaColuna] = useState(false);
+  const [novaColunaLabel, setNovaColunaLabel] = useState('');
   const colunasVisiveis = tabela.colunas.filter((c) => c.isVisible).length;
+  const canAddRemoveColunas =
+    tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa';
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -126,14 +171,31 @@ function TabelaConfigCard({ tabela, onToggleColuna, onToggleSomarNoTotal, onRese
 
       {isExpanded && (
         <div className="border-t border-slate-200 p-4">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-slate-500">
-              Marque as colunas que deseja exibir na tabela
+              {canAddRemoveColunas
+                ? 'Inclua ou remova colunas e marque as que deseja exibir'
+                : 'Marque as colunas que deseja exibir na tabela'}
             </p>
-            <Button variant="outline" size="sm" onClick={onReset}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Restaurar padrao
-            </Button>
+            <div className="flex items-center gap-2">
+              {canAddRemoveColunas && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setNovaColunaLabel('');
+                    setDialogNovaColuna(true);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova coluna
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={onReset}>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Restaurar padrao
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -150,10 +212,67 @@ function TabelaConfigCard({ tabela, onToggleColuna, onToggleSomarNoTotal, onRese
                       ? (somarNoTotal) => onToggleSomarNoTotal(coluna.id, somarNoTotal)
                       : undefined
                   }
-                  showSomarNoTotal={tabela.id === 'balanco'}
+                  showSomarNoTotal={tabela.id === 'balanco' || tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa'}
+                  onRemove={onRemoveColuna ? (colunaId) => onRemoveColuna(tabela.id, colunaId) : undefined}
+                  canAddRemoveColunas={canAddRemoveColunas}
                 />
               ))}
           </div>
+
+          {canAddRemoveColunas && (
+            <Dialog open={dialogNovaColuna} onOpenChange={setDialogNovaColuna}>
+              <DialogContent className="sm:max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Nova coluna</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <p className="text-sm text-slate-500">
+                    Informe o nome da coluna. Ela aparecera na tabela e no formulario do Caixa.
+                  </p>
+                  <input
+                    type="text"
+                    value={novaColunaLabel}
+                    onChange={(e) => setNovaColunaLabel(e.target.value)}
+                    placeholder="Ex.: Taxa cartao"
+                    className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <DialogFooter className="mt-2">
+                  <Button variant="outline" onClick={() => setDialogNovaColuna(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const label = novaColunaLabel.trim();
+                      if (!label) {
+                        toast.error('Informe o nome da coluna.');
+                        return;
+                      }
+                      const tabelaRef = useConfiguracaoStore.getState().getTabela(tabela.id);
+                      const existingIds = tabelaRef?.colunas.map((c) => c.id) ?? [];
+                      let id = slugFromLabel(label);
+                      let n = 1;
+                      while (existingIds.includes(id)) {
+                        id = slugFromLabel(label) + String(n);
+                        n++;
+                      }
+                      useConfiguracaoStore.getState().addColuna(tabela.id, {
+                        id,
+                        label,
+                        isVisible: true,
+                        somarNoTotal: true,
+                      });
+                      toast.success('Coluna adicionada.');
+                      setNovaColunaLabel('');
+                      setDialogNovaColuna(false);
+                    }}
+                  >
+                    Adicionar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       )}
     </div>
@@ -167,6 +286,7 @@ export function ConfiguracoesPage() {
     updateColunaVisibilidade,
     updateColunaSomarNoTotal,
     resetTabela,
+    removeColuna,
   } = useConfiguracaoStore();
 
   useEffect(() => {
@@ -225,6 +345,14 @@ export function ConfiguracoesPage() {
                 : undefined
             }
             onReset={() => handleReset(tabela.id)}
+            onRemoveColuna={
+              tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa'
+                ? (tid, colunaId) => {
+                    removeColuna(tid, colunaId);
+                    toast.success('Coluna removida.');
+                  }
+                : undefined
+            }
           />
         ))}
       </div>

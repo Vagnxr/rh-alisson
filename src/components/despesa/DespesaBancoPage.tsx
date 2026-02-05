@@ -12,7 +12,7 @@ import { ArrowUpDown, Plus, Pencil, Trash2, Loader2, Building2, Settings2 } from
 import { toast } from 'sonner';
 import type { DespesaBase, DespesaInput } from '@/types/despesa';
 import { TIPOS_DESPESA } from '@/types/despesa';
-import { BANCOS_PADRAO, getBancoIcon, type Banco } from '@/types/banco';
+import { getBancoIcon, type Banco } from '@/types/banco';
 import { useBancoStore } from '@/stores/bancoStore';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { formatDateToLocalYYYYMMDD } from '@/lib/date';
@@ -37,10 +37,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/cn';
 
-// Extende DespesaBase para incluir banco
-interface DespesaBanco extends DespesaBase {
-  bancoId?: string;
-}
+// DespesaBase ja inclui bancoId e bancoNome (despesa-banco)
+interface DespesaBanco extends DespesaBase {}
 
 interface DespesaBancoInput extends DespesaInput {
   bancoId?: string;
@@ -70,11 +68,31 @@ function formatDateForInput(date: string) {
   return date.split('T')[0];
 }
 
-// Lista de bancos: da API se houver, senao padrao
+// Lista de bancos: vem da API (backend)
 function useBancosList(): Banco[] {
-  const bancosFromApi = useBancoStore((s) => s.bancos);
-  if (bancosFromApi.length > 0) return bancosFromApi;
-  return BANCOS_PADRAO;
+  return useBancoStore((s) => s.bancos) ?? [];
+}
+
+// Celula de logo do banco: imagem quando existe logo, senao fallback com iniciais
+function BancoLogo({ banco, size = 'md' }: { banco: Banco; size?: 'sm' | 'md' | 'lg' }) {
+  const sizeClass = size === 'sm' ? 'h-6 w-6' : size === 'lg' ? 'h-10 w-10' : 'h-8 w-8';
+  if (banco.logo) {
+    return (
+      <img
+        src={banco.logo}
+        alt=""
+        className={cn('rounded-lg object-contain bg-white shrink-0', sizeClass)}
+      />
+    );
+  }
+  return (
+    <div
+      className={cn('flex shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white', sizeClass)}
+      style={{ backgroundColor: banco.cor }}
+    >
+      {getBancoIcon(banco)}
+    </div>
+  );
 }
 
 // Componente de selecao de banco com visual de cards
@@ -105,12 +123,7 @@ function BancoSelector({
                 : 'border-slate-200 bg-white hover:border-slate-300'
             )}
           >
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
-              style={{ backgroundColor: banco.cor }}
-            >
-              {getBancoIcon(banco)}
-            </div>
+            <BancoLogo banco={banco} size="md" />
             <span className="text-xs font-medium text-slate-700 text-center leading-tight">
               {banco.nome.split(' ')[0]}
             </span>
@@ -128,12 +141,7 @@ function BancoBadge({ bancoId, bancos }: { bancoId?: string; bancos: Banco[] }) 
 
   return (
     <div className="flex items-center gap-2">
-      <div
-        className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white"
-        style={{ backgroundColor: banco.cor }}
-      >
-        {getBancoIcon(banco)}
-      </div>
+      <BancoLogo banco={banco} size="sm" />
       <span className="text-sm font-medium">{banco.nome}</span>
     </div>
   );
@@ -288,7 +296,7 @@ export function DespesaBancoPageComponent({
         cell: ({ row }) => formatDate(row.getValue('data')),
       },
       {
-        accessorKey: 'bancoId',
+        accessorKey: 'bancoNome',
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
@@ -298,7 +306,12 @@ export function DespesaBancoPageComponent({
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => <BancoBadge bancoId={row.getValue('bancoId')} bancos={bancos} />,
+        cell: ({ row }) => {
+          const bancoNome = row.original.bancoNome;
+          const bancoId = row.original.bancoId;
+          if (bancoNome) return <span className="text-sm font-medium">{bancoNome}</span>;
+          return <BancoBadge bancoId={bancoId} bancos={bancos} />;
+        },
       },
       {
         accessorKey: 'tipo',
@@ -422,10 +435,10 @@ export function DespesaBancoPageComponent({
 
           <ExportButtons
             data={(filteredItems ?? []).map((item) => {
-              const banco = bancos.find((b) => b.id === item.bancoId);
+              const bancoNome = item.bancoNome ?? bancos.find((b) => b.id === item.bancoId)?.nome ?? '-';
               return {
                 data: formatDate(item.data),
-                banco: banco?.nome || '-',
+                banco: bancoNome,
                 tipo: item.tipo || '-',
                 descricao: item.descricao,
                 valor: formatCurrency(item.valor),
@@ -590,12 +603,7 @@ export function DespesaBancoPageComponent({
                     className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
                   >
                     <div className="flex items-center gap-2">
-                      <div
-                        className="h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                        style={{ backgroundColor: b.cor }}
-                      >
-                        {getBancoIcon(b)}
-                      </div>
+                      <BancoLogo banco={b} size="sm" />
                       <span className="text-sm font-medium">{b.nome}</span>
                       {b.codigo && (
                         <span className="text-xs text-slate-500">({b.codigo})</span>
@@ -673,12 +681,7 @@ export function DespesaBancoPageComponent({
               onClick={() => setBancoFilter(bancoFilter === banco.id ? '' : banco.id)}
             >
               <div className="flex items-center gap-3">
-                <div
-                  className="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold text-white"
-                  style={{ backgroundColor: banco.cor }}
-                >
-                  {getBancoIcon(banco)}
-                </div>
+                <BancoLogo banco={banco} size="lg" />
                 <div>
                   <p className="text-xs font-medium text-slate-500">{banco.nome}</p>
                   <p className="text-lg font-bold text-slate-900">{formatCurrency(totalBanco)}</p>
@@ -763,7 +766,11 @@ export function DespesaBancoPageComponent({
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <BancoBadge bancoId={item.bancoId} bancos={bancos} />
+                        {item.bancoNome ? (
+                          <span className="text-sm font-medium">{item.bancoNome}</span>
+                        ) : (
+                          <BancoBadge bancoId={item.bancoId} bancos={bancos} />
+                        )}
                       </div>
                       <p className="font-medium text-slate-900">{item.descricao}</p>
                       <p className="mt-0.5 text-xs text-slate-500">{formatDate(item.data)}</p>

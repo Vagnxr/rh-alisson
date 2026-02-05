@@ -105,22 +105,10 @@ export function ExportButtons({
       const itemsPerPage = 25;
       const totalPages = Math.ceil(data.length / itemsPerPage) || 1;
 
-      // Logo: do tenant se houver, senao SVG padrao MSystem
+      // Logo: do tenant se houver, senao logo padrao
       const logoHTML = tenant?.logo
         ? `<img src="${tenant.logo}" alt="Logo" style="max-height: 50px; max-width: 180px; object-fit: contain;" />`
-        : `
-        <svg width="180" height="50" viewBox="0 0 180 50" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style="stop-color:#10b981"/>
-              <stop offset="100%" style="stop-color:#059669"/>
-            </linearGradient>
-          </defs>
-          <rect x="2" y="10" width="30" height="30" rx="6" fill="url(#logoGrad)"/>
-          <text x="10" y="32" fill="white" font-family="Arial" font-size="18" font-weight="bold">$</text>
-          <text x="40" y="33" fill="#1e293b" font-family="Arial" font-size="22" font-weight="bold">MSystem</text>
-        </svg>
-      `;
+        : `<img src="/logo.svg" alt="Logo" style="max-height: 50px; max-width: 180px; object-fit: contain;" />`;
 
       // Cria conteúdo HTML para impressão/PDF
       const printContent = `

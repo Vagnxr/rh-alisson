@@ -120,21 +120,33 @@ export function FornecedorForm({
     e.preventDefault();
     setErrors({});
 
-    // Validações básicas
+    // Únicos opcionais: complemento, telefone principal, contato vendedor. Demais obrigatórios.
     const newErrors: Record<string, string> = {};
 
     if (formData.tipo === 'cnpj') {
-      if (!formData.cnpj) newErrors.cnpj = 'CNPJ é obrigatório';
-      if (!formData.razaoSocial) newErrors.razaoSocial = 'Razão Social é obrigatória';
-      if (!formData.nomeFantasia) newErrors.nomeFantasia = 'Nome Fantasia é obrigatório';
+      if (!formData.cnpj?.trim()) newErrors.cnpj = 'CNPJ é obrigatório';
+      if (!formData.razaoSocial?.trim()) newErrors.razaoSocial = 'Razão Social é obrigatória';
+      if (!formData.nomeFantasia?.trim()) newErrors.nomeFantasia = 'Nome Fantasia é obrigatório';
     } else {
-      if (!formData.cpf) newErrors.cpf = 'CPF é obrigatório';
-      if (!formData.nomeCompleto) newErrors.nomeCompleto = 'Nome Completo é obrigatório';
+      if (!formData.cpf?.trim()) newErrors.cpf = 'CPF é obrigatório';
+      if (!formData.nomeCompleto?.trim()) newErrors.nomeCompleto = 'Nome Completo é obrigatório';
+      if (!formData.nomeComercial?.trim()) newErrors.nomeComercial = 'Nome Comercial é obrigatório';
     }
 
-    if (!formData.contatoEmpresa.emailPrincipal) {
-      newErrors.emailPrincipal = 'E-mail Principal é obrigatório';
-    }
+    const end = formData.endereco;
+    if (!end.cep?.trim()) newErrors.endereco_cep = 'CEP é obrigatório';
+    if (!end.logradouro?.trim()) newErrors.endereco_logradouro = 'Logradouro é obrigatório';
+    if (!end.numero?.trim()) newErrors.endereco_numero = 'Número é obrigatório';
+    if (!end.bairro?.trim()) newErrors.endereco_bairro = 'Bairro é obrigatório';
+    if (!end.cidade?.trim()) newErrors.endereco_cidade = 'Cidade é obrigatória';
+    if (!end.uf?.trim()) newErrors.endereco_uf = 'UF é obrigatória';
+
+    const cont = formData.contatoEmpresa;
+    if (!cont.whatsapp?.trim()) newErrors.whatsapp = 'WhatsApp é obrigatório';
+    if (!cont.emailPrincipal?.trim()) newErrors.emailPrincipal = 'E-mail Principal é obrigatório';
+    if (!cont.emailFinanceiro?.trim()) newErrors.emailFinanceiro = 'E-mail Financeiro é obrigatório';
+    if (!cont.site?.trim()) newErrors.site = 'Site é obrigatório';
+    if (!cont.instagram?.trim()) newErrors.instagram = 'Instagram é obrigatório';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -261,25 +273,36 @@ export function FornecedorForm({
                 label="Nome Comercial"
                 value={formData.nomeComercial}
                 onChange={(e) => setFormData({ ...formData, nomeComercial: e.target.value })}
+                error={errors.nomeComercial}
+                required
               />
             </div>
           )}
 
-          {/* Endereço */}
+          {/* Endereço - complemento opcional */}
           <div>
             <h3 className="mb-3 text-sm font-semibold text-slate-700">Endereço</h3>
             <InputEnderecoFornecedor
               value={formData.endereco}
               onChange={(endereco) => setFormData({ ...formData, endereco })}
+              required
+              errors={{
+                cep: errors.endereco_cep,
+                logradouro: errors.endereco_logradouro,
+                numero: errors.endereco_numero,
+                bairro: errors.endereco_bairro,
+                cidade: errors.endereco_cidade,
+                uf: errors.endereco_uf,
+              }}
             />
           </div>
 
-          {/* Contato Empresa */}
+          {/* Contato Empresa - telefone principal opcional */}
           <div>
             <h3 className="mb-3 text-sm font-semibold text-slate-700">Contato Empresa</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <InputTelefone
-                label="Telefone Principal"
+                label="Telefone Principal (opcional)"
                 value={formData.contatoEmpresa.telefonePrincipal || ''}
                 onValueChange={(value) =>
                   setFormData({
@@ -297,6 +320,8 @@ export function FornecedorForm({
                     contatoEmpresa: { ...formData.contatoEmpresa, whatsapp: value },
                   })
                 }
+                error={errors.whatsapp}
+                required
               />
               <InputUppercase
                 label="E-mail Principal"
@@ -323,6 +348,8 @@ export function FornecedorForm({
                     contatoEmpresa: { ...formData.contatoEmpresa, emailFinanceiro: e.target.value },
                   })
                 }
+                error={errors.emailFinanceiro}
+                required
               />
               <InputUppercase
                 label="Site"
@@ -334,6 +361,8 @@ export function FornecedorForm({
                     contatoEmpresa: { ...formData.contatoEmpresa, site: e.target.value },
                   })
                 }
+                error={errors.site}
+                required
               />
               <InputUppercase
                 label="Instagram"
@@ -344,6 +373,8 @@ export function FornecedorForm({
                     contatoEmpresa: { ...formData.contatoEmpresa, instagram: e.target.value },
                   })
                 }
+                error={errors.instagram}
+                required
               />
             </div>
           </div>

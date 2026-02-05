@@ -1,9 +1,11 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useTenantStore } from '@/stores/tenantStore';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { hasRoutePermission, getFirstAllowedPath } from '@/lib/paginasPermissao';
 
 export function ProtectedRoute() {
+  const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const currentTenant = useTenantStore((s) => s.currentTenant);
@@ -21,6 +23,12 @@ export function ProtectedRoute() {
   // Usuario com tenantId mas sem tenant carregado (ex.: tenant inexistente) -> selecao para recarregar
   if (user?.tenantId && !currentTenant) {
     return <Navigate to="/selecionar-empresa" replace />;
+  }
+
+  // Sem permissao para esta rota -> redireciona para primeira rota permitida
+  const permissoes = user?.permissoes ?? [];
+  if (!hasRoutePermission(permissoes, location.pathname)) {
+    return <Navigate to={getFirstAllowedPath(permissoes)} replace />;
   }
 
   return (

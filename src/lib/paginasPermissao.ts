@@ -38,3 +38,62 @@ export const PAGINAS_PERMISSAO: { id: string; label: string }[] = [
   { id: 'lembretes', label: 'Lembretes' },
   { id: 'configuracoes', label: 'Configuracoes' },
 ];
+
+/** Mapa permissionId -> path (para redirecionamento pos-login e protecao de rotas). */
+export const PERMISSION_ID_TO_PATH: Record<string, string> = {
+  dashboard: '/dashboard',
+  'despesa-fixa': '/despesa-fixa',
+  'despesa-extra': '/despesa-extra',
+  'despesa-funcionario': '/despesa-funcionario',
+  'despesa-imposto': '/despesa-imposto',
+  'despesa-veiculo': '/despesa-veiculo',
+  'despesa-banco': '/despesa-banco',
+  parcelamento: '/parcelamento',
+  'renda-extra': '/renda-extra',
+  investimento: '/investimento',
+  'financeiro-caixa': '/financeiro/caixa',
+  'financeiro-controle-cartoes': '/financeiro/controle-cartoes',
+  'financeiro-vendas': '/financeiro/vendas',
+  'financeiro-controle-dinheiro': '/financeiro/controle-dinheiro',
+  'financeiro-controle-deposito': '/financeiro/controle-deposito',
+  'financeiro-venda-cartoes': '/financeiro/venda-cartoes',
+  'financeiro-ativo-imobilizado': '/financeiro/ativo-imobilizado',
+  'financeiro-entrada': '/financeiro/entrada',
+  'financeiro-saida': '/financeiro/saida',
+  'financeiro-pago-dinheiro': '/financeiro/pago-dinheiro',
+  'financeiro-calculadora-margem': '/financeiro/calculadora-margem',
+  'financeiro-pedido-venda': '/financeiro/pedido-venda',
+  'financeiro-a-receber': '/financeiro/outras-funcoes/a-receber',
+  'financeiro-venda-perda': '/financeiro/outras-funcoes/venda-perda',
+  'financeiro-agenda': '/financeiro/agenda',
+  fornecedores: '/fornecedores',
+  lojas: '/lojas',
+  'recursos-humanos': '/recursos-humanos',
+  socios: '/socios',
+  'balanco-geral': '/balanco-geral',
+  relatorios: '/relatorios',
+  lembretes: '/lembretes',
+  configuracoes: '/configuracoes',
+};
+
+/** Mapa path -> permissionId (inverso de PERMISSION_ID_TO_PATH) para protecao de rotas. */
+export const PATH_TO_PERMISSION_ID: Record<string, string> = Object.fromEntries(
+  Object.entries(PERMISSION_ID_TO_PATH).map(([id, path]) => [path, id])
+);
+
+/** Retorna a rota para a primeira permissao do array que tiver path, ou /dashboard. */
+export function getFirstAllowedPath(permissoes: string[]): string {
+  if (permissoes?.includes('dashboard')) return '/dashboard';
+  const first = permissoes?.[0];
+  if (first && PERMISSION_ID_TO_PATH[first]) return PERMISSION_ID_TO_PATH[first];
+  return '/dashboard';
+}
+
+/** Verifica se o usuario tem permissao para acessar o pathname. Mesma regra do Sidebar. */
+export function hasRoutePermission(permissoes: string[] | undefined, pathname: string): boolean {
+  const permissionId = PATH_TO_PERMISSION_ID[pathname];
+  if (!permissionId) return true; // rota sem mapeamento (ex.: redirect) deixa passar
+  if (!permissoes || permissoes.length === 0) return true;
+  if (permissoes.includes('*')) return true;
+  return permissoes.includes(permissionId);
+}

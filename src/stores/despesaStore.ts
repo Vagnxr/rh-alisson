@@ -20,7 +20,7 @@ interface DespesaActions {
 type DespesaStore = DespesaState & DespesaActions;
 
 function normalizeDespesa(item: Record<string, unknown>): DespesaBase {
-  return {
+  const base = {
     id: String(item.id),
     data: typeof item.data === 'string' ? item.data : (item.data as Date)?.toString?.()?.slice(0, 10) ?? '',
     tipo: String(item.tipo ?? ''),
@@ -30,6 +30,9 @@ function normalizeDespesa(item: Record<string, unknown>): DespesaBase {
     createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
     updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
   };
+  const bancoId = item.bancoId != null ? String(item.bancoId) : undefined;
+  const bancoNome = item.bancoNome != null ? String(item.bancoNome) : undefined;
+  return { ...base, ...(bancoId !== undefined && { bancoId }), ...(bancoNome !== undefined && { bancoNome }) };
 }
 
 function createDespesaStore(categoria: DespesaCategoria) {

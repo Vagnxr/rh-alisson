@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Plus, Pencil, Trash2, Loader2, CalendarClock } from 'lucide-react';
+import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Parcelamento, ParcelamentoInput } from '@/types/parcelamento';
 import { useParcelamentoStore } from '@/stores/parcelamentoStore';
@@ -126,7 +126,7 @@ export function ParcelamentoPage() {
       return;
     }
 
-    if (!formData.parcela.trim()) {
+    if (!editingItem && !formData.parcela.trim()) {
       toast.error('Parcela e obrigatoria (ex: 3/12)');
       return;
     }
@@ -138,7 +138,8 @@ export function ParcelamentoPage() {
 
     try {
       if (editingItem) {
-        await updateItem(editingItem.id, formData);
+        const { parcela: _p, ...rest } = formData;
+        await updateItem(editingItem.id, { ...rest, parcela: editingItem.parcela });
         toast.success('Registro atualizado com sucesso!');
       } else {
         await addItem(formData);
@@ -259,13 +260,6 @@ export function ParcelamentoPage() {
           header: () => <span className="sr-only">Acoes</span>,
           cell: ({ row }) => (
             <div className="flex items-center justify-end gap-1">
-              <button
-                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                title="Ajustar parcelas"
-                onClick={() => handleOpenAjustar(row.original)}
-              >
-                <CalendarClock className="h-4 w-4" />
-              </button>
               <button
                 className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                 title="Editar"
@@ -435,13 +429,6 @@ export function ParcelamentoPage() {
                       <div className="flex gap-1">
                         <button
                           className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                          title="Ajustar parcelas"
-                          onClick={() => handleOpenAjustar(item)}
-                        >
-                          <CalendarClock className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                           title="Editar"
                           onClick={() => handleOpenDialog(item)}
                         >
@@ -523,25 +510,27 @@ export function ParcelamentoPage() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <label
-                  htmlFor="parcela"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Parcela
-                </label>
-                <input
-                  id="parcela"
-                  type="text"
-                  placeholder="Ex: 3/12"
-                  value={formData.parcela}
-                  onChange={(e) =>
-                    setFormData({ ...formData, parcela: e.target.value })
-                  }
-                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  required
-                />
-              </div>
+              {!editingItem && (
+                <div className="space-y-2">
+                  <label
+                    htmlFor="parcela"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Parcela
+                  </label>
+                  <input
+                    id="parcela"
+                    type="text"
+                    placeholder="Ex: 3/12"
+                    value={formData.parcela}
+                    onChange={(e) =>
+                      setFormData({ ...formData, parcela: e.target.value })
+                    }
+                    className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    required
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <label
                   htmlFor="valor"
