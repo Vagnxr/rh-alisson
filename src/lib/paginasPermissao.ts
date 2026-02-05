@@ -1,0 +1,40 @@
+/**
+ * Lista de paginas (ids de permissao) usada na Sidebar e no admin (Empresas e Usuarios).
+ * Empresas: selecao de telas permitidas (paginasPermitidas).
+ * Usuarios: selecao de paginas que o usuario acessa (subconjunto das da empresa).
+ */
+export const PAGINAS_PERMISSAO: { id: string; label: string }[] = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'despesa-fixa', label: 'Despesa Fixa' },
+  { id: 'despesa-extra', label: 'Despesa Extra' },
+  { id: 'despesa-funcionario', label: 'Despesa Funcionario' },
+  { id: 'despesa-imposto', label: 'Despesa Imposto' },
+  { id: 'despesa-veiculo', label: 'Despesa Veiculo' },
+  { id: 'despesa-banco', label: 'Despesa Banco' },
+  { id: 'parcelamento', label: 'Parcelamento' },
+  { id: 'renda-extra', label: 'Renda Extra' },
+  { id: 'investimento', label: 'Investimento' },
+  { id: 'financeiro-caixa', label: 'Financeiro - Caixa' },
+  { id: 'financeiro-controle-cartoes', label: 'Financeiro - Controle Cartoes' },
+  { id: 'financeiro-vendas', label: 'Financeiro - Vendas' },
+  { id: 'financeiro-controle-dinheiro', label: 'Financeiro - Controle Dinheiro' },
+  { id: 'financeiro-controle-deposito', label: 'Financeiro - Controle Deposito' },
+  { id: 'financeiro-venda-cartoes', label: 'Financeiro - Venda Cartoes' },
+  { id: 'financeiro-ativo-imobilizado', label: 'Financeiro - Ativo Imobilizado' },
+  { id: 'financeiro-entrada', label: 'Financeiro - Entrada' },
+  { id: 'financeiro-saida', label: 'Financeiro - Saida' },
+  { id: 'financeiro-pago-dinheiro', label: 'Financeiro - Pago em Dinheiro' },
+  { id: 'financeiro-calculadora-margem', label: 'Financeiro - Calculadora de Margem' },
+  { id: 'financeiro-pedido-venda', label: 'Financeiro - Pedido de Venda' },
+  { id: 'financeiro-a-receber', label: 'Financeiro - A receber' },
+  { id: 'financeiro-venda-perda', label: 'Financeiro - Venda e perda' },
+  { id: 'financeiro-agenda', label: 'Financeiro - Agenda' },
+  { id: 'fornecedores', label: 'Fornecedores' },
+  { id: 'lojas', label: 'Lojas' },
+  { id: 'recursos-humanos', label: 'Recursos Humanos' },
+  { id: 'socios', label: 'Socios' },
+  { id: 'balanco-geral', label: 'Balanco Geral' },
+  { id: 'relatorios', label: 'Relatorios' },
+  { id: 'lembretes', label: 'Lembretes' },
+  { id: 'configuracoes', label: 'Configuracoes' },
+];

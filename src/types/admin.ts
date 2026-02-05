@@ -9,6 +9,8 @@ export interface AdminUser {
   tenantName?: string;
   role: 'super_admin' | 'admin' | 'manager' | 'user';
   isActive: boolean;
+  /** Ids das paginas que o usuario pode acessar (subconjunto das da empresa). */
+  permissoes?: string[];
   createdAt: string;
   lastLogin?: string;
 }
@@ -21,6 +23,7 @@ export interface AdminUserFormData {
   role: AdminUser['role'];
   password?: string;
   isActive: boolean;
+  permissoes?: string[];
 }
 
 export interface AdminTenant extends Tenant {
@@ -39,6 +42,9 @@ export interface AdminTenantFormData {
   endereco?: string;
   responsavel?: string;
   isActive: boolean;
+  isMultiloja?: boolean;
+  /** Ids das paginas que a empresa tem acesso. Enviado no POST/PATCH. */
+  paginasPermitidas?: string[];
 }
 
 export const ROLE_LABELS: Record<AdminUser['role'], string> = {

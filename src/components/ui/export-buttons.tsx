@@ -105,8 +105,10 @@ export function ExportButtons({
       const itemsPerPage = 25;
       const totalPages = Math.ceil(data.length / itemsPerPage) || 1;
 
-      // Logo MSystem em SVG (centralizado)
-      const logoSVG = `
+      // Logo: do tenant se houver, senao SVG padrao MSystem
+      const logoHTML = tenant?.logo
+        ? `<img src="${tenant.logo}" alt="Logo" style="max-height: 50px; max-width: 180px; object-fit: contain;" />`
+        : `
         <svg width="180" height="50" viewBox="0 0 180 50" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -218,7 +220,7 @@ export function ExportButtons({
         </head>
         <body>
           <div class="logo-container">
-            ${logoSVG}
+            ${logoHTML}
           </div>
           
           <div class="header">
@@ -332,9 +334,9 @@ export function ExportButtons({
 /**
  * Hook helper para criar colunas de exportação
  */
-export function useExportColumns<T extends Record<string, unknown>>(
+export function useExportColumns<T extends object>(
   columns: Array<{
-    key: keyof T;
+    key: keyof T & string;
     label: string;
     format?: (value: T[keyof T]) => string;
   }>

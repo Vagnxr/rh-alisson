@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { ArrowUpDown, Plus, Pencil, Trash2, Loader2, CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Parcelamento, ParcelamentoInput } from '@/types/parcelamento';
 import { useParcelamentoStore } from '@/stores/parcelamentoStore';
@@ -58,11 +58,15 @@ export function ParcelamentoPage() {
   const addItem = useParcelamentoStore((s) => s.addItem);
   const updateItem = useParcelamentoStore((s) => s.updateItem);
   const deleteItem = useParcelamentoStore((s) => s.deleteItem);
+  const ajustarParcelas = useParcelamentoStore((s) => s.ajustarParcelas);
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Parcelamento | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+  const [ajustarItem, setAjustarItem] = useState<Parcelamento | null>(null);
+  const [ajustarData, setAjustarData] = useState('');
+  const [ajustarParcela, setAjustarParcela] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
 
   const [formData, setFormData] = useState<ParcelamentoInput>({
@@ -70,6 +74,7 @@ export function ParcelamentoPage() {
     descricao: '',
     parcela: '',
     valor: 0,
+    comunicarAgenda: false,
   });
 
   const dateParams = useMemo(() => ({
@@ -92,6 +97,7 @@ export function ParcelamentoPage() {
         descricao: item.descricao,
         parcela: item.parcela,
         valor: item.valor,
+        comunicarAgenda: item.comunicarAgenda ?? false,
       });
     } else {
       setEditingItem(null);
@@ -100,6 +106,7 @@ export function ParcelamentoPage() {
         descricao: '',
         parcela: '',
         valor: 0,
+        comunicarAgenda: false,
       });
     }
     setIsDialogOpen(true);
@@ -108,7 +115,7 @@ export function ParcelamentoPage() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingItem(null);
-    setFormData({ data: '', descricao: '', parcela: '', valor: 0 });
+    setFormData({ data: '', descricao: '', parcela: '', valor: 0, comunicarAgenda: false });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -152,6 +159,27 @@ export function ParcelamentoPage() {
       setDeleteItemId(null);
     } catch {
       toast.error('Erro ao excluir registro');
+    }
+  };
+
+  const handleOpenAjustar = (item: Parcelamento) => {
+    setAjustarItem(item);
+    setAjustarData(formatDateForInput(item.data));
+    setAjustarParcela(item.parcela);
+  };
+
+  const handleAjustarParcelas = async () => {
+    if (!ajustarItem) return;
+    try {
+      await ajustarParcelas(ajustarItem.id, {
+        data: ajustarData || undefined,
+        parcela: ajustarParcela.trim() || undefined,
+      });
+      toast.success('Parcelas ajustadas com sucesso!');
+      setAjustarItem(null);
+      fetchItems(dateParams);
+    } catch {
+      toast.error('Erro ao ajustar parcelas. Verifique se o backend suporta este recurso.');
     }
   };
 
@@ -231,6 +259,13 @@ export function ParcelamentoPage() {
           header: () => <span className="sr-only">Acoes</span>,
           cell: ({ row }) => (
             <div className="flex items-center justify-end gap-1">
+              <button
+                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                title="Ajustar parcelas"
+                onClick={() => handleOpenAjustar(row.original)}
+              >
+                <CalendarClock className="h-4 w-4" />
+              </button>
               <button
                 className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                 title="Editar"
@@ -400,6 +435,13 @@ export function ParcelamentoPage() {
                       <div className="flex gap-1">
                         <button
                           className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          title="Ajustar parcelas"
+                          onClick={() => handleOpenAjustar(item)}
+                        >
+                          <CalendarClock className="h-4 w-4" />
+                        </button>
+                        <button
+                          className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                           title="Editar"
                           onClick={() => handleOpenDialog(item)}
                         >
@@ -524,6 +566,20 @@ export function ParcelamentoPage() {
                   required
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="comunicarAgenda"
+                  type="checkbox"
+                  checked={formData.comunicarAgenda ?? false}
+                  onChange={(e) =>
+                    setFormData({ ...formData, comunicarAgenda: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="comunicarAgenda" className="text-sm font-medium text-slate-700">
+                  Comunicar Agenda
+                </label>
+              </div>
             </div>
             <DialogFooter>
               <button
@@ -543,6 +599,65 @@ export function ParcelamentoPage() {
               </button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Ajustar parcelas */}
+      <Dialog open={!!ajustarItem} onOpenChange={(open) => !open && setAjustarItem(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajustar parcelas</DialogTitle>
+            <DialogDescription>
+              Corrija a data ou a parcela (ex: 2/12) se estiver errado ou adiantado. O backend recalculara os registros dos meses.
+            </DialogDescription>
+          </DialogHeader>
+          {ajustarItem && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="ajustarData" className="text-sm font-medium text-slate-700">
+                  Data
+                </label>
+                <input
+                  id="ajustarData"
+                  type="date"
+                  value={ajustarData}
+                  onChange={(e) => setAjustarData(e.target.value)}
+                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="ajustarParcela" className="text-sm font-medium text-slate-700">
+                  Parcela
+                </label>
+                <input
+                  id="ajustarParcela"
+                  type="text"
+                  placeholder="Ex: 3/12"
+                  value={ajustarParcela}
+                  onChange={(e) => setAjustarParcela(e.target.value)}
+                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setAjustarItem(null)}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleAjustarParcelas}
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              Ajustar
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -32,6 +32,7 @@ import {
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { AtivoImobilizadoRow } from '@/types/financeiro';
+import { ExportButtons } from '@/components/ui/export-buttons';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -74,6 +75,8 @@ export function AtivoImobilizadoPage() {
     nf: '',
     descricaoFornecedor: '',
     valor: '',
+    recorrencia: '',
+    comunicarAgenda: false,
   });
 
   const handleOpenDialogEntrada = (item?: AtivoImobilizadoRow) => {
@@ -105,6 +108,8 @@ export function AtivoImobilizadoPage() {
         nf: item.nf,
         descricaoFornecedor: item.descricaoFornecedor,
         valor: String(item.valor),
+        recorrencia: item.recorrencia ?? '',
+        comunicarAgenda: item.comunicarAgenda ?? false,
       });
     } else {
       setEditingSaida(null);
@@ -113,6 +118,8 @@ export function AtivoImobilizadoPage() {
         nf: '',
         descricaoFornecedor: '',
         valor: '',
+        recorrencia: '',
+        comunicarAgenda: false,
       });
     }
     setDialogSaida(true);
@@ -176,10 +183,25 @@ export function AtivoImobilizadoPage() {
   const handleSubmitSaida = (e: React.FormEvent) => {
     e.preventDefault();
     const data = formSaida.data.slice(0, 10);
-    const body = { tipo: 'saida' as const, data, nf: formSaida.nf, descricaoFornecedor: formSaida.descricaoFornecedor, valor: parseNum(formSaida.valor) };
+    const body = {
+      tipo: 'saida' as const,
+      data,
+      nf: formSaida.nf,
+      descricaoFornecedor: formSaida.descricaoFornecedor,
+      valor: parseNum(formSaida.valor),
+      recorrencia: formSaida.recorrencia.trim() || undefined,
+      comunicarAgenda: formSaida.comunicarAgenda,
+    };
     if (editingSaida) {
       api
-        .patch<AtivoImobilizadoRow>(`financeiro/ativo-imobilizado/${editingSaida.id}`, { data, nf: formSaida.nf, descricaoFornecedor: formSaida.descricaoFornecedor, valor: parseNum(formSaida.valor) })
+        .patch<AtivoImobilizadoRow>(`financeiro/ativo-imobilizado/${editingSaida.id}`, {
+          data,
+          nf: formSaida.nf,
+          descricaoFornecedor: formSaida.descricaoFornecedor,
+          valor: parseNum(formSaida.valor),
+          recorrencia: formSaida.recorrencia.trim() || undefined,
+          comunicarAgenda: formSaida.comunicarAgenda,
+        })
         .then(() => {
           toast.success('Registro atualizado.');
           fetchSaidas();
@@ -192,7 +214,7 @@ export function AtivoImobilizadoPage() {
         .post<AtivoImobilizadoRow>('financeiro/ativo-imobilizado', body)
         .then((res) => {
           toast.success('Registro adicionado.');
-          setSaidas((prev) => [...prev, res.data]);
+          setSaidas((prev) => [...prev, { ...res.data, recorrencia: formSaida.recorrencia || undefined, comunicarAgenda: formSaida.comunicarAgenda }]);
           setDialogSaida(false);
           setEditingSaida(null);
         })
@@ -405,7 +427,41 @@ export function AtivoImobilizadoPage() {
             Entrada e saida: data, N.F., descricao/fornecedor e valor
           </p>
         </div>
-        <DateFilter value={dateFilter} onChange={setDateFilter} />
+        <div className="flex flex-wrap items-center gap-3">
+          <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <ExportButtons
+            data={entradas.map((r) => ({
+              data: formatDate(r.data),
+              nf: r.nf,
+              descricaoFornecedor: r.descricaoFornecedor,
+              valor: formatCurrency(r.valor),
+            }))}
+            columns={[
+              { key: 'data', label: 'Data' },
+              { key: 'nf', label: 'N.F.' },
+              { key: 'descricaoFornecedor', label: 'Descricao/Fornecedor' },
+              { key: 'valor', label: 'Valor' },
+            ]}
+            filename="ativo-imobilizado-entrada"
+            title="Ativo Imobilizado - Entrada"
+          />
+          <ExportButtons
+            data={saidas.map((r) => ({
+              data: formatDate(r.data),
+              nf: r.nf,
+              descricaoFornecedor: r.descricaoFornecedor,
+              valor: formatCurrency(r.valor),
+            }))}
+            columns={[
+              { key: 'data', label: 'Data' },
+              { key: 'nf', label: 'N.F.' },
+              { key: 'descricaoFornecedor', label: 'Descricao/Fornecedor' },
+              { key: 'valor', label: 'Valor' },
+            ]}
+            filename="ativo-imobilizado-saida"
+            title="Ativo Imobilizado - Saida"
+          />
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -502,6 +558,32 @@ export function AtivoImobilizadoPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Valor (R$)</label>
                 <input type="text" inputMode="decimal" placeholder="0,00" value={formSaida.valor} onChange={(e) => setFormSaida({ ...formSaida, valor: e.target.value })} className={inputClass} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Recorrencia</label>
+                <select
+                  value={formSaida.recorrencia}
+                  onChange={(e) => setFormSaida({ ...formSaida, recorrencia: e.target.value })}
+                  className={inputClass}
+                >
+                  <option value="">Nenhuma</option>
+                  <option value="Mensal">Mensal</option>
+                  <option value="Trimestral">Trimestral</option>
+                  <option value="Semestral">Semestral</option>
+                  <option value="Anual">Anual</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="comunicarAgendaSaida"
+                  type="checkbox"
+                  checked={formSaida.comunicarAgenda}
+                  onChange={(e) => setFormSaida({ ...formSaida, comunicarAgenda: e.target.checked })}
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="comunicarAgendaSaida" className="text-sm font-medium text-slate-700">
+                  Comunicar Agenda (registra saida ao marcar como pago na agenda)
+                </label>
               </div>
             </div>
             </DialogBody>

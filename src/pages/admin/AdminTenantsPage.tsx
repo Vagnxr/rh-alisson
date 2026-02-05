@@ -26,6 +26,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -42,6 +44,7 @@ import type { AdminTenant, AdminTenantFormData } from '@/types/admin';
 import { cn } from '@/lib/cn';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { InputCNPJ, InputTelefone } from '@/components/ui/input-masked';
+import { PAGINAS_PERMISSAO } from '@/lib/paginasPermissao';
 
 const ADMIN_TENANTS_TABLE_DEFAULT_ORDER = ['name', 'responsavel', 'telefone', 'usersCount', 'isActive', 'createdAt'];
 
@@ -64,6 +67,8 @@ export function AdminTenantsPage() {
     endereco: '',
     responsavel: '',
     isActive: true,
+    isMultiloja: false,
+    paginasPermitidas: [],
   });
 
   useEffect(() => {
@@ -209,6 +214,8 @@ export function AdminTenantsPage() {
       endereco: '',
       responsavel: '',
       isActive: true,
+      isMultiloja: false,
+      paginasPermitidas: [],
     });
     setIsDialogOpen(true);
   };
@@ -223,6 +230,8 @@ export function AdminTenantsPage() {
       endereco: tenant.endereco || '',
       responsavel: tenant.responsavel || '',
       isActive: tenant.isActive,
+      isMultiloja: tenant.isMultiloja ?? false,
+      paginasPermitidas: Array.isArray(tenant.paginasPermitidas) ? [...tenant.paginasPermitidas] : [],
     });
     setIsDialogOpen(true);
   };
@@ -370,13 +379,14 @@ export function AdminTenantsPage() {
 
       {/* Dialog de Adicionar/Editar */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="flex max-h-[90vh] flex-col max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editingTenant ? 'Editar Empresa' : 'Nova Empresa'}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <DialogBody className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-slate-700">
@@ -443,20 +453,76 @@ export function AdminTenantsPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-              />
-              <label htmlFor="isActive" className="text-sm text-slate-700">
-                Empresa ativa
-              </label>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="isActive" className="text-sm text-slate-700">
+                  Empresa ativa
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isMultiloja"
+                  checked={formData.isMultiloja ?? false}
+                  onChange={(e) => setFormData({ ...formData, isMultiloja: e.target.checked })}
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="isMultiloja" className="text-sm text-slate-700">
+                  Multiloja (acesso à tela Lojas)
+                </label>
+              </div>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="border-t border-slate-200 pt-4">
+              <p className="mb-2 text-sm font-medium text-slate-700">
+                Telas permitidas para esta empresa
+              </p>
+              <p className="mb-3 text-xs text-slate-500">
+                Selecione quais paginas todos os usuarios desta empresa poderao acessar. Deixe em branco para permitir todas (conforme backend).
+              </p>
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {PAGINAS_PERMISSAO.map((pagina) => {
+                    const checked = (formData.paginasPermitidas ?? []).includes(pagina.id);
+                    return (
+                      <label
+                        key={pagina.id}
+                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-100"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...(formData.paginasPermitidas ?? []), pagina.id]
+                              : (formData.paginasPermitidas ?? []).filter((id) => id !== pagina.id);
+                            setFormData({ ...formData, paginasPermitidas: next });
+                          }}
+                          className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <span className="text-sm text-slate-700">{pagina.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, paginasPermitidas: [] })}
+                className="mt-2 text-xs text-slate-500 underline hover:text-slate-700"
+              >
+                Limpar selecao (backend pode tratar como todas)
+              </button>
+            </div>
+            </DialogBody>
+            <DialogFooter className="flex gap-3 pt-4">
               <button
                 type="button"
                 onClick={() => setIsDialogOpen(false)}
@@ -472,7 +538,7 @@ export function AdminTenantsPage() {
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {editingTenant ? 'Salvar' : 'Criar'}
               </button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

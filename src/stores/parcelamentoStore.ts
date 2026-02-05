@@ -15,6 +15,8 @@ interface ParcelamentoActions {
   addItem: (data: ParcelamentoInput) => Promise<void>;
   updateItem: (id: string, data: Partial<ParcelamentoInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
+  /** Ajustar parcelas (datas/sequencia). Backend: PATCH parcelamentos/:id/ajustar-parcelas */
+  ajustarParcelas: (id: string, payload?: { data?: string; parcela?: string }) => Promise<void>;
 }
 
 type ParcelamentoStore = ParcelamentoState & ParcelamentoActions;
@@ -85,6 +87,23 @@ export const useParcelamentoStore = create<ParcelamentoStore>((set, get) => ({
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Erro ao excluir',
+        isLoading: false,
+      });
+      throw err;
+    }
+  },
+
+  ajustarParcelas: async (id: string, payload?: { data?: string; parcela?: string }) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await api.patch<Parcelamento>(`parcelamentos/${id}/ajustar-parcelas`, payload ?? {});
+      set((state) => ({
+        items: state.items.map((item) => (item.id === id ? res.data : item)),
+        isLoading: false,
+      }));
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao ajustar parcelas',
         isLoading: false,
       });
       throw err;

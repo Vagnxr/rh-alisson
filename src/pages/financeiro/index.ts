@@ -12,3 +12,4 @@ export { CalculadoraMargemPage } from './CalculadoraMargemPage';
 export { PedidoVendaPage } from './PedidoVendaPage';
 export { AReceberPage } from './AReceberPage';
 export { VendaPerdaPage } from './VendaPerdaPage';
+export { AgendaPage } from './AgendaPage';

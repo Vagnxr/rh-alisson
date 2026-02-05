@@ -1,13 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Receipt,
-  CreditCard,
-  Users,
-  Building2,
-  Car,
-  Landmark,
   Calendar,
   TrendingUp,
   PiggyBank,
@@ -27,66 +22,78 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSidebarStore } from '@/stores/sidebarStore';
+import { useAuthStore } from '@/stores/authStore';
+import { useTenantStore } from '@/stores/tenantStore';
 
 interface SubMenuItem {
   label: string;
   href: string;
+  permissionId: string;
 }
 
 interface MenuItem {
   label: string;
   icon: React.ElementType;
   href?: string;
+  permissionId: string;
   subItems?: SubMenuItem[];
 }
 
-const menuItems: MenuItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+const MENU_ITEMS: MenuItem[] = [
+  { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', permissionId: 'dashboard' },
   {
     label: 'Despesas',
     icon: Receipt,
+    permissionId: 'despesas',
     subItems: [
-      { label: 'Despesa Fixa', href: '/despesa-fixa' },
-      { label: 'Despesa Extra', href: '/despesa-extra' },
-      { label: 'Despesa Funcionario', href: '/despesa-funcionario' },
-      { label: 'Despesa Imposto', href: '/despesa-imposto' },
-      { label: 'Despesa Veiculo', href: '/despesa-veiculo' },
-      { label: 'Despesa Banco', href: '/despesa-banco' },
+      { label: 'Despesa Fixa', href: '/despesa-fixa', permissionId: 'despesa-fixa' },
+      { label: 'Despesa Extra', href: '/despesa-extra', permissionId: 'despesa-extra' },
+      { label: 'Despesa Funcionario', href: '/despesa-funcionario', permissionId: 'despesa-funcionario' },
+      { label: 'Despesa Imposto', href: '/despesa-imposto', permissionId: 'despesa-imposto' },
+      { label: 'Despesa Veiculo', href: '/despesa-veiculo', permissionId: 'despesa-veiculo' },
+      { label: 'Despesa Banco', href: '/despesa-banco', permissionId: 'despesa-banco' },
     ],
   },
-  { label: 'Parcelamento', icon: Calendar, href: '/parcelamento' },
-  { label: 'Renda Extra', icon: TrendingUp, href: '/renda-extra' },
-  { label: 'Investimento', icon: PiggyBank, href: '/investimento' },
+  { label: 'Parcelamento', icon: Calendar, href: '/parcelamento', permissionId: 'parcelamento' },
+  { label: 'Renda Extra', icon: TrendingUp, href: '/renda-extra', permissionId: 'renda-extra' },
+  { label: 'Investimento', icon: PiggyBank, href: '/investimento', permissionId: 'investimento' },
   {
     label: 'Financeiro',
     icon: DollarSign,
+    permissionId: 'financeiro',
     subItems: [
-      { label: 'Caixa', href: '/financeiro/caixa' },
-      { label: 'Controle Cartoes', href: '/financeiro/controle-cartoes' },
-      { label: 'Vendas', href: '/financeiro/vendas' },
-      { label: 'Controle Dinheiro', href: '/financeiro/controle-dinheiro' },
-      { label: 'Controle Deposito', href: '/financeiro/controle-deposito' },
-      { label: 'Venda Cartoes', href: '/financeiro/venda-cartoes' },
-      { label: 'Ativo Imobilizado', href: '/financeiro/ativo-imobilizado' },
-      { label: 'Entrada', href: '/financeiro/entrada' },
-      { label: 'Saida', href: '/financeiro/saida' },
-      { label: 'Pago em Dinheiro', href: '/financeiro/pago-dinheiro' },
-      { label: 'Calculadora de Margem', href: '/financeiro/calculadora-margem' },
-      { label: 'Pedido de Venda', href: '/financeiro/pedido-venda' },
-      { label: 'A receber', href: '/financeiro/outras-funcoes/a-receber' },
-      { label: 'Venda e perda', href: '/financeiro/outras-funcoes/venda-perda' },
-      { label: 'Agenda', href: '/financeiro/agenda' },
+      { label: 'Caixa', href: '/financeiro/caixa', permissionId: 'financeiro-caixa' },
+      { label: 'Controle Cartoes', href: '/financeiro/controle-cartoes', permissionId: 'financeiro-controle-cartoes' },
+      { label: 'Vendas', href: '/financeiro/vendas', permissionId: 'financeiro-vendas' },
+      { label: 'Controle Dinheiro', href: '/financeiro/controle-dinheiro', permissionId: 'financeiro-controle-dinheiro' },
+      { label: 'Controle Deposito', href: '/financeiro/controle-deposito', permissionId: 'financeiro-controle-deposito' },
+      { label: 'Venda Cartoes', href: '/financeiro/venda-cartoes', permissionId: 'financeiro-venda-cartoes' },
+      { label: 'Ativo Imobilizado', href: '/financeiro/ativo-imobilizado', permissionId: 'financeiro-ativo-imobilizado' },
+      { label: 'Entrada', href: '/financeiro/entrada', permissionId: 'financeiro-entrada' },
+      { label: 'Saida', href: '/financeiro/saida', permissionId: 'financeiro-saida' },
+      { label: 'Pago em Dinheiro', href: '/financeiro/pago-dinheiro', permissionId: 'financeiro-pago-dinheiro' },
+      { label: 'Calculadora de Margem', href: '/financeiro/calculadora-margem', permissionId: 'financeiro-calculadora-margem' },
+      { label: 'Pedido de Venda', href: '/financeiro/pedido-venda', permissionId: 'financeiro-pedido-venda' },
+      { label: 'A receber', href: '/financeiro/outras-funcoes/a-receber', permissionId: 'financeiro-a-receber' },
+      { label: 'Venda e perda', href: '/financeiro/outras-funcoes/venda-perda', permissionId: 'financeiro-venda-perda' },
+      { label: 'Agenda', href: '/financeiro/agenda', permissionId: 'financeiro-agenda' },
     ],
   },
-  { label: 'Fornecedores', icon: Truck, href: '/fornecedores' },
-  { label: 'Lojas', icon: Store, href: '/lojas' },
-  { label: 'Recursos Humanos', icon: UserCog, href: '/recursos-humanos' },
-  { label: 'Socios', icon: UsersRound, href: '/socios' },
-  { label: 'Balanco Geral', icon: BarChart3, href: '/balanco-geral' },
-  { label: 'Relatorios', icon: FileText, href: '/relatorios' },
-  { label: 'Lembretes', icon: Bell, href: '/lembretes' },
-  { label: 'Configuracoes', icon: Settings, href: '/configuracoes' },
+  { label: 'Fornecedores', icon: Truck, href: '/fornecedores', permissionId: 'fornecedores' },
+  { label: 'Lojas', icon: Store, href: '/lojas', permissionId: 'lojas' },
+  { label: 'Recursos Humanos', icon: UserCog, href: '/recursos-humanos', permissionId: 'recursos-humanos' },
+  { label: 'Socios', icon: UsersRound, href: '/socios', permissionId: 'socios' },
+  { label: 'Balanco Geral', icon: BarChart3, href: '/balanco-geral', permissionId: 'balanco-geral' },
+  { label: 'Relatorios', icon: FileText, href: '/relatorios', permissionId: 'relatorios' },
+  { label: 'Lembretes', icon: Bell, href: '/lembretes', permissionId: 'lembretes' },
+  { label: 'Configuracoes', icon: Settings, href: '/configuracoes', permissionId: 'configuracoes' },
 ];
+
+function hasPermission(permissoes: string[], permissionId: string): boolean {
+  if (!permissoes || permissoes.length === 0) return true;
+  if (permissoes.includes('*')) return true;
+  return permissoes.includes(permissionId);
+}
 
 function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: boolean }) {
   const location = useLocation();
@@ -108,10 +115,11 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
     }
   }, [isSubItemActive, isOpen, item.label, setSubmenuOpen]);
 
-  if (item.subItems) {
+  if (item.subItems && item.subItems.length > 0) {
     return (
       <li className="relative group">
         <button
+          type="button"
           onClick={() => isExpanded && toggleSubmenu(item.label)}
           title={!isExpanded ? item.label : undefined}
           className={cn(
@@ -233,6 +241,30 @@ export function Sidebar() {
   const isPinned = useSidebarStore((s) => s.isPinned);
   const togglePin = useSidebarStore((s) => s.togglePin);
   const [isHovered, setIsHovered] = useState(false);
+  const location = useLocation();
+  const permissoes = useAuthStore((s) => s.user?.permissoes ?? []);
+  const currentTenant = useTenantStore((s) => s.currentTenant);
+
+  const menuItems = useMemo(() => {
+    const withPermissions = MENU_ITEMS.map((item) => {
+      if (item.subItems) {
+        const allowedSub = item.subItems.filter((sub) => hasPermission(permissoes, sub.permissionId));
+        if (allowedSub.length === 0) return null;
+        return { ...item, subItems: allowedSub };
+      }
+      return hasPermission(permissoes, item.permissionId) ? item : null;
+    }).filter((item): item is MenuItem => item !== null);
+
+    if (!currentTenant?.isMultiloja) {
+      return withPermissions.filter((item) => item.permissionId !== 'lojas');
+    }
+    return withPermissions;
+  }, [permissoes, currentTenant?.isMultiloja]);
+
+  // Fechar sidebar no mobile ao trocar de rota (evita ficar fixa/aberta)
+  useEffect(() => {
+    if (isOpen) close();
+  }, [location.pathname, isOpen, close]);
 
   // Desktop: expande se pinned OU hover
   const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
@@ -242,8 +274,12 @@ export function Sidebar() {
     <>
       {isOpen && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Fechar menu"
           className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity lg:hidden"
-          onClick={close}
+          onClick={() => close()}
+          onKeyDown={(e) => e.key === 'Enter' && close()}
         />
       )}
 

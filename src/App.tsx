@@ -36,6 +36,7 @@ import {
   PedidoVendaPage,
   AReceberPage,
   VendaPerdaPage,
+  AgendaPage,
 } from '@/pages/financeiro';
 import { ProtectedRoute, AuthOnlyRoute, SuperAdminRoute } from '@/components/ProtectedRoute';
 import { Toaster } from '@/components/ui/sonner';
@@ -97,7 +98,7 @@ function App() {
           <Route path="/financeiro/pedido-venda" element={<PedidoVendaPage />} />
           <Route path="/financeiro/outras-funcoes/a-receber" element={<AReceberPage />} />
           <Route path="/financeiro/outras-funcoes/venda-perda" element={<VendaPerdaPage />} />
-          <Route path="/financeiro/agenda" element={<PlaceholderPage title="Agenda" />} />
+          <Route path="/financeiro/agenda" element={<AgendaPage />} />
 
           <Route path="/recursos-humanos" element={<PlaceholderPage title="Recursos Humanos" />} />
           <Route path="/relatorios" element={<RelatoriosPage />} />

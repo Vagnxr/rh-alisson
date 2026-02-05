@@ -70,7 +70,27 @@ export const useAuthStore = create<AuthState>()(
           });
 
           const data = res.data;
-          const user = mapUser(data.user);
+          const userPayload = data.user as {
+            id: string;
+            nome: string;
+            email: string;
+            tenantId?: string | null;
+            lojas?: string[];
+            permissoes?: string[];
+            isSuperAdmin?: boolean;
+            tenant?: {
+              id: string;
+              name: string;
+              nomeFantasia?: string | null;
+              cnpj?: string | null;
+              isActive?: boolean;
+              isMultiloja?: boolean;
+              urlLogo?: string | null;
+              paginasPermitidas?: string[] | null;
+              createdAt?: string;
+            };
+          };
+          const user = mapUser(userPayload);
 
           set({
             user,
@@ -81,19 +101,27 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
 
+          const tenantStore = useTenantStore.getState();
           if (user.tenantId) {
-            const tenantStore = useTenantStore.getState();
-            const tenants = tenantStore.availableTenants;
-            const tenant = tenants.find((t) => t.id === user.tenantId!) ?? {
-              id: user.tenantId,
-              name: 'Empresa',
-              nomeFantasia: '',
-              cnpj: '',
-              isActive: true,
-              isMultiloja: false,
-              createdAt: new Date().toISOString(),
-            };
-            tenantStore.setCurrentTenant(tenant);
+            const tenantFromApi = userPayload.tenant;
+            if (tenantFromApi && tenantFromApi.id === user.tenantId) {
+              tenantStore.setCurrentTenant({
+                id: tenantFromApi.id,
+                name: tenantFromApi.name,
+                nomeFantasia: tenantFromApi.nomeFantasia ?? '',
+                cnpj: tenantFromApi.cnpj ?? '',
+                logo: tenantFromApi.urlLogo ?? undefined,
+                isActive: tenantFromApi.isActive ?? true,
+                isMultiloja: tenantFromApi.isMultiloja ?? false,
+                paginasPermitidas: tenantFromApi.paginasPermitidas ?? undefined,
+                createdAt: tenantFromApi.createdAt ?? new Date().toISOString(),
+              });
+            } else {
+              await tenantStore.fetchAvailableTenants();
+              const tenants = useTenantStore.getState().availableTenants;
+              const tenant = tenants.find((t) => t.id === user.tenantId!);
+              tenantStore.setCurrentTenant(tenant ?? null);
+            }
           }
 
           return true;
@@ -128,7 +156,27 @@ export const useAuthStore = create<AuthState>()(
           });
 
           const responseData = res.data;
-          const user = mapUser(responseData.user);
+          const userPayload = responseData.user as {
+            id: string;
+            nome: string;
+            email: string;
+            tenantId?: string | null;
+            lojas?: string[];
+            permissoes?: string[];
+            isSuperAdmin?: boolean;
+            tenant?: {
+              id: string;
+              name: string;
+              nomeFantasia?: string | null;
+              cnpj?: string | null;
+              isActive?: boolean;
+              isMultiloja?: boolean;
+              urlLogo?: string | null;
+              paginasPermitidas?: string[] | null;
+              createdAt?: string;
+            };
+          };
+          const user = mapUser(userPayload);
 
           set({
             user,
@@ -141,17 +189,25 @@ export const useAuthStore = create<AuthState>()(
 
           if (user.tenantId) {
             const tenantStore = useTenantStore.getState();
-            const tenants = tenantStore.availableTenants;
-            const tenant = tenants.find((t) => t.id === user.tenantId!) ?? {
-              id: user.tenantId,
-              name: 'Empresa',
-              nomeFantasia: '',
-              cnpj: '',
-              isActive: true,
-              isMultiloja: false,
-              createdAt: new Date().toISOString(),
-            };
-            tenantStore.setCurrentTenant(tenant);
+            const tenantFromApi = userPayload.tenant;
+            if (tenantFromApi && tenantFromApi.id === user.tenantId) {
+              tenantStore.setCurrentTenant({
+                id: tenantFromApi.id,
+                name: tenantFromApi.name,
+                nomeFantasia: tenantFromApi.nomeFantasia ?? '',
+                cnpj: tenantFromApi.cnpj ?? '',
+                logo: tenantFromApi.urlLogo ?? undefined,
+                isActive: tenantFromApi.isActive ?? true,
+                isMultiloja: tenantFromApi.isMultiloja ?? false,
+                paginasPermitidas: tenantFromApi.paginasPermitidas ?? undefined,
+                createdAt: tenantFromApi.createdAt ?? new Date().toISOString(),
+              });
+            } else {
+              await tenantStore.fetchAvailableTenants();
+              const tenants = useTenantStore.getState().availableTenants;
+              const tenant = tenants.find((t) => t.id === user.tenantId!);
+              tenantStore.setCurrentTenant(tenant ?? null);
+            }
           }
 
           return true;

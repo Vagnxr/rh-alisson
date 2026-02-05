@@ -32,6 +32,7 @@ import {
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { CaixaRow } from '@/types/financeiro';
+import { ExportButtons } from '@/components/ui/export-buttons';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -149,7 +150,7 @@ export function CaixaPage() {
           fetchList();
           handleCloseDialog();
         })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao atualizar'));
+        .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao atualizar'));
     } else {
       api
         .post<CaixaRow>('financeiro/caixa', body)
@@ -158,7 +159,7 @@ export function CaixaPage() {
           setItems((prev) => [...prev, res.data]);
           handleCloseDialog();
         })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao criar'));
+        .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao criar'));
     }
   };
 
@@ -285,6 +286,32 @@ export function CaixaPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <ExportButtons
+            data={items.map((r) => ({
+              dia: formatDate(r.dia),
+              dinheiroDeposito: formatCurrency(r.dinheiroDeposito),
+              pagamentoPdv: formatCurrency(r.pagamentoPdv),
+              pix: formatCurrency(r.pix),
+              credito: formatCurrency(r.credito),
+              debito: formatCurrency(r.debito),
+              voucher: formatCurrency(r.voucher),
+              ifood: formatCurrency(r.ifood),
+              total: formatCurrency(r.total),
+            }))}
+            columns={[
+              { key: 'dia', label: 'Dia' },
+              { key: 'dinheiroDeposito', label: 'Dinheiro (dep.)' },
+              { key: 'pagamentoPdv', label: 'Pag. (PDV)' },
+              { key: 'pix', label: 'PIX' },
+              { key: 'credito', label: 'Credito' },
+              { key: 'debito', label: 'Debito' },
+              { key: 'voucher', label: 'Voucher' },
+              { key: 'ifood', label: 'iFood' },
+              { key: 'total', label: 'Total' },
+            ]}
+            filename="caixa"
+            title="Caixa"
+          />
           <button
             type="button"
             onClick={() => handleOpenDialog()}
@@ -378,7 +405,6 @@ export function CaixaPage() {
                   value={formData.dia}
                   onChange={(e) => setFormData({ ...formData, dia: e.target.value })}
                   className={inputClass}
-                  required
                 />
               </div>
               {[

@@ -18,6 +18,11 @@ export function ProtectedRoute() {
     return <Navigate to="/selecionar-empresa" replace />;
   }
 
+  // Usuario com tenantId mas sem tenant carregado (ex.: tenant inexistente) -> selecao para recarregar
+  if (user?.tenantId && !currentTenant) {
+    return <Navigate to="/selecionar-empresa" replace />;
+  }
+
   return (
     <DashboardLayout>
       <Outlet />

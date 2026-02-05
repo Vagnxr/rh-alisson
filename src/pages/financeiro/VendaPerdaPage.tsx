@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
+import { ExportButtons } from '@/components/ui/export-buttons';
 import type {
   VendaPerdaCreditoRow,
   VendaPerdaDebitoPixRow,
@@ -68,6 +69,19 @@ export function VendaPerdaPage() {
     fetchData();
   }, [fetchData]);
 
+  const exportData = useMemo(
+    () => [
+      { tipo: 'Credito', totalBruto: formatCurrency(credito.totalBruto), descontos: formatCurrency(credito.descontos), totalLiquido: formatCurrency(credito.totalLiquido) },
+      { tipo: 'Debito/PIX', totalBruto: formatCurrency(debitoPix.totalBruto), descontos: formatCurrency(debitoPix.descontos), totalLiquido: formatCurrency(debitoPix.totalLiquido) },
+      { tipo: 'Alim/ref', totalBruto: formatCurrency(alimRef.totalBruto), descontos: formatCurrency(alimRef.descontos), totalLiquido: formatCurrency(alimRef.totalLiquido) },
+      { tipo: 'Food', totalBruto: formatCurrency(food.totalBruto), descontos: formatCurrency(food.descontos), totalLiquido: formatCurrency(food.totalLiquido) },
+      { tipo: 'Total cartoes', totalBruto: formatCurrency(totalCartoes.valorBruto), descontos: formatCurrency(totalCartoes.descontos), totalLiquido: formatCurrency(totalCartoes.totalLiquido) },
+      { tipo: 'POS aluguel', valor: formatCurrency(posAluguel.valor) },
+      { tipo: 'Perda total', valor: formatCurrency(perdaTotal.valor) },
+    ],
+    [credito, debitoPix, alimRef, food, totalCartoes, posAluguel, perdaTotal]
+  );
+
   function renderTabelaCreditoDebito(
     titulo: string,
     row: VendaPerdaCreditoRow | VendaPerdaDebitoPixRow | VendaPerdaAlimRefRow
@@ -108,7 +122,21 @@ export function VendaPerdaPage() {
             Resumo por tipo: credito, debito/PIX, alim/ref, food, total cartoes, POS aluguel e perda total.
           </p>
         </div>
-        <DateFilter value={dateFilter} onChange={setDateFilter} />
+        <div className="flex flex-wrap items-center gap-3">
+          <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <ExportButtons
+            data={exportData}
+            columns={[
+              { key: 'tipo', label: 'Tipo' },
+              { key: 'totalBruto', label: 'Total bruto' },
+              { key: 'descontos', label: 'Descontos' },
+              { key: 'totalLiquido', label: 'Total liquido' },
+              { key: 'valor', label: 'Valor' },
+            ]}
+            filename="venda-perda"
+            title="Venda e perda"
+          />
+        </div>
       </div>
 
       {loading ? (

@@ -32,6 +32,7 @@ import {
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { PagoDinheiroRow } from '@/types/financeiro';
+import { ExportButtons } from '@/components/ui/export-buttons';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -211,6 +212,20 @@ export function PagoDinheiroPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <ExportButtons
+            data={items.map((r) => ({
+              data: formatDate(r.data),
+              descricaoFornecedor: r.descricaoFornecedor,
+              valor: formatCurrency(r.valor),
+            }))}
+            columns={[
+              { key: 'data', label: 'Data' },
+              { key: 'descricaoFornecedor', label: 'Descricao/Fornecedor' },
+              { key: 'valor', label: 'Valor' },
+            ]}
+            filename="pago-dinheiro"
+            title="Pago em Dinheiro"
+          />
           <button
             type="button"
             onClick={() => handleOpenDialog()}

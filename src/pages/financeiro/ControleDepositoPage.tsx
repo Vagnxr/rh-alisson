@@ -32,6 +32,7 @@ import {
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { ControleDepositoRow, ValorDepositadoRow } from '@/types/financeiro';
+import { ExportButtons } from '@/components/ui/export-buttons';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -360,10 +361,44 @@ export function ControleDepositoPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Controle Deposito</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Tabela 1: Deposito (data, dia, dinheiro, sobra, total). Tabela 2: Valor depositado (data, dia, dinheiro).
+            Tabela Deposito: reflexo da parte de deposito do caixa. Valor depositado: valor efetivamente depositado.
           </p>
         </div>
-        <DateFilter value={dateFilter} onChange={setDateFilter} />
+        <div className="flex flex-wrap items-center gap-3">
+          <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <ExportButtons
+            data={depositos.map((r) => ({
+              data: formatDate(r.data),
+              dia: r.dia,
+              dinheiro: formatCurrency(r.dinheiro),
+              sobra: formatCurrency(r.sobra),
+              total: formatCurrency(r.total),
+            }))}
+            columns={[
+              { key: 'data', label: 'Data' },
+              { key: 'dia', label: 'Dia' },
+              { key: 'dinheiro', label: 'Dinheiro' },
+              { key: 'sobra', label: 'Sobra' },
+              { key: 'total', label: 'Total' },
+            ]}
+            filename="controle-deposito"
+            title="Controle Deposito"
+          />
+          <ExportButtons
+            data={valoresDepositados.map((r) => ({
+              data: formatDate(r.data),
+              dia: r.dia,
+              dinheiro: formatCurrency(r.dinheiro),
+            }))}
+            columns={[
+              { key: 'data', label: 'Data' },
+              { key: 'dia', label: 'Dia' },
+              { key: 'dinheiro', label: 'Valor depositado' },
+            ]}
+            filename="valor-depositado"
+            title="Valor Depositado"
+          />
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

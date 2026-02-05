@@ -28,7 +28,7 @@ import { cn } from '@/lib/cn';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import type { CreateFornecedorDto, UpdateFornecedorDto } from '@/types/fornecedor';
 
-const FORNECEDOR_TABLE_DEFAULT_ORDER = ['tipo', 'nome', 'documento', 'contatoEmpresa', 'endereco', 'isAtivo'];
+const FORNECEDOR_TABLE_DEFAULT_ORDER = ['tipo', 'cnpj', 'razaoSocial', 'nomeFantasia', 'nome', 'documento', 'contatoEmpresa', 'endereco', 'isAtivo'];
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString('pt-BR');
@@ -153,6 +153,54 @@ export function FornecedoresPage() {
               )}
             </div>
           );
+        },
+      },
+      cnpj: {
+        accessorKey: 'cnpj',
+        header: ({ column }) => (
+          <button
+            className="flex items-center gap-1 font-medium"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            CNPJ
+            <ArrowUpDown className="h-4 w-4" />
+          </button>
+        ),
+        cell: ({ row }) => {
+          const f = row.original;
+          return <span className="text-sm text-slate-600">{f.tipo === 'cnpj' ? f.cnpj : '-'}</span>;
+        },
+      },
+      razaoSocial: {
+        accessorKey: 'razaoSocial',
+        header: ({ column }) => (
+          <button
+            className="flex items-center gap-1 font-medium"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Razao Social
+            <ArrowUpDown className="h-4 w-4" />
+          </button>
+        ),
+        cell: ({ row }) => {
+          const f = row.original;
+          return <span className="text-sm text-slate-600">{f.tipo === 'cnpj' ? f.razaoSocial : '-'}</span>;
+        },
+      },
+      nomeFantasia: {
+        accessorKey: 'nomeFantasia',
+        header: ({ column }) => (
+          <button
+            className="flex items-center gap-1 font-medium"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Nome Fantasia
+            <ArrowUpDown className="h-4 w-4" />
+          </button>
+        ),
+        cell: ({ row }) => {
+          const f = row.original;
+          return <span className="text-sm text-slate-600">{f.tipo === 'cnpj' ? f.nomeFantasia : '-'}</span>;
         },
       },
       documento: {

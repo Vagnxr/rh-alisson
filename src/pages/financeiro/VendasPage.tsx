@@ -7,28 +7,10 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ExportButtons, useExportColumns } from '@/components/ui/export-buttons';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogBody,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { VendasRow } from '@/types/financeiro';
@@ -54,10 +36,6 @@ export function VendasPage() {
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   const [items, setItems] = useState<VendasRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<VendasRow | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ dia: new Date().toISOString().split('T')[0], valor: '' });
 
   const fetchList = useCallback(() => {
     setLoading(true);
@@ -72,69 +50,10 @@ export function VendasPage() {
     fetchList();
   }, [fetchList]);
 
-  const handleOpenDialog = (item?: VendasRow) => {
-    if (item) {
-      setEditingItem(item);
-      setFormData({
-        dia: item.dia.split('T')[0] || item.dia.slice(0, 10),
-        valor: String(item.valor),
-      });
-    } else {
-      setEditingItem(null);
-      setFormData({
-        dia: new Date().toISOString().split('T')[0],
-        valor: '',
-      });
-    }
-    setIsDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setEditingItem(null);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const valor = parseNum(formData.valor);
-    if (valor <= 0) {
-      toast.error('Valor deve ser maior que zero');
-      return;
-    }
-    const dia = formData.dia.slice(0, 10);
-    const body = { dia, valor };
-    if (editingItem) {
-      api
-        .patch<VendasRow>(`financeiro/vendas/${editingItem.id}`, body)
-        .then(() => {
-          toast.success('Registro atualizado.');
-          fetchList();
-          handleCloseDialog();
-        })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao atualizar'));
-    } else {
-      api
-        .post<VendasRow>('financeiro/vendas', body)
-        .then((res) => {
-          toast.success('Registro adicionado.');
-          setItems((prev) => [...prev, res.data]);
-          handleCloseDialog();
-        })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao criar'));
-    }
-  };
-
-  const handleDelete = () => {
-    if (!deleteId) return;
-    api
-      .delete(`financeiro/vendas/${deleteId}`)
-      .then(() => {
-        setItems((prev) => prev.filter((r) => r.id !== deleteId));
-        setDeleteId(null);
-        toast.success('Registro excluido.');
-      })
-      .catch((err) => toast.error(err?.message ?? 'Erro ao excluir'));
-  };
+  const exportColumns = useExportColumns<VendasRow>([
+    { key: 'dia', label: 'Dia', format: (v) => formatDate(String(v)) },
+    { key: 'valor', label: 'Valor', format: (v) => formatCurrency(Number(v)) },
+  ]);
 
   const columns = useMemo<ColumnDef<VendasRow>[]>(
     () => [
@@ -157,30 +76,6 @@ export function VendasPage() {
           <span className="font-medium text-slate-900">
             {formatCurrency(row.getValue('valor'))}
           </span>
-        ),
-      },
-      {
-        id: 'actions',
-        header: () => <span className="sr-only">Acoes</span>,
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1">
-            <button
-              type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              title="Editar"
-              onClick={() => handleOpenDialog(row.original)}
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-              title="Excluir"
-              onClick={() => setDeleteId(row.original.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
         ),
       },
     ],
@@ -207,16 +102,15 @@ export function VendasPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
-          <button
-            type="button"
-            onClick={() => handleOpenDialog()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-          >
-            <Plus className="h-4 w-4" />
-            Novo
-          </button>
+          <ExportButtons
+            data={items.map((r) => ({ dia: r.dia, valor: r.valor }))}
+            columns={exportColumns}
+            filename="vendas"
+            title="Vendas"
+          />
         </div>
       </div>
+      <p className="text-sm text-slate-500">Pagina somente de visualizacao (reflexo do caixa).</p>
 
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
         <div className="overflow-x-auto">
@@ -267,13 +161,12 @@ export function VendasPage() {
             {items.length > 0 && (
               <tfoot className="border-t border-slate-200 bg-slate-50">
                 <tr>
-                  <td colSpan={columns.length - 2} className="px-4 py-3 text-right text-sm font-medium text-slate-900">
+                  <td className="px-4 py-3 text-right text-sm font-medium text-slate-900">
                     Total:
                   </td>
                   <td className="px-4 py-3 text-sm font-bold text-slate-900">
                     {formatCurrency(total)}
                   </td>
-                  <td></td>
                 </tr>
               </tfoot>
             )}
@@ -281,68 +174,6 @@ export function VendasPage() {
           )}
         </div>
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingItem ? 'Editar Venda' : 'Nova Venda'}</DialogTitle>
-            <DialogDescription>
-              {editingItem ? 'Altere os dados.' : 'Preencha dia e valor.'}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-            <DialogBody>
-            <div className="space-y-4 mt-4 mb-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Dia</label>
-                <input
-                  type="date"
-                  value={formData.dia}
-                  onChange={(e) => setFormData({ ...formData, dia: e.target.value })}
-                  className={inputClass}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Valor (R$)</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  value={formData.valor}
-                  onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
-                  className={inputClass}
-                  required
-                />
-              </div>
-            </div>
-            </DialogBody>
-            <DialogFooter>
-              <button type="button" onClick={handleCloseDialog} className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-slate-100">
-                Cancelar
-              </button>
-              <button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700">
-                {editingItem ? 'Salvar' : 'Adicionar'}
-              </button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusao</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este registro? Esta acao nao pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

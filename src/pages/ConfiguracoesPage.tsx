@@ -17,10 +17,13 @@ import { cn } from '@/lib/cn';
 
 interface ColunaItemProps {
   coluna: ColunaConfig;
+  tabelaId: string;
   onToggle: (isVisible: boolean) => void;
+  onToggleSomarNoTotal?: (somarNoTotal: boolean) => void;
+  showSomarNoTotal?: boolean;
 }
 
-function ColunaItem({ coluna, onToggle }: ColunaItemProps) {
+function ColunaItem({ coluna, tabelaId, onToggle, onToggleSomarNoTotal, showSomarNoTotal }: ColunaItemProps) {
   return (
     <div
       className={cn(
@@ -38,6 +41,23 @@ function ColunaItem({ coluna, onToggle }: ColunaItemProps) {
             <p className="flex items-center gap-1 text-xs text-slate-500">
               <Lock className="h-3 w-3" />
               Coluna obrigatoria
+            </p>
+          )}
+          {showSomarNoTotal && onToggleSomarNoTotal && (
+            <p className="mt-1 flex items-center gap-2 text-xs text-slate-600">
+              <span>Somar no total:</span>
+              <button
+                type="button"
+                onClick={() => onToggleSomarNoTotal(!coluna.somarNoTotal)}
+                className={cn(
+                  'rounded px-2 py-0.5 text-xs font-medium',
+                  coluna.somarNoTotal
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-slate-100 text-slate-600'
+                )}
+              >
+                {coluna.somarNoTotal !== false ? 'Sim' : 'Nao'}
+              </button>
             </p>
           )}
         </div>
@@ -63,10 +83,11 @@ function ColunaItem({ coluna, onToggle }: ColunaItemProps) {
 interface TabelaConfigCardProps {
   tabela: TabelaConfig;
   onToggleColuna: (colunaId: string, isVisible: boolean) => void;
+  onToggleSomarNoTotal?: (colunaId: string, somarNoTotal: boolean) => void;
   onReset: () => void;
 }
 
-function TabelaConfigCard({ tabela, onToggleColuna, onReset }: TabelaConfigCardProps) {
+function TabelaConfigCard({ tabela, onToggleColuna, onToggleSomarNoTotal, onReset }: TabelaConfigCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const colunasVisiveis = tabela.colunas.filter((c) => c.isVisible).length;
 
@@ -122,7 +143,14 @@ function TabelaConfigCard({ tabela, onToggleColuna, onReset }: TabelaConfigCardP
                 <ColunaItem
                   key={coluna.id}
                   coluna={coluna}
+                  tabelaId={tabela.id}
                   onToggle={(isVisible) => onToggleColuna(coluna.id, isVisible)}
+                  onToggleSomarNoTotal={
+                    onToggleSomarNoTotal
+                      ? (somarNoTotal) => onToggleSomarNoTotal(coluna.id, somarNoTotal)
+                      : undefined
+                  }
+                  showSomarNoTotal={tabela.id === 'balanco'}
                 />
               ))}
           </div>
@@ -137,6 +165,7 @@ export function ConfiguracoesPage() {
     tabelas,
     fetchConfiguracoes,
     updateColunaVisibilidade,
+    updateColunaSomarNoTotal,
     resetTabela,
   } = useConfiguracaoStore();
 
@@ -147,6 +176,11 @@ export function ConfiguracoesPage() {
   const handleToggleColuna = (tabelaId: string, colunaId: string, isVisible: boolean) => {
     updateColunaVisibilidade(tabelaId, colunaId, isVisible);
     toast.success(isVisible ? 'Coluna ativada' : 'Coluna desativada');
+  };
+
+  const handleToggleSomarNoTotal = (tabelaId: string, colunaId: string, somarNoTotal: boolean) => {
+    updateColunaSomarNoTotal?.(tabelaId, colunaId, somarNoTotal);
+    toast.success(somarNoTotal ? 'Coluna somada no total' : 'Coluna nao somada no total');
   };
 
   const handleReset = (tabelaId: string) => {
@@ -184,6 +218,11 @@ export function ConfiguracoesPage() {
             tabela={tabela}
             onToggleColuna={(colunaId, isVisible) =>
               handleToggleColuna(tabela.id, colunaId, isVisible)
+            }
+            onToggleSomarNoTotal={
+              updateColunaSomarNoTotal
+                ? (colunaId, somarNoTotal) => handleToggleSomarNoTotal(tabela.id, colunaId, somarNoTotal)
+                : undefined
             }
             onReset={() => handleReset(tabela.id)}
           />

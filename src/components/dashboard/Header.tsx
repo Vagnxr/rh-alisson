@@ -83,6 +83,15 @@ export function Header() {
   return (
     <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 sm:h-16 sm:px-6">
       <div className="flex items-center gap-3">
+        {/* Logo (tenant ou padrao) */}
+        {currentTenant?.logo ? (
+          <img
+            src={currentTenant.logo}
+            alt="Logo"
+            className="hidden h-9 w-auto max-w-[140px] object-contain sm:block"
+          />
+        ) : null}
+
         {/* Botao menu mobile */}
         <button
           onClick={toggleSidebar}

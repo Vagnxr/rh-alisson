@@ -44,6 +44,7 @@ import { cn } from '@/lib/cn';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { InputCelular } from '@/components/ui/input-masked';
 import { InputPassword } from '@/components/ui/input-password';
+import { PAGINAS_PERMISSAO } from '@/lib/paginasPermissao';
 
 const ADMIN_USERS_TABLE_DEFAULT_ORDER = ['nome', 'tenantName', 'role', 'isActive', 'lastLogin'];
 
@@ -67,6 +68,7 @@ export function AdminUsersPage() {
     role: 'user',
     password: '',
     isActive: true,
+    permissoes: [],
   });
 
   useEffect(() => {
@@ -189,6 +191,17 @@ export function AdminUsersPage() {
     getFilteredRowModel: getFilteredRowModel(),
   });
 
+  const selectedTenant = useMemo(
+    () => tenants.find((t) => t.id === formData.tenantId),
+    [tenants, formData.tenantId]
+  );
+
+  const paginasDisponiveisParaUsuario = useMemo(() => {
+    const ids = selectedTenant?.paginasPermitidas;
+    if (ids && ids.length > 0) return PAGINAS_PERMISSAO.filter((p) => ids.includes(p.id));
+    return PAGINAS_PERMISSAO;
+  }, [selectedTenant?.paginasPermitidas]);
+
   const handleAdd = () => {
     setEditingUser(null);
     setFormData({
@@ -199,6 +212,7 @@ export function AdminUsersPage() {
       role: 'user',
       password: '',
       isActive: true,
+      permissoes: [],
     });
     setIsDialogOpen(true);
   };
@@ -213,6 +227,7 @@ export function AdminUsersPage() {
       role: user.role,
       password: '',
       isActive: user.isActive,
+      permissoes: Array.isArray(user.permissoes) ? [...user.permissoes] : [],
     });
     setIsDialogOpen(true);
   };
@@ -265,16 +280,17 @@ export function AdminUsersPage() {
   };
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex min-h-0 flex-1 flex-col gap-6 p-4 sm:p-6">
+      {/* Header fixo com botao Criar sempre visivel */}
+      <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Usuarios</h1>
           <p className="text-sm text-slate-500">Gerencie os usuarios do sistema</p>
         </div>
         <button
+          type="button"
           onClick={handleAdd}
-          className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-emerald-700"
+          className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-emerald-700"
         >
           <Plus className="h-4 w-4" />
           Novo Usuario
@@ -282,7 +298,7 @@ export function AdminUsersPage() {
       </div>
 
       {/* Filtro */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
@@ -293,8 +309,8 @@ export function AdminUsersPage() {
         />
       </div>
 
-      {/* Tabela */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      {/* Tabela com scroll */}
+      <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
@@ -401,7 +417,21 @@ export function AdminUsersPage() {
               </label>
               <select
                 value={formData.tenantId}
-                onChange={(e) => setFormData({ ...formData, tenantId: e.target.value })}
+                onChange={(e) => {
+                  const newTenantId = e.target.value;
+                  const newTenant = tenants.find((t) => t.id === newTenantId);
+                  const allowedIds = newTenant?.paginasPermitidas?.length
+                    ? newTenant.paginasPermitidas
+                    : PAGINAS_PERMISSAO.map((p) => p.id);
+                  const permissoesValidas = (formData.permissoes ?? []).filter((id) =>
+                    allowedIds.includes(id)
+                  );
+                  setFormData({
+                    ...formData,
+                    tenantId: newTenantId,
+                    permissoes: permissoesValidas,
+                  });
+                }}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               >
                 <option value="">Selecione uma empresa</option>
@@ -428,6 +458,43 @@ export function AdminUsersPage() {
                 <option value="manager">Gerente</option>
                 <option value="admin">Administrador</option>
               </select>
+            </div>
+
+            <div className="border-t border-slate-200 pt-4">
+              <p className="mb-1 text-sm font-medium text-slate-700">
+                Paginas que o usuario pode acessar
+              </p>
+              <p className="mb-3 text-xs text-slate-500">
+                {selectedTenant?.paginasPermitidas?.length
+                  ? 'Apenas as telas permitidas para a empresa estao listadas. O usuario so vera o que estiver marcado.'
+                  : 'Selecione as telas para este usuario. Se a empresa nao tiver restricao, todas aparecem aqui.'}
+              </p>
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {paginasDisponiveisParaUsuario.map((pagina) => {
+                    const checked = (formData.permissoes ?? []).includes(pagina.id);
+                    return (
+                      <label
+                        key={pagina.id}
+                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-100"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...(formData.permissoes ?? []), pagina.id]
+                              : (formData.permissoes ?? []).filter((id) => id !== pagina.id);
+                            setFormData({ ...formData, permissoes: next });
+                          }}
+                          className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <span className="text-sm text-slate-700">{pagina.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {!editingUser && (

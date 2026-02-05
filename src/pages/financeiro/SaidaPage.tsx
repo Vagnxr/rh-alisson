@@ -32,6 +32,7 @@ import {
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { SaidaRow } from '@/types/financeiro';
+import { ExportButtons } from '@/components/ui/export-buttons';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -246,6 +247,30 @@ export function SaidaPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <ExportButtons
+            data={items.map((r) => ({
+              data: formatDate(r.data),
+              fornecedor: r.fornecedor,
+              industrializacao: formatCurrency(Number(r.industrializacao)),
+              comercializacao: formatCurrency(Number(r.comercializacao)),
+              embalagem: formatCurrency(Number(r.embalagem)),
+              materialUsoCons: formatCurrency(Number(r.materialUsoCons)),
+              mercadoriaUsoCons: formatCurrency(Number(r.mercadoriaUsoCons)),
+              gas: formatCurrency(Number(r.gas)),
+            }))}
+            columns={[
+              { key: 'data', label: 'Data' },
+              { key: 'fornecedor', label: 'Fornecedor' },
+              { key: 'industrializacao', label: 'Industrializacao' },
+              { key: 'comercializacao', label: 'Comercializacao' },
+              { key: 'embalagem', label: 'Embalagem' },
+              { key: 'materialUsoCons', label: 'Material uso/cons.' },
+              { key: 'mercadoriaUsoCons', label: 'Mercadoria uso/cons.' },
+              { key: 'gas', label: 'Gas' },
+            ]}
+            filename="saida"
+            title="Saida"
+          />
           <button
             type="button"
             onClick={() => handleOpenDialog()}

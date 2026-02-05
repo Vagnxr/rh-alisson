@@ -11,6 +11,7 @@ import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DespesaBase, DespesaInput, DespesaCategoriaConfig, DespesaCategoria } from '@/types/despesa';
 import { TIPOS_DESPESA } from '@/types/despesa';
+import { useDespesaTiposStore } from '@/stores/despesaTiposStore';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { ExportButtons } from '@/components/ui/export-buttons';
@@ -46,6 +47,8 @@ interface DespesaPageProps {
   addItem: (data: DespesaInput) => Promise<void>;
   updateItem: (id: string, data: Partial<DespesaInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
+  /** Exibir opcao "Comunicar agenda" no formulario. Investimento nao usa. Default true. */
+  showComunicarAgenda?: boolean;
 }
 
 function formatCurrency(value: number) {
@@ -72,6 +75,7 @@ export function DespesaPage({
   addItem,
   updateItem,
   deleteItem,
+  showComunicarAgenda = true,
 }: DespesaPageProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -87,8 +91,31 @@ export function DespesaPage({
     comunicarAgenda: false,
   });
 
-  // Tipos disponiveis para esta categoria
-  const tiposDisponiveis = TIPOS_DESPESA[config.key as DespesaCategoria] || ['OUTROS'];
+  const [isTiposDialogOpen, setIsTiposDialogOpen] = useState(false);
+  const [novoTipoLabel, setNovoTipoLabel] = useState('');
+
+  const {
+    fetchTipos,
+    getTipos,
+    addTipo,
+    deleteTipo,
+    isLoading: isLoadingTipos,
+    error: tiposError,
+  } = useDespesaTiposStore();
+
+  const tiposFromStore = getTipos(config.key);
+  const defaultLabels =
+    TIPOS_DESPESA[config.key as DespesaCategoria] || ['OUTROS'];
+  const customTipos = tiposFromStore.filter(
+    (t) => !defaultLabels.includes(t.label)
+  );
+  const tiposDisponiveis = [...defaultLabels, ...customTipos.map((t) => t.label)];
+
+  // Lista para o dialog: padroes (sem id) + tipos da API que nao sao padrao (com id, podem excluir)
+  const tiposParaListar = [
+    ...defaultLabels.map((label) => ({ label, id: undefined as string | undefined })),
+    ...customTipos.map((t) => ({ label: t.label, id: t.id })),
+  ];
 
   const dateParams = useMemo(() => ({
     dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
@@ -98,6 +125,10 @@ export function DespesaPage({
   useEffect(() => {
     fetchItems(dateParams);
   }, [fetchItems, dateParams.dataInicio, dateParams.dataFim]);
+
+  useEffect(() => {
+    fetchTipos(config.key).catch(() => {});
+  }, [config.key, fetchTipos]);
 
   // Backend ja retorna itens filtrados por dataInicio/dataFim; nao filtrar de novo no cliente
   const filteredItems = items ?? [];
@@ -136,11 +167,6 @@ export function DespesaPage({
 
     if (!formData.tipo) {
       toast.error('Tipo e obrigatorio');
-      return;
-    }
-
-    if (!formData.descricao.trim()) {
-      toast.error('Descricao e obrigatoria');
       return;
     }
 
@@ -504,22 +530,35 @@ export function DespesaPage({
                   >
                     Tipo <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    id="tipo"
-                    value={formData.tipo}
-                    onChange={(e) =>
-                      setFormData({ ...formData, tipo: e.target.value })
-                    }
-                    className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
-                    required
-                  >
-                    <option value="">Selecione...</option>
-                    {tiposDisponiveis.map((tipo) => (
-                      <option key={tipo} value={tipo}>
-                        {tipo}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex gap-1">
+                    <select
+                      id="tipo"
+                      value={formData.tipo}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tipo: e.target.value })
+                      }
+                      className="flex h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
+                      required
+                    >
+                      <option value="">Selecione...</option>
+                      {tiposDisponiveis.map((tipo) => (
+                        <option key={tipo} value={tipo}>
+                          {tipo}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNovoTipoLabel('');
+                        setIsTiposDialogOpen(true);
+                      }}
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-emerald-600"
+                      title="Adicionar ou gerenciar tipos"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
@@ -527,7 +566,7 @@ export function DespesaPage({
                   htmlFor="descricao"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Descricao <span className="text-red-500">*</span>
+                  Descricao
                 </label>
                 <input
                   id="descricao"
@@ -538,7 +577,6 @@ export function DespesaPage({
                     setFormData({ ...formData, descricao: e.target.value.toUpperCase() })
                   }
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
-                  required
                 />
               </div>
               <div className="space-y-2">
@@ -565,23 +603,25 @@ export function DespesaPage({
                   required
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  id="comunicarAgenda"
-                  type="checkbox"
-                  checked={formData.comunicarAgenda || false}
-                  onChange={(e) =>
-                    setFormData({ ...formData, comunicarAgenda: e.target.checked })
-                  }
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <label
-                  htmlFor="comunicarAgenda"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Comunicar Agenda
-                </label>
-              </div>
+              {showComunicarAgenda && (
+                <div className="flex items-center gap-2">
+                  <input
+                    id="comunicarAgenda"
+                    type="checkbox"
+                    checked={formData.comunicarAgenda || false}
+                    onChange={(e) =>
+                      setFormData({ ...formData, comunicarAgenda: e.target.checked })
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <label
+                    htmlFor="comunicarAgenda"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Comunicar Agenda
+                  </label>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <button
@@ -601,6 +641,112 @@ export function DespesaPage({
               </button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Gerenciar Tipos */}
+      <Dialog open={isTiposDialogOpen} onOpenChange={setIsTiposDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerenciar tipos</DialogTitle>
+            <DialogDescription>
+              Adicione ou remova tipos para {config.title}. Nao e possivel excluir um tipo que ja possua lancamentos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {tiposError && (
+              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                {tiposError}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Nome do tipo"
+                value={novoTipoLabel}
+                onChange={(e) =>
+                  setNovoTipoLabel(e.target.value.trim().toUpperCase())
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (novoTipoLabel.trim()) {
+                      addTipo(config.key, novoTipoLabel.trim().toUpperCase())
+                        .then(() => {
+                          setNovoTipoLabel('');
+                          toast.success('Tipo adicionado.');
+                        })
+                        .catch((err) => {
+                          toast.error(
+                            err instanceof Error ? err.message : 'Erro ao adicionar tipo'
+                          );
+                        });
+                    }
+                  }
+                }}
+                className="flex flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm uppercase placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              />
+              <button
+                type="button"
+                disabled={!novoTipoLabel.trim() || isLoadingTipos}
+                onClick={() => {
+                  const label = novoTipoLabel.trim().toUpperCase();
+                  if (!label) return;
+                  addTipo(config.key, label)
+                    .then(() => {
+                      setNovoTipoLabel('');
+                      toast.success('Tipo adicionado.');
+                    })
+                    .catch((err) => {
+                      toast.error(
+                        err instanceof Error ? err.message : 'Erro ao adicionar tipo'
+                      );
+                    });
+                }}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {isLoadingTipos ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Adicionar
+              </button>
+            </div>
+            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2">
+              {tiposParaListar.length === 0 ? (
+                <li className="py-4 text-center text-sm text-slate-500">
+                  Nenhum tipo. Adicione acima.
+                </li>
+              ) : (
+                tiposParaListar.map((t) => (
+                  <li
+                    key={t.id ?? t.label}
+                    className="flex items-center justify-between rounded bg-white px-3 py-2 text-sm text-slate-800"
+                  >
+                    <span>{t.label}</span>
+                    {t.id ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteTipo(t.id!).catch((err) => {
+                            toast.error(
+                              err instanceof Error
+                                ? err.message
+                                : 'Nao foi possivel excluir. O tipo pode estar em uso.'
+                            );
+                          });
+                        }}
+                        disabled={isLoadingTipos}
+                        className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                        title="Excluir tipo"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <span className="text-xs text-slate-400">padrao</span>
+                    )}
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
         </DialogContent>
       </Dialog>
 

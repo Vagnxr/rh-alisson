@@ -7,28 +7,10 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogBody,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { ExportButtons, useExportColumns } from '@/components/ui/export-buttons';
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { ControleDinheiroRow } from '@/types/financeiro';
@@ -41,67 +23,11 @@ function formatDate(date: string) {
   return new Date(date).toLocaleDateString('pt-BR');
 }
 
-function parseNum(v: string): number {
-  const n = parseFloat(String(v).replace(',', '.'));
-  return Number.isFinite(n) ? n : 0;
-}
-
-function diaSemanaFromDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  const dias = ['Domingo', 'Segunda', 'Terca', 'Quarta', 'Quinta', 'Sexta', 'Sabado'];
-  return dias[d.getDay()];
-}
-
-const inputClass =
-  'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
-
 export function ControleDinheiroPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   const [items, setItems] = useState<ControleDinheiroRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<ControleDinheiroRow | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    data: new Date().toISOString().split('T')[0],
-    dia: '',
-    deposito: '',
-    sobra: '',
-    pagPdv: '',
-    totalDia: '',
-  });
-
-  const handleOpenDialog = (item?: ControleDinheiroRow) => {
-    if (item) {
-      setEditingItem(item);
-      setFormData({
-        data: item.data.split('T')[0] || item.data.slice(0, 10),
-        dia: item.dia,
-        deposito: String(item.deposito),
-        sobra: String(item.sobra),
-        pagPdv: String(item.pagPdv),
-        totalDia: String(item.totalDia),
-      });
-    } else {
-      setEditingItem(null);
-      const hoje = new Date().toISOString().split('T')[0];
-      setFormData({
-        data: hoje,
-        dia: diaSemanaFromDate(hoje),
-        deposito: '',
-        sobra: '',
-        pagPdv: '',
-        totalDia: '',
-      });
-    }
-    setIsDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setEditingItem(null);
-  };
 
   const fetchList = useCallback(() => {
     setLoading(true);
@@ -116,50 +42,14 @@ export function ControleDinheiroPage() {
     fetchList();
   }, [fetchList]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const data = formData.data.slice(0, 10);
-    const dia = formData.dia || diaSemanaFromDate(formData.data);
-    const body = {
-      data,
-      dia,
-      deposito: parseNum(formData.deposito),
-      sobra: parseNum(formData.sobra),
-      pagPdv: parseNum(formData.pagPdv),
-      totalDia: parseNum(formData.totalDia),
-    };
-    if (editingItem) {
-      api
-        .patch<ControleDinheiroRow>(`financeiro/controle-dinheiro/${editingItem.id}`, body)
-        .then(() => {
-          toast.success('Registro atualizado.');
-          fetchList();
-          handleCloseDialog();
-        })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao atualizar'));
-    } else {
-      api
-        .post<ControleDinheiroRow>('financeiro/controle-dinheiro', body)
-        .then((res) => {
-          toast.success('Registro adicionado.');
-          setItems((prev) => [...prev, res.data]);
-          handleCloseDialog();
-        })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao criar'));
-    }
-  };
-
-  const handleDelete = () => {
-    if (!deleteId) return;
-    api
-      .delete(`financeiro/controle-dinheiro/${deleteId}`)
-      .then(() => {
-        setItems((prev) => prev.filter((r) => r.id !== deleteId));
-        setDeleteId(null);
-        toast.success('Registro excluido.');
-      })
-      .catch((err) => toast.error(err?.message ?? 'Erro ao excluir'));
-  };
+  const exportColumns = useExportColumns<ControleDinheiroRow>([
+    { key: 'data', label: 'Data', format: (v) => formatDate(String(v)) },
+    { key: 'dia', label: 'Dia' },
+    { key: 'deposito', label: 'Deposito', format: (v) => formatCurrency(Number(v)) },
+    { key: 'sobra', label: 'Sobra', format: (v) => formatCurrency(Number(v)) },
+    { key: 'pagPdv', label: 'Pag. PDV', format: (v) => formatCurrency(Number(v)) },
+    { key: 'totalDia', label: 'Total dia', format: (v) => formatCurrency(Number(v)) },
+  ]);
 
   const columns = useMemo<ColumnDef<ControleDinheiroRow>[]>(
     () => [
@@ -200,30 +90,6 @@ export function ControleDinheiroPage() {
           </span>
         ),
       },
-      {
-        id: 'actions',
-        header: () => <span className="sr-only">Acoes</span>,
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1">
-            <button
-              type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              title="Editar"
-              onClick={() => handleOpenDialog(row.original)}
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-              title="Excluir"
-              onClick={() => setDeleteId(row.original.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ),
-      },
     ],
     []
   );
@@ -253,16 +119,22 @@ export function ControleDinheiroPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
-          <button
-            type="button"
-            onClick={() => handleOpenDialog()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-          >
-            <Plus className="h-4 w-4" />
-            Novo
-          </button>
+          <ExportButtons
+            data={items.map((r) => ({
+              data: r.data,
+              dia: r.dia,
+              deposito: r.deposito,
+              sobra: r.sobra,
+              pagPdv: r.pagPdv,
+              totalDia: r.totalDia,
+            }))}
+            columns={exportColumns}
+            filename="controle-dinheiro"
+            title="Controle Dinheiro"
+          />
         </div>
       </div>
+      <p className="text-sm text-slate-500">Pagina somente de visualizacao (reflexo do caixa).</p>
 
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
         <div className="overflow-x-auto">
@@ -313,13 +185,12 @@ export function ControleDinheiroPage() {
             {items.length > 0 && (
               <tfoot className="border-t border-slate-200 bg-slate-50">
                 <tr>
-                  <td colSpan={columns.length - 2} className="px-4 py-3 text-right text-sm font-medium text-slate-900">
+                  <td colSpan={columns.length - 1} className="px-4 py-3 text-right text-sm font-medium text-slate-900">
                     Total:
                   </td>
                   <td className="px-4 py-3 text-sm font-bold text-slate-900">
                     {formatCurrency(totalGeral)}
                   </td>
-                  <td></td>
                 </tr>
               </tfoot>
             )}
@@ -327,86 +198,6 @@ export function ControleDinheiroPage() {
           )}
         </div>
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingItem ? 'Editar Controle Dinheiro' : 'Novo Registro'}</DialogTitle>
-            <DialogDescription>
-              {editingItem ? 'Altere os dados.' : 'Preencha data, dia, deposito, sobra, pag. PDV e total.'}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-            <DialogBody>
-            <div className="space-y-4 mt-4 mb-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Data</label>
-                <input
-                  type="date"
-                  value={formData.data}
-                  onChange={(e) =>
-                    setFormData({ ...formData, data: e.target.value, dia: formData.dia || diaSemanaFromDate(e.target.value) })
-                  }
-                  className={inputClass}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Dia (semana)</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Segunda"
-                  value={formData.dia}
-                  onChange={(e) => setFormData({ ...formData, dia: e.target.value })}
-                  className={inputClass}
-                />
-              </div>
-              {[
-                { key: 'deposito', label: 'Deposito (R$)' },
-                { key: 'sobra', label: 'Sobra (R$)' },
-                { key: 'pagPdv', label: 'Pag. PDV (R$)' },
-                { key: 'totalDia', label: 'Total dia (R$)' },
-              ].map(({ key, label }) => (
-                <div key={key} className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{label}</label>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={formData[key as keyof typeof formData]}
-                    onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
-                    className={inputClass}
-                  />
-                </div>
-              ))}
-            </div>
-            </DialogBody>
-            <DialogFooter>
-              <button type="button" onClick={handleCloseDialog} className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-slate-100">
-                Cancelar
-              </button>
-              <button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700">
-                {editingItem ? 'Salvar' : 'Adicionar'}
-              </button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusao</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este registro? Esta acao nao pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

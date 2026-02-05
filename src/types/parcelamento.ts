@@ -4,6 +4,7 @@ export interface Parcelamento {
   descricao: string;
   parcela: string; // Ex: "3/12"
   valor: number;
+  comunicarAgenda?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -13,4 +14,5 @@ export interface ParcelamentoInput {
   descricao: string;
   parcela: string;
   valor: number;
+  comunicarAgenda?: boolean;
 }

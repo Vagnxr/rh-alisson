@@ -33,6 +33,7 @@ import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { ControleCartoesRow, BandeiraCartao } from '@/types/financeiro';
 import { cn } from '@/lib/cn';
+import { ExportButtons } from '@/components/ui/export-buttons';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -56,23 +57,25 @@ function diaSemanaFromDate(dateStr: string): string {
 const inputClass =
   'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
-const BANDEIRAS_CREDITO_DEBITO: { id: BandeiraCartao; label: string }[] = [
+const BANDEIRAS_CREDITO: { id: BandeiraCartao; label: string }[] = [
   { id: 'amex', label: 'Amex' },
   { id: 'elo-credito', label: 'Elo Credito' },
   { id: 'hipercard', label: 'Hipercard' },
   { id: 'mastercard', label: 'Mastercard' },
   { id: 'visa', label: 'Visa' },
+];
+const BANDEIRAS_DEBITO: { id: BandeiraCartao; label: string }[] = [
   { id: 'electron', label: 'Electron' },
   { id: 'elo-debito', label: 'Elo Debito' },
   { id: 'maestro', label: 'Maestro' },
 ];
 
-type TabCartao = 'credito-debito' | 'pix' | 'voucher' | 'ifood' | 'outras';
+type TabCartao = 'credito' | 'debito' | 'pix' | 'voucher' | 'ifood' | 'outras';
 
 export function ControleCartoesPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
-  const [tab, setTab] = useState<TabCartao>('credito-debito');
+  const [tab, setTab] = useState<TabCartao>('credito');
   const [bandeira, setBandeira] = useState<BandeiraCartao>('visa');
   const [items, setItems] = useState<ControleCartoesRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,20 +85,16 @@ export function ControleCartoesPage() {
   const [formData, setFormData] = useState({
     data: new Date().toISOString().split('T')[0],
     valor: '',
-    desconto: '',
     dataAReceber: new Date().toISOString().split('T')[0],
   });
 
-  const aReceber = useMemo(() => {
-    const v = parseNum(formData.valor);
-    const d = parseNum(formData.desconto);
-    return Math.max(0, v - d);
-  }, [formData.valor, formData.desconto]);
-
   const fetchList = useCallback(() => {
     setLoading(true);
-    const params: Record<string, string> = { ...dateFilterToParams(dateFilter), tipo: tab };
-    if (tab === 'credito-debito') params.bandeira = bandeira;
+    const params: Record<string, string> = {
+      ...dateFilterToParams(dateFilter),
+      tipo: tab === 'credito' || tab === 'debito' ? tab : tab,
+    };
+    if (tab === 'credito' || tab === 'debito') params.bandeira = bandeira;
     api
       .get<ControleCartoesRow[]>('financeiro/controle-cartoes', { params })
       .then((res) => {
@@ -124,7 +123,6 @@ export function ControleCartoesPage() {
       taxaPercent: 0,
       dataAReceber: '',
       bruto: items.reduce((a, r) => a + r.valor, 0),
-      desconto: items.reduce((a, r) => a + r.desconto, 0),
       liquido: items.reduce((a, r) => a + r.aReceber, 0),
     }),
     [items]
@@ -136,7 +134,6 @@ export function ControleCartoesPage() {
       setFormData({
         data: item.data.split('T')[0] || item.data.slice(0, 10),
         valor: String(item.valor),
-        desconto: String(item.desconto),
         dataAReceber: item.dataAReceber.split('T')[0] || item.dataAReceber.slice(0, 10),
       });
     } else {
@@ -144,7 +141,6 @@ export function ControleCartoesPage() {
       setFormData({
         data: new Date().toISOString().split('T')[0],
         valor: '',
-        desconto: '',
         dataAReceber: new Date().toISOString().split('T')[0],
       });
     }
@@ -161,14 +157,13 @@ export function ControleCartoesPage() {
     const data = formData.data.slice(0, 10);
     const dataAReceber = formData.dataAReceber.slice(0, 10);
     const valor = parseNum(formData.valor);
-    const desconto = parseNum(formData.desconto);
-    const body = {
-      tipo: tab,
-      ...(tab === 'credito-debito' && { bandeira }),
+    const body: Record<string, unknown> = {
+      tipo: tab === 'credito' || tab === 'debito' ? tab : tab,
+      ...((tab === 'credito' || tab === 'debito') && { bandeira }),
       data,
       valor,
-      desconto,
       dataAReceber,
+      desconto: 0,
     };
     if (editingItem) {
       api
@@ -223,30 +218,21 @@ export function ControleCartoesPage() {
   const columns = useMemo<ColumnDef<ControleCartoesRow>[]>(
     () => [
       {
-        accessorKey: 'diaSemana',
+        accessorKey: 'data',
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
-            Dia da semana <ArrowUpDown className="h-4 w-4" />
+            Data <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-      },
-      {
-        accessorKey: 'data',
-        header: 'Data',
         cell: ({ row }) => formatDate(row.getValue('data')),
       },
       {
         accessorKey: 'valor',
         header: 'Valor',
         cell: ({ row }) => formatCurrency(row.getValue('valor')),
-      },
-      {
-        accessorKey: 'desconto',
-        header: 'Desconto',
-        cell: ({ row }) => formatCurrency(row.getValue('desconto')),
       },
       {
         accessorKey: 'aReceber',
@@ -257,10 +243,6 @@ export function ControleCartoesPage() {
         accessorKey: 'dataAReceber',
         header: 'Data a receber',
         cell: ({ row }) => formatDate(row.getValue('dataAReceber')),
-      },
-      {
-        accessorKey: 'diaSemanaAReceber',
-        header: 'Dia da semana',
       },
       {
         id: 'actions',
@@ -299,7 +281,8 @@ export function ControleCartoesPage() {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const showBandeiras = tab === 'credito-debito';
+  const showBandeiras = tab === 'credito' || tab === 'debito';
+  const bandeirasList = tab === 'credito' ? BANDEIRAS_CREDITO : tab === 'debito' ? BANDEIRAS_DEBITO : [];
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -312,6 +295,22 @@ export function ControleCartoesPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <ExportButtons
+            data={items.map((r) => ({
+              data: formatDate(r.data),
+              valor: formatCurrency(r.valor),
+              aReceber: formatCurrency(r.aReceber),
+              dataAReceber: formatDate(r.dataAReceber),
+            }))}
+            columns={[
+              { key: 'data', label: 'Data' },
+              { key: 'valor', label: 'Valor' },
+              { key: 'aReceber', label: 'A receber' },
+              { key: 'dataAReceber', label: 'Data a receber' },
+            ]}
+            filename={`controle-cartoes-${tab}`}
+            title="Controle Cartoes"
+          />
           <button
             type="button"
             onClick={() => handleOpenDialog()}
@@ -325,7 +324,8 @@ export function ControleCartoesPage() {
 
       <div className="flex flex-wrap gap-1 border-b border-slate-200">
         {([
-          { id: 'credito-debito' as TabCartao, label: 'Credito/Debito' },
+          { id: 'credito' as TabCartao, label: 'Credito' },
+          { id: 'debito' as TabCartao, label: 'Debito' },
           { id: 'pix' as TabCartao, label: 'PIX' },
           { id: 'voucher' as TabCartao, label: 'Voucher' },
           { id: 'ifood' as TabCartao, label: 'iFood' },
@@ -334,7 +334,11 @@ export function ControleCartoesPage() {
           <button
             key={t.id}
             type="button"
-            onClick={() => setTab(t.id)}
+            onClick={() => {
+              setTab(t.id);
+              if (t.id === 'credito') setBandeira('visa');
+              if (t.id === 'debito') setBandeira('electron');
+            }}
             className={cn(
               'rounded-t-lg px-4 py-2 text-sm font-medium transition-colors',
               tab === t.id
@@ -349,7 +353,7 @@ export function ControleCartoesPage() {
 
       {showBandeiras && (
         <div className="flex flex-wrap gap-2">
-          {BANDEIRAS_CREDITO_DEBITO.map((b) => (
+          {bandeirasList.map((b) => (
             <button
               key={b.id}
               type="button"
@@ -374,8 +378,7 @@ export function ControleCartoesPage() {
           <span><strong>Taxa %:</strong> {headerResumoFromItems.taxaPercent ? `${headerResumoFromItems.taxaPercent}%` : '-'}</span>
           <span><strong>Data a receber:</strong> {headerResumoFromItems.dataAReceber || '-'}</span>
           <span><strong>Bruto:</strong> {formatCurrency(headerResumoFromItems.bruto)}</span>
-          <span><strong>Desconto:</strong> {formatCurrency(headerResumoFromItems.desconto)}</span>
-          <span><strong>Liquido:</strong> {formatCurrency(headerResumoFromItems.liquido)}</span>
+          <span><strong>Liquido (a receber):</strong> {formatCurrency(headerResumoFromItems.liquido)}</span>
         </div>
       </div>
 
@@ -435,7 +438,7 @@ export function ControleCartoesPage() {
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Editar Registro' : 'Novo Registro'}</DialogTitle>
             <DialogDescription>
-              {editingItem ? 'Altere os dados.' : 'Preencha data, valor, desconto e data a receber.'}
+              {editingItem ? 'Altere os dados.' : 'Preencha data, valor e data a receber. O valor a receber e calculado pelo sistema (taxa/prazo).'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
@@ -463,18 +466,6 @@ export function ControleCartoesPage() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Desconto (R$)</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  value={formData.desconto}
-                  onChange={(e) => setFormData({ ...formData, desconto: e.target.value })}
-                  className={inputClass}
-                />
-              </div>
-              <p className="text-sm text-slate-500">A receber: {formatCurrency(aReceber)}</p>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Data a receber</label>
                 <input

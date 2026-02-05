@@ -15,6 +15,8 @@ export interface ColunaConfig {
   order: number;
   width?: number;
   isRequired?: boolean; // Colunas obrigatorias nao podem ser ocultadas
+  /** Quando true, o valor da coluna entra no total (ex.: Caixa, Balanco). Backend deve suportar. */
+  somarNoTotal?: boolean;
 }
 
 export interface TabelaConfig {
@@ -92,6 +94,7 @@ export interface ConfiguracaoState {
   tabelas: TabelaConfig[];
   fetchConfiguracoes: () => Promise<void>;
   updateColunaVisibilidade: (tabelaId: string, colunaId: string, isVisible: boolean) => void;
+  updateColunaSomarNoTotal?: (tabelaId: string, colunaId: string, somarNoTotal: boolean) => void;
   updateColunaOrdem: (tabelaId: string, colunas: ColunaConfig[]) => void;
   resetTabela: (tabelaId: string) => void;
   getColunasVisiveis: (tabelaId: string) => ColunaConfig[];

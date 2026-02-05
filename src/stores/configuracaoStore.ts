@@ -37,6 +37,22 @@ export const useConfiguracaoStore = create<ConfiguracaoState>()(
         if (tabela) api.put(`configuracoes/tabelas/${tabelaId}`, { colunas: tabela.colunas }).catch(() => {});
       },
 
+      updateColunaSomarNoTotal: (tabelaId: string, colunaId: string, somarNoTotal: boolean) => {
+        set((state) => ({
+          tabelas: state.tabelas.map((tabela) => {
+            if (tabela.id !== tabelaId) return tabela;
+            return {
+              ...tabela,
+              colunas: tabela.colunas.map((coluna) =>
+                coluna.id === colunaId ? { ...coluna, somarNoTotal } : coluna
+              ),
+            };
+          }),
+        }));
+        const tabela = get().tabelas.find((t) => t.id === tabelaId);
+        if (tabela) api.put(`configuracoes/tabelas/${tabelaId}`, { colunas: tabela.colunas }).catch(() => {});
+      },
+
       updateColunaOrdem: (tabelaId: string, colunas: ColunaConfig[]) => {
         set((state) => ({
           tabelas: state.tabelas.map((tabela) =>

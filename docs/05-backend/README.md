@@ -24,19 +24,22 @@ Esta pasta e a **fonte de verdade** para o agent (ou desenvolvedor) implementar 
    Contrato do modulo **Outras funcoes**: pagina **A receber** (tabelas Credito, Debito, Voucher por bandeira; bandeiras voucher configuraveis) e pagina **Venda e perda** (sete tabelas de resumo). Endpoints e config bandeiras-voucher.  
    **Guia de integracao:** ordem de leitura dos docs, o que o front envia (base URL, headers, filtro de periodo), ordem de implementacao sugerida, checklist do modulo Financeiro Operacional, tabelaIds para Configuracoes e exemplos de request. Use este doc para implementar e integrar da melhor forma.
 
-8. **api-specification.md**  
+8. **08-ajustes-reuniao-cliente.md**  
+   Ajustes solicitados na reuniao com o cliente (2026-02-04): login/tenant, despesas (tipos, recorrencia, agenda), agenda, fornecedores, usuarios/empresas (permissionamento, multiloja), renda extra/investimento, parcelamento, despesa banco, entrada, ativo imobilizado, controle cartoes, caixa, configuracoes, balanco, logo, etc. Tudo que exige alteracao no backend esta listado ali.
+
+9. **api-specification.md**  
    Padroes gerais: formato de resposta (success/data/error), autenticacao JWT, multi-tenancy, listagens com `columns`.
 
-9. **dtos-e-tipos.md**  
+10. **dtos-e-tipos.md**  
    DTOs e tipos (incluindo `TableColumnConfigFromApi` e `TabelaConfig`/`ColunaConfig` para configuracoes).
 
-10. **endpoints.md**  
+11. **endpoints.md**  
    Resumo de endpoints por modulo; detalhes no contrato (01).
 
-11. **modelo-de-dados.md**  
+12. **modelo-de-dados.md**  
    Visao conceitual; schema de implementacao no 02-prisma.
 
-12. **estrategia.md**  
+13. **estrategia.md**  
    Contexto da fase atual (backend a implementar) e stack definida.
 
 ## Escopo inicial (implementar agora)

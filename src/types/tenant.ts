@@ -6,6 +6,8 @@ export interface Tenant {
   logo?: string;
   isActive: boolean;
   isMultiloja?: boolean; // Permite multiplas lojas
+  /** Ids das paginas que a empresa tem acesso. Null/undefined = todas (comportamento backend). */
+  paginasPermitidas?: string[] | null;
   createdAt: string;
 }
 

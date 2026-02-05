@@ -31,7 +31,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
+import { onlyNumbers, isValidCNPJ, maskCNPJ } from '@/lib/masks';
 import type { EntradaRow } from '@/types/financeiro';
+import { useFornecedorStore } from '@/stores/fornecedorStore';
+import { ExportButtons } from '@/components/ui/export-buttons';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -78,6 +81,7 @@ export function EntradaPage() {
   const [editingItem, setEditingItem] = useState<EntradaRow | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState(defaultForm());
+  const { fornecedores, fetchFornecedores } = useFornecedorStore();
 
   const fetchList = useCallback(() => {
     setLoading(true);
@@ -92,12 +96,19 @@ export function EntradaPage() {
     fetchList();
   }, [fetchList]);
 
+  useEffect(() => {
+    if (isDialogOpen) fetchFornecedores().catch(() => {});
+  }, [isDialogOpen, fetchFornecedores]);
+
   const handleOpenDialog = (item?: EntradaRow) => {
     if (item) {
       setEditingItem(item);
+      const fornecedorVal = item.fornecedor || '';
+      const cnpjDisplay =
+        onlyNumbers(fornecedorVal).length === 14 ? maskCNPJ(fornecedorVal) : fornecedorVal;
       setFormData({
         data: item.data.split('T')[0] || item.data.slice(0, 10),
-        fornecedor: item.fornecedor,
+        fornecedor: cnpjDisplay,
         industrializacao: String(item.industrializacao),
         comercializacao: String(item.comercializacao),
         embalagem: String(item.embalagem),
@@ -119,10 +130,28 @@ export function EntradaPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const fornecedorRaw = formData.fornecedor.trim();
+    const fornecedorNumeros = onlyNumbers(fornecedorRaw);
+    if (fornecedorNumeros.length !== 14) {
+      toast.error('Informe o CNPJ do fornecedor (14 digitos).');
+      return;
+    }
+    if (!isValidCNPJ(fornecedorRaw)) {
+      toast.error('CNPJ do fornecedor invalido. Verifique os digitos.');
+      return;
+    }
+    const existeFornecedor = fornecedores.some((f) => {
+      if (f.tipo !== 'cnpj') return false;
+      return onlyNumbers(f.cnpj) === fornecedorNumeros;
+    });
+    if (!existeFornecedor) {
+      toast.error('Fornecedor nao cadastrado. Cadastre o fornecedor em Fornecedores antes de lançar a entrada.');
+      return;
+    }
     const data = formData.data.slice(0, 10);
     const body = {
       data,
-      fornecedor: formData.fornecedor,
+      fornecedor: fornecedorNumeros.length === 14 ? fornecedorNumeros : fornecedorRaw,
       industrializacao: parseNum(formData.industrializacao),
       comercializacao: parseNum(formData.comercializacao),
       embalagem: parseNum(formData.embalagem),
@@ -138,7 +167,7 @@ export function EntradaPage() {
           fetchList();
           handleCloseDialog();
         })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao atualizar'));
+        .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao atualizar'));
     } else {
       api
         .post<EntradaRow>('financeiro/entrada', body)
@@ -147,7 +176,7 @@ export function EntradaPage() {
           setItems((prev) => [...prev, res.data]);
           handleCloseDialog();
         })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao criar'));
+        .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao criar'));
     }
   };
 
@@ -246,6 +275,30 @@ export function EntradaPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <ExportButtons
+            data={items.map((r) => ({
+              data: formatDate(r.data),
+              fornecedor: r.fornecedor,
+              industrializacao: formatCurrency(Number(r.industrializacao)),
+              comercializacao: formatCurrency(Number(r.comercializacao)),
+              embalagem: formatCurrency(Number(r.embalagem)),
+              materialUsoCons: formatCurrency(Number(r.materialUsoCons)),
+              mercadoriaUsoCons: formatCurrency(Number(r.mercadoriaUsoCons)),
+              gas: formatCurrency(Number(r.gas)),
+            }))}
+            columns={[
+              { key: 'data', label: 'Data' },
+              { key: 'fornecedor', label: 'Fornecedor' },
+              { key: 'industrializacao', label: 'Industrializacao' },
+              { key: 'comercializacao', label: 'Comercializacao' },
+              { key: 'embalagem', label: 'Embalagem' },
+              { key: 'materialUsoCons', label: 'Material uso/cons.' },
+              { key: 'mercadoriaUsoCons', label: 'Mercadoria uso/cons.' },
+              { key: 'gas', label: 'Gas' },
+            ]}
+            filename="entrada"
+            title="Entrada"
+          />
           <button
             type="button"
             onClick={() => handleOpenDialog()}
@@ -317,8 +370,17 @@ export function EntradaPage() {
                 <input type="date" value={formData.data} onChange={(e) => setFormData({ ...formData, data: e.target.value })} className={inputClass} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Fornecedor</label>
-                <input type="text" value={formData.fornecedor} onChange={(e) => setFormData({ ...formData, fornecedor: e.target.value })} className={inputClass} />
+                <label className="text-sm font-medium text-slate-700">CNPJ do fornecedor</label>
+                <input
+                  type="text"
+                  placeholder="00.000.000/0000-00"
+                  maxLength={18}
+                  value={formData.fornecedor}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fornecedor: maskCNPJ(e.target.value) })
+                  }
+                  className={inputClass}
+                />
               </div>
               {CAMPOS_NUMERICOS.map((key) => (
                 <div key={key} className="space-y-2">

@@ -27,6 +27,7 @@ export function InvestimentoPage() {
       addItem={addItem}
       updateItem={updateItem}
       deleteItem={deleteItem}
+      showComunicarAgenda={false}
     />
   );
 }

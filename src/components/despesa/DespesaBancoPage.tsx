@@ -8,11 +8,12 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Plus, Pencil, Trash2, Loader2, Building2 } from 'lucide-react';
+import { ArrowUpDown, Plus, Pencil, Trash2, Loader2, Building2, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DespesaBase, DespesaInput } from '@/types/despesa';
 import { TIPOS_DESPESA } from '@/types/despesa';
 import { BANCOS_PADRAO, getBancoIcon, type Banco } from '@/types/banco';
+import { useBancoStore } from '@/stores/bancoStore';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { ExportButtons } from '@/components/ui/export-buttons';
@@ -69,13 +70,22 @@ function formatDateForInput(date: string) {
   return date.split('T')[0];
 }
 
+// Lista de bancos: da API se houver, senao padrao
+function useBancosList(): Banco[] {
+  const bancosFromApi = useBancoStore((s) => s.bancos);
+  if (bancosFromApi.length > 0) return bancosFromApi;
+  return BANCOS_PADRAO;
+}
+
 // Componente de selecao de banco com visual de cards
 function BancoSelector({
   value,
   onChange,
+  bancos,
 }: {
   value: string;
   onChange: (bancoId: string) => void;
+  bancos: Banco[];
 }) {
   return (
     <div className="space-y-2">
@@ -83,7 +93,7 @@ function BancoSelector({
         Banco <span className="text-red-500">*</span>
       </label>
       <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
-        {BANCOS_PADRAO.map((banco) => (
+        {bancos.map((banco) => (
           <button
             key={banco.id}
             type="button"
@@ -112,8 +122,8 @@ function BancoSelector({
 }
 
 // Componente de badge do banco
-function BancoBadge({ bancoId }: { bancoId?: string }) {
-  const banco = BANCOS_PADRAO.find((b) => b.id === bancoId);
+function BancoBadge({ bancoId, bancos }: { bancoId?: string; bancos: Banco[] }) {
+  const banco = bancos.find((b) => b.id === bancoId);
   if (!banco) return <span className="text-slate-400">-</span>;
 
   return (
@@ -143,6 +153,18 @@ export function DespesaBancoPageComponent({
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   const [bancoFilter, setBancoFilter] = useState<string>('');
+  const bancos = useBancosList();
+  const fetchBancos = useBancoStore((s) => s.fetchBancos);
+  const bancosFromApi = useBancoStore((s) => s.bancos);
+  const addBanco = useBancoStore((s) => s.addBanco);
+  const updateBanco = useBancoStore((s) => s.updateBanco);
+  const deleteBanco = useBancoStore((s) => s.deleteBanco);
+
+  const [isBancosDialogOpen, setIsBancosDialogOpen] = useState(false);
+  const [editingBanco, setEditingBanco] = useState<Banco | null>(null);
+  const [bancoForm, setBancoForm] = useState({ nome: '', codigo: '', cor: '#64748B' });
+  const [deleteBancoId, setDeleteBancoId] = useState<string | null>(null);
+  const [isBancoSaving, setIsBancoSaving] = useState(false);
 
   const [formData, setFormData] = useState<DespesaBancoInput>({
     data: '',
@@ -164,6 +186,10 @@ export function DespesaBancoPageComponent({
     fetchItems(dateParams);
   }, [fetchItems, dateParams.dataInicio, dateParams.dataFim]);
 
+  useEffect(() => {
+    fetchBancos();
+  }, [fetchBancos]);
+
   // Backend ja retorna itens filtrados por data; so filtrar no cliente apenas por banco
   const filteredItems = useMemo(() => {
     if (!items) return [];
@@ -177,7 +203,7 @@ export function DespesaBancoPageComponent({
       setFormData({
         data: formatDateForInput(item.data),
         tipo: item.tipo || '',
-        descricao: item.descricao,
+        descricao: item.descricao ?? '',
         valor: item.valor,
         bancoId: item.bancoId || '',
         comunicarAgenda: item.comunicarAgenda || false,
@@ -189,7 +215,7 @@ export function DespesaBancoPageComponent({
         tipo: tiposDisponiveis[0] || '',
         descricao: '',
         valor: 0,
-        bancoId: '',
+        bancoId: bancoFilter || '',
         comunicarAgenda: false,
       });
     }
@@ -215,11 +241,6 @@ export function DespesaBancoPageComponent({
       return;
     }
 
-    if (!formData.descricao.trim()) {
-      toast.error('Descricao e obrigatoria');
-      return;
-    }
-
     if (formData.valor <= 0) {
       toast.error('Valor deve ser maior que zero');
       return;
@@ -234,8 +255,8 @@ export function DespesaBancoPageComponent({
         toast.success('Registro adicionado com sucesso!');
       }
       handleCloseDialog();
-    } catch {
-      toast.error('Erro ao salvar registro');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar registro');
     }
   };
 
@@ -246,8 +267,8 @@ export function DespesaBancoPageComponent({
       await deleteItem(deleteItemId);
       toast.success('Registro excluido com sucesso!');
       setDeleteItemId(null);
-    } catch {
-      toast.error('Erro ao excluir registro');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao excluir registro');
     }
   };
 
@@ -277,7 +298,7 @@ export function DespesaBancoPageComponent({
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => <BancoBadge bancoId={row.getValue('bancoId')} />,
+        cell: ({ row }) => <BancoBadge bancoId={row.getValue('bancoId')} bancos={bancos} />,
       },
       {
         accessorKey: 'tipo',
@@ -348,7 +369,7 @@ export function DespesaBancoPageComponent({
         ),
       },
     ],
-    []
+    [bancos]
   );
 
   const table = useReactTable({
@@ -392,7 +413,7 @@ export function DespesaBancoPageComponent({
             className="h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
           >
             <option value="">Todos os Bancos</option>
-            {BANCOS_PADRAO.map((banco) => (
+            {bancos.map((banco) => (
               <option key={banco.id} value={banco.id}>
                 {banco.nome}
               </option>
@@ -401,7 +422,7 @@ export function DespesaBancoPageComponent({
 
           <ExportButtons
             data={(filteredItems ?? []).map((item) => {
-              const banco = BANCOS_PADRAO.find((b) => b.id === item.bancoId);
+              const banco = bancos.find((b) => b.id === item.bancoId);
               return {
                 data: formatDate(item.data),
                 banco: banco?.nome || '-',
@@ -422,6 +443,13 @@ export function DespesaBancoPageComponent({
           />
 
           <button
+            onClick={() => setIsBancosDialogOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            <Settings2 className="h-4 w-4" />
+            <span>Gerenciar bancos</span>
+          </button>
+          <button
             onClick={() => handleOpenDialog()}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
           >
@@ -431,9 +459,209 @@ export function DespesaBancoPageComponent({
         </div>
       </div>
 
+      {/* Dialog Gerenciar Bancos */}
+      <Dialog open={isBancosDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsBancosDialogOpen(false);
+          setEditingBanco(null);
+          setBancoForm({ nome: '', codigo: '', cor: '#64748B' });
+        } else setIsBancosDialogOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerenciar bancos</DialogTitle>
+            <DialogDescription>
+              Adicione, edite ou remova bancos. Bancos padrao aparecem quando nao ha nenhum cadastrado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Form Add / Edit */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
+              <p className="text-sm font-medium text-slate-700">
+                {editingBanco ? 'Editar banco' : 'Novo banco'}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  placeholder="Nome"
+                  value={bancoForm.nome}
+                  onChange={(e) => setBancoForm((f) => ({ ...f, nome: e.target.value.toUpperCase() }))}
+                  className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder="Codigo (opcional)"
+                  value={bancoForm.codigo}
+                  onChange={(e) => setBancoForm((f) => ({ ...f, codigo: e.target.value }))}
+                  className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm"
+                />
+              </div>
+              {editingBanco && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-slate-600">Cor:</label>
+                  <input
+                    type="color"
+                    value={bancoForm.cor}
+                    onChange={(e) => setBancoForm((f) => ({ ...f, cor: e.target.value }))}
+                    className="h-8 w-14 cursor-pointer rounded border border-slate-200"
+                  />
+                </div>
+              )}
+              <div className="flex gap-2">
+                {editingBanco ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!bancoForm.nome.trim()) {
+                          toast.error('Nome e obrigatorio');
+                          return;
+                        }
+                        setIsBancoSaving(true);
+                        try {
+                          await updateBanco(editingBanco.id, {
+                            nome: bancoForm.nome.trim(),
+                            codigo: bancoForm.codigo.trim() || undefined,
+                            cor: bancoForm.cor,
+                          });
+                          toast.success('Banco atualizado');
+                          setEditingBanco(null);
+                          setBancoForm({ nome: '', codigo: '', cor: '#64748B' });
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : 'Erro ao atualizar');
+                        } finally {
+                          setIsBancoSaving(false);
+                        }
+                      }}
+                      disabled={isBancoSaving}
+                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingBanco(null);
+                        setBancoForm({ nome: '', codigo: '', cor: '#64748B' });
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!bancoForm.nome.trim()) {
+                        toast.error('Nome e obrigatorio');
+                        return;
+                      }
+                      setIsBancoSaving(true);
+                      try {
+                        await addBanco({
+                          nome: bancoForm.nome.trim(),
+                          codigo: bancoForm.codigo.trim() || undefined,
+                        });
+                        toast.success('Banco adicionado');
+                        setBancoForm({ nome: '', codigo: '', cor: '#64748B' });
+                      } catch (err) {
+                        toast.error(err instanceof Error ? err.message : 'Erro ao adicionar');
+                      } finally {
+                        setIsBancoSaving(false);
+                      }
+                    }}
+                    disabled={isBancoSaving}
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    Adicionar
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Lista */}
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {bancosFromApi.length === 0 ? (
+                <p className="text-sm text-slate-500">Nenhum banco cadastrado. Adicione um acima.</p>
+              ) : (
+                bancosFromApi.map((b) => (
+                  <div
+                    key={b.id}
+                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                        style={{ backgroundColor: b.cor }}
+                      >
+                        {getBancoIcon(b)}
+                      </div>
+                      <span className="text-sm font-medium">{b.nome}</span>
+                      {b.codigo && (
+                        <span className="text-xs text-slate-500">({b.codigo})</span>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingBanco(b);
+                          setBancoForm({ nome: b.nome, codigo: b.codigo || '', cor: b.cor || '#64748B' });
+                        }}
+                        className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        title="Editar"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteBancoId(b.id)}
+                        className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        title="Excluir"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AlertDialog Excluir Banco */}
+      <AlertDialog open={!!deleteBancoId} onOpenChange={(open) => !open && setDeleteBancoId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir banco</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este banco? Despesas vinculadas podem ficar sem banco.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!deleteBancoId) return;
+                try {
+                  await deleteBanco(deleteBancoId);
+                  toast.success('Banco excluido');
+                  setDeleteBancoId(null);
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : 'Erro ao excluir');
+                }
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Cards de resumo por banco */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {BANCOS_PADRAO.slice(0, 4).map((banco) => {
+        {bancos.slice(0, 4).map((banco) => {
           const totalBanco = items
             .filter((i) => i.bancoId === banco.id)
             .reduce((acc, i) => acc + i.valor, 0);
@@ -535,7 +763,7 @@ export function DespesaBancoPageComponent({
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <BancoBadge bancoId={item.bancoId} />
+                        <BancoBadge bancoId={item.bancoId} bancos={bancos} />
                       </div>
                       <p className="font-medium text-slate-900">{item.descricao}</p>
                       <p className="mt-0.5 text-xs text-slate-500">{formatDate(item.data)}</p>
@@ -588,6 +816,7 @@ export function DespesaBancoPageComponent({
               <BancoSelector
                 value={formData.bancoId || ''}
                 onChange={(bancoId) => setFormData({ ...formData, bancoId })}
+                bancos={bancos}
               />
 
               <div className="grid grid-cols-2 gap-4">
@@ -627,7 +856,7 @@ export function DespesaBancoPageComponent({
 
               <div className="space-y-2">
                 <label htmlFor="descricao" className="text-sm font-medium text-slate-700">
-                  Descricao <span className="text-red-500">*</span>
+                  Descricao
                 </label>
                 <input
                   id="descricao"
@@ -636,7 +865,6 @@ export function DespesaBancoPageComponent({
                   value={formData.descricao}
                   onChange={(e) => setFormData({ ...formData, descricao: e.target.value.toUpperCase() })}
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 uppercase"
-                  required
                 />
               </div>
 

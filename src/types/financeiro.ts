@@ -90,6 +90,10 @@ export interface AtivoImobilizadoRow {
   nf: string;
   descricaoFornecedor: string;
   valor: number;
+  /** Periodicidade (ex.: Mensal, Anual). Backend pode usar para gerar parcelas. */
+  recorrencia?: string;
+  /** Quando true, item aparece na Agenda e so registra saida ao marcar como pago. */
+  comunicarAgenda?: boolean;
 }
 
 /** Linha Entrada */

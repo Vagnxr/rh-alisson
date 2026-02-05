@@ -15,6 +15,7 @@ import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { AReceberRow } from '@/types/financeiro';
 import type { BandeiraCartao } from '@/types/financeiro';
 import { cn } from '@/lib/cn';
+import { ExportButtons } from '@/components/ui/export-buttons';
 
 const BANDEIRAS_CREDITO_DEBITO: { id: BandeiraCartao; label: string }[] = [
   { id: 'amex', label: 'Amex' },
@@ -142,6 +143,20 @@ export function AReceberPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <ExportButtons
+            data={[
+              ...creditoCompleto.map((r) => ({ tipo: 'Credito', bandeira: r.bandeira, aReceber: formatCurrency(r.aReceber) })),
+              ...debitoCompleto.map((r) => ({ tipo: 'Debito', bandeira: r.bandeira, aReceber: formatCurrency(r.aReceber) })),
+              ...voucherCompleto.map((r) => ({ tipo: 'Voucher', bandeira: r.bandeira, aReceber: formatCurrency(r.aReceber) })),
+            ]}
+            columns={[
+              { key: 'tipo', label: 'Tipo' },
+              { key: 'bandeira', label: 'Bandeira' },
+              { key: 'aReceber', label: 'A receber' },
+            ]}
+            filename="a-receber"
+            title="A receber"
+          />
           <button
             type="button"
             onClick={() => setDialogBandeiras(true)}

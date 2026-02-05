@@ -256,6 +256,7 @@ export function BalancoGeralPage() {
   const { balanco, isLoading, error, fetchBalanco } = useBalancoStore();
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   const [lojaFiltro, setLojaFiltro] = useState<string | null>(null);
+  const [cardEntradaSaida, setCardEntradaSaida] = useState<'entrada' | 'saida'>('entrada');
 
   const { mes, ano } = useMemo(() => getMesAnoFromFilter(dateFilter), [dateFilter]);
 
@@ -268,11 +269,16 @@ export function BalancoGeralPage() {
   }, [fetchBalanco, mes, ano, lojaFiltro]);
 
   const filteredData = balanco;
-  const lucroLiquido = filteredData
-    ? filteredData.vendas.total - filteredData.despesas.total
-    : 0;
   const totalVendas = filteredData?.vendas.total ?? 0;
-  const margemLucro = totalVendas > 0 ? (lucroLiquido / totalVendas) * 100 : 0;
+  const totalEntrada =
+    (filteredData?.mercadoriaEntrada.total ?? 0) + (filteredData?.ativoImobilizado.entrada ?? 0);
+  const totalSaida =
+    (filteredData?.despesas.total ?? 0) +
+    (filteredData?.mercadoriaSaida.total ?? 0) +
+    (filteredData?.ativoImobilizado.saida ?? 0);
+  const resultado = filteredData
+    ? filteredData.vendas.total - filteredData.despesas.total - totalEntrada
+    : 0;
 
   if (error) {
     return (
@@ -312,26 +318,28 @@ export function BalancoGeralPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Balanco Mensal</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Resumo financeiro consolidado do periodo
-            {isMultiLoja && !lojaFiltro && ' - Todas as lojas'}
-            {isMultiLoja && lojaFiltro && ` - ${lojas.find((l) => l.id === lojaFiltro)?.apelido}`}
-          </p>
+      {/* Header + Filtros + 4 cards fixos no scroll */}
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 bg-slate-50 px-4 pt-4 pb-4 sm:-mx-6 sm:px-6 sm:pt-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Balanco Mensal</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Resumo financeiro consolidado do periodo
+              {isMultiLoja && !lojaFiltro && ' - Todas as lojas'}
+              {isMultiLoja && lojaFiltro && ` - ${lojas.find((l) => l.id === lojaFiltro)?.apelido}`}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <DateFilter value={dateFilter} onChange={setDateFilter} />
+            {isMultiLoja && (
+              <LojaSelector lojas={lojas} lojaAtual={lojaFiltro} onChange={setLojaFiltro} />
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <DateFilter value={dateFilter} onChange={setDateFilter} />
-          {isMultiLoja && (
-            <LojaSelector lojas={lojas} lojaAtual={lojaFiltro} onChange={setLojaFiltro} />
-          )}
-        </div>
-      </div>
-
-      {/* Cards de Resumo */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Cards de Resumo (Faturamento, Despesas, Entrada/Saida, Resultado) */}
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
@@ -369,15 +377,38 @@ export function BalancoGeralPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
               <DollarSign className="h-5 w-5 text-blue-600" />
             </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Lucro Liquido</p>
-              <p
-                className={cn(
-                  'text-lg font-bold',
-                  lucroLiquido >= 0 ? 'text-emerald-600' : 'text-red-600'
-                )}
-              >
-                {formatCurrency(lucroLiquido)}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-medium text-slate-500">Entrada / Saida</p>
+                <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setCardEntradaSaida('entrada')}
+                    className={cn(
+                      'rounded-md px-2 py-0.5 text-xs font-medium transition-colors',
+                      cardEntradaSaida === 'entrada'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    )}
+                  >
+                    Entrada
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCardEntradaSaida('saida')}
+                    className={cn(
+                      'rounded-md px-2 py-0.5 text-xs font-medium transition-colors',
+                      cardEntradaSaida === 'saida'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    )}
+                  >
+                    Saida
+                  </button>
+                </div>
+              </div>
+              <p className="mt-1 text-lg font-bold text-slate-900">
+                {formatCurrency(cardEntradaSaida === 'entrada' ? totalEntrada : totalSaida)}
               </p>
             </div>
           </div>
@@ -389,22 +420,22 @@ export function BalancoGeralPage() {
               <TrendingUp className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Margem</p>
+              <p className="text-xs font-medium text-slate-500">Resultado</p>
               <p
                 className={cn(
                   'text-lg font-bold',
-                  margemLucro >= 20
-                    ? 'text-emerald-600'
-                    : margemLucro >= 10
-                      ? 'text-amber-600'
-                      : 'text-red-600'
+                  resultado >= 0 ? 'text-emerald-600' : 'text-red-600'
                 )}
               >
-                {formatPercent(margemLucro)}
+                {formatCurrency(resultado)}
+              </p>
+              <p className="text-xs text-slate-500">
+                Faturamento - Despesas - Entrada
               </p>
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Secoes principais */}
@@ -428,13 +459,6 @@ export function BalancoGeralPage() {
           lojas={lojas}
         />
       </div>
-
-      {/* Outros Valores */}
-      <BalancoTable
-        titulo="Outros Valores"
-        items={filteredData.outrosValores.items}
-        total={filteredData.outrosValores.total}
-      />
 
       {/* Mercadoria */}
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
