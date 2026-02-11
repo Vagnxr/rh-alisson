@@ -19,6 +19,7 @@ interface DespesaTiposActions {
   addTipo: (categoria: DespesaCategoria | string, label: string) => Promise<DespesaTipo>;
   deleteTipo: (id: string) => Promise<void>;
   getTipos: (categoria: DespesaCategoria | string) => DespesaTipo[];
+  reset: () => void;
 }
 
 function normalizeTipo(item: unknown): DespesaTipo {

@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
 import { useConfiguracaoStore } from '@/stores/configuracaoStore';
@@ -300,7 +300,7 @@ function TabelaConfigCard({
                   showSomarNoTotal={tabela.id === 'balanco' || tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa'}
                   showSubtrairNoTotal={tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa'}
                   onToggleSubtrairNoTotal={
-                    onToggleSubtrairNoTotal ? (subtrairNoTotal) => onToggleSubtrairNoTotal(tabela.id, coluna.id, subtrairNoTotal) : undefined
+                    onToggleSubtrairNoTotal ? (subtrairNoTotal) => onToggleSubtrairNoTotal(coluna.id, subtrairNoTotal) : undefined
                   }
                   onRemove={onRemoveColuna ? (colunaId) => onRemoveColuna(tabela.id, colunaId) : undefined}
                   canAddRemoveColunas={canAddRemoveColunas}
@@ -420,9 +420,9 @@ export function ConfiguracoesPage() {
             Personalize a exibicao de colunas em cada tabela do sistema
           </p>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/configuracoes/criar-despesa">Criar despesa</Link>
-        </Button>
+        <Link to="/configuracoes/criar-despesa" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+          Criar despesa
+        </Link>
       </div>
 
       {/* Info card */}
