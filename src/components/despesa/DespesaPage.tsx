@@ -11,12 +11,15 @@ import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DespesaBase, DespesaInput, DespesaCategoriaConfig, DespesaCategoria } from '@/types/despesa';
 import { TIPOS_DESPESA } from '@/types/despesa';
+import type { TipoRecorrencia } from '@/types/recorrencia';
+import { SelectRecorrencia, RecorrenciaBadge } from '@/components/ui/select-recorrencia';
 import { useDespesaTiposStore } from '@/stores/despesaTiposStore';
+import { useAgendaStore } from '@/stores/agendaStore';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
-import { formatDateToLocalYYYYMMDD } from '@/lib/date';
+import { formatDateToLocalYYYYMMDD, formatDateStringToBR } from '@/lib/date';
 import {
   Dialog,
   DialogContent,
@@ -36,7 +39,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const DESPESA_TABLE_DEFAULT_ORDER = ['data', 'tipo', 'descricao', 'valor'];
+const DESPESA_TABLE_DEFAULT_ORDER = ['data', 'tipo', 'descricao', 'valor', 'recorrencia'];
 
 interface DespesaPageProps {
   config: DespesaCategoriaConfig;
@@ -59,7 +62,7 @@ function formatCurrency(value: number) {
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
+  return formatDateStringToBR(date);
 }
 
 function formatDateForInput(date: string) {
@@ -83,12 +86,13 @@ export function DespesaPage({
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
 
-  const [formData, setFormData] = useState<DespesaInput>({
+  const [formData, setFormData] = useState<DespesaInput & { recorrente: boolean }>({
     data: '',
     tipo: '',
     descricao: '',
     valor: 0,
     comunicarAgenda: false,
+    recorrente: false,
   });
 
   const [isTiposDialogOpen, setIsTiposDialogOpen] = useState(false);
@@ -102,6 +106,7 @@ export function DespesaPage({
     isLoading: isLoadingTipos,
     error: tiposError,
   } = useDespesaTiposStore();
+  const fetchAgendaDias = useAgendaStore((s) => s.fetchDias);
 
   const tiposFromStore = getTipos(config.key);
   const defaultLabels =
@@ -136,21 +141,26 @@ export function DespesaPage({
   const handleOpenDialog = (item?: DespesaBase) => {
     if (item) {
       setEditingItem(item);
+      const rec = (item.recorrencia ?? 'unica') as TipoRecorrencia;
       setFormData({
         data: formatDateForInput(item.data),
         tipo: item.tipo || '',
         descricao: item.descricao,
         valor: item.valor,
         comunicarAgenda: item.comunicarAgenda || false,
+        recorrencia: item.recorrencia,
+        recorrenciaFim: item.recorrenciaFim,
+        recorrente: rec !== 'unica',
       });
     } else {
       setEditingItem(null);
       setFormData({
-        data: new Date().toISOString().split('T')[0],
+        data: formatDateToLocalYYYYMMDD(new Date()),
         tipo: tiposDisponiveis[0] || '',
         descricao: '',
         valor: 0,
         comunicarAgenda: false,
+        recorrente: false,
       });
     }
     setIsDialogOpen(true);
@@ -159,7 +169,7 @@ export function DespesaPage({
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingItem(null);
-    setFormData({ data: '', tipo: '', descricao: '', valor: 0, comunicarAgenda: false });
+    setFormData({ data: '', tipo: '', descricao: '', valor: 0, comunicarAgenda: false, recorrente: false });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,14 +186,24 @@ export function DespesaPage({
     }
 
     try {
+      const payload: DespesaInput = {
+        data: formData.data,
+        tipo: formData.tipo,
+        descricao: formData.descricao,
+        valor: formData.valor,
+        comunicarAgenda: formData.comunicarAgenda,
+        recorrencia: formData.recorrente ? (formData.recorrencia || 'mensal') : 'unica',
+        recorrenciaFim: formData.recorrente ? formData.recorrenciaFim : undefined,
+      };
       if (editingItem) {
-        await updateItem(editingItem.id, formData);
+        await updateItem(editingItem.id, payload);
         toast.success('Registro atualizado com sucesso!');
       } else {
-        await addItem(formData);
+        await addItem(payload);
         toast.success('Registro adicionado com sucesso!');
       }
       handleCloseDialog();
+      fetchAgendaDias(dateParams).catch(() => {});
     } catch {
       toast.error('Erro ao salvar registro');
     }
@@ -262,6 +282,26 @@ export function DespesaPage({
           </span>
         ),
       },
+      recorrencia: {
+        accessorKey: 'recorrencia',
+        header: ({ column }) => (
+          <button
+            className="flex items-center gap-1 font-medium"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Recorrencia
+            <ArrowUpDown className="h-4 w-4" />
+          </button>
+        ),
+        cell: ({ row }) => {
+          const value = (row.getValue('recorrencia') as string) || 'unica';
+          return value === 'unica' ? (
+            <span className="text-slate-400">-</span>
+          ) : (
+            <RecorrenciaBadge value={value as TipoRecorrencia} />
+          );
+        },
+      },
     }),
     []
   );
@@ -298,7 +338,8 @@ export function DespesaPage({
         columnDefsByKey,
         columnsFromApi ?? null,
         DESPESA_TABLE_DEFAULT_ORDER,
-        actionsColumn
+        actionsColumn,
+        ['tipo']
       ),
     [columnDefsByKey, columnsFromApi, actionsColumn]
   );
@@ -603,6 +644,54 @@ export function DespesaPage({
                   required
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="recorrente"
+                  type="checkbox"
+                  checked={formData.recorrente || false}
+                  onChange={(e) =>
+                    setFormData({ ...formData, recorrente: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <label
+                  htmlFor="recorrente"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Recorrente
+                </label>
+              </div>
+              {formData.recorrente && (
+                <div className="grid grid-cols-2 gap-4">
+                  <SelectRecorrencia
+                    value={(formData.recorrencia as TipoRecorrencia) || 'mensal'}
+                    onChange={(value) =>
+                      setFormData({ ...formData, recorrencia: value })
+                    }
+                    label="Periodicidade"
+                  />
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="recorrenciaFim"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Data fim (opcional)
+                    </label>
+                    <input
+                      id="recorrenciaFim"
+                      type="date"
+                      value={formData.recorrenciaFim || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          recorrenciaFim: e.target.value || undefined,
+                        })
+                      }
+                      className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                    />
+                  </div>
+                </div>
+              )}
               {showComunicarAgenda && (
                 <div className="flex items-center gap-2">
                   <input

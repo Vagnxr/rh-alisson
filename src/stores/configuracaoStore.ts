@@ -53,7 +53,23 @@ export const useConfiguracaoStore = create<ConfiguracaoState>()(
             return {
               ...tabela,
               colunas: tabela.colunas.map((coluna) =>
-                coluna.id === colunaId ? { ...coluna, somarNoTotal } : coluna
+                coluna.id === colunaId ? { ...coluna, somarNoTotal, subtrairNoTotal: somarNoTotal ? false : coluna.subtrairNoTotal } : coluna
+              ),
+            };
+          }),
+        }));
+        const tabela = get().tabelas.find((t) => t.id === tabelaId);
+        if (tabela) api.put(`configuracoes/tabelas/${tabelaId}`, { colunas: tabela.colunas }).catch(() => {});
+      },
+
+      updateColunaSubtrairNoTotal: (tabelaId: string, colunaId: string, subtrairNoTotal: boolean) => {
+        set((state) => ({
+          tabelas: state.tabelas.map((tabela) => {
+            if (tabela.id !== tabelaId) return tabela;
+            return {
+              ...tabela,
+              colunas: tabela.colunas.map((coluna) =>
+                coluna.id === colunaId ? { ...coluna, subtrairNoTotal, somarNoTotal: subtrairNoTotal ? false : coluna.somarNoTotal } : coluna
               ),
             };
           }),

@@ -17,6 +17,8 @@ export interface ColunaConfig {
   isRequired?: boolean; // Colunas obrigatorias nao podem ser ocultadas
   /** Quando true, o valor da coluna entra no total (ex.: Caixa, Balanco). Backend deve suportar. */
   somarNoTotal?: boolean;
+  /** Quando true, o valor da coluna SUBTRAI do total (ex.: Caixa). Mutuamente exclusivo com somarNoTotal. */
+  subtrairNoTotal?: boolean;
 }
 
 export interface TabelaConfig {
@@ -27,7 +29,8 @@ export interface TabelaConfig {
 }
 
 /** Id da tabela Caixa (permite adicionar/remover colunas). */
-export const ID_TABELA_CAIXA = 'caixa';
+/** tabelaId do Caixa (contrato backend: GET /financeiro/caixa retorna columns com este id). */
+export const ID_TABELA_CAIXA = 'financeiro-caixa';
 
 // Configuracoes padrao de cada tabela
 export const TABELAS_CONFIGURACOES: TabelaConfig[] = [
@@ -37,11 +40,12 @@ export const TABELAS_CONFIGURACOES: TabelaConfig[] = [
     descricao: 'Configuracoes da tabela de despesas fixas',
     colunas: [
       { id: 'data', label: 'Data', isVisible: true, order: 1, isRequired: true },
-      { id: 'descricao', label: 'Descricao', isVisible: true, order: 2, isRequired: true },
-      { id: 'valor', label: 'Valor', isVisible: true, order: 3, isRequired: true },
-      { id: 'recorrencia', label: 'Recorrencia', isVisible: true, order: 4 },
-      { id: 'categoria', label: 'Categoria', isVisible: false, order: 5 },
-      { id: 'observacao', label: 'Observacao', isVisible: false, order: 6 },
+      { id: 'tipo', label: 'Tipo', isVisible: true, order: 2 },
+      { id: 'descricao', label: 'Descricao', isVisible: true, order: 3, isRequired: true },
+      { id: 'valor', label: 'Valor', isVisible: true, order: 4, isRequired: true },
+      { id: 'recorrencia', label: 'Recorrencia', isVisible: true, order: 5 },
+      { id: 'categoria', label: 'Categoria', isVisible: false, order: 6 },
+      { id: 'observacao', label: 'Observacao', isVisible: false, order: 7 },
     ],
   },
   {
@@ -50,10 +54,11 @@ export const TABELAS_CONFIGURACOES: TabelaConfig[] = [
     descricao: 'Configuracoes da tabela de despesas extras',
     colunas: [
       { id: 'data', label: 'Data', isVisible: true, order: 1, isRequired: true },
-      { id: 'descricao', label: 'Descricao', isVisible: true, order: 2, isRequired: true },
-      { id: 'valor', label: 'Valor', isVisible: true, order: 3, isRequired: true },
-      { id: 'categoria', label: 'Categoria', isVisible: false, order: 4 },
-      { id: 'observacao', label: 'Observacao', isVisible: false, order: 5 },
+      { id: 'tipo', label: 'Tipo', isVisible: true, order: 2 },
+      { id: 'descricao', label: 'Descricao', isVisible: true, order: 3, isRequired: true },
+      { id: 'valor', label: 'Valor', isVisible: true, order: 4, isRequired: true },
+      { id: 'categoria', label: 'Categoria', isVisible: false, order: 5 },
+      { id: 'observacao', label: 'Observacao', isVisible: false, order: 6 },
     ],
   },
   {
@@ -92,9 +97,9 @@ export const TABELAS_CONFIGURACOES: TabelaConfig[] = [
     ],
   },
   {
-    id: 'caixa',
+    id: ID_TABELA_CAIXA,
     nome: 'Caixa',
-    descricao: 'Configuracoes da tabela de caixa (colunas e campos do formulario)',
+    descricao: 'Configuracoes da tabela de caixa (colunas e campos do formulario). Idêntico à planilha.',
     colunas: [
       { id: 'dia', label: 'Dia', isVisible: true, order: 1, isRequired: true },
       { id: 'dinheiroDeposito', label: 'Dinheiro (dep.)', isVisible: true, order: 2, somarNoTotal: true },
@@ -114,6 +119,7 @@ export interface ConfiguracaoState {
   fetchConfiguracoes: () => Promise<void>;
   updateColunaVisibilidade: (tabelaId: string, colunaId: string, isVisible: boolean) => void;
   updateColunaSomarNoTotal?: (tabelaId: string, colunaId: string, somarNoTotal: boolean) => void;
+  updateColunaSubtrairNoTotal?: (tabelaId: string, colunaId: string, subtrairNoTotal: boolean) => void;
   updateColunaOrdem: (tabelaId: string, colunas: ColunaConfig[]) => void;
   resetTabela: (tabelaId: string) => void;
   getColunasVisiveis: (tabelaId: string) => ColunaConfig[];

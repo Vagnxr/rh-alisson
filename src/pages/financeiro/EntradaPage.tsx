@@ -64,6 +64,8 @@ const CATEGORIAS_INICIAIS = [
 
 const MODELOS_NOTA_INICIAIS = ['NF-e', 'NFC-e'];
 
+const TIPOS_ENTRADA = ['Compra', 'Devolucao', 'Outros'];
+
 const FORMAS_PAGAMENTO_INICIAIS = ['Dinheiro', 'PIX', 'Cartao credito', 'Cartao debito'];
 
 const FORMAS_PAGAMENTO_LANCAMENTO_DIRETO = ['Dinheiro', 'PIX'];
@@ -98,6 +100,9 @@ export function EntradaPage() {
   const defaultForm = useCallback(() => {
     return {
       data: new Date().toISOString().split('T')[0],
+      dataEmissao: '',
+      sequencia: '',
+      tipoEntradaId: TIPOS_ENTRADA[0] ?? 'Compra',
       fornecedor: '',
       modeloNotaId: modelosNota[0] ?? '',
       formaPagamentoId: formasPagamento[0] ?? '',
@@ -155,6 +160,9 @@ export function EntradaPage() {
       }
       setFormData({
         data: item.data.split('T')[0] || item.data.slice(0, 10),
+        dataEmissao: item.dataEmissao?.split('T')[0] ?? item.dataEmissao?.slice(0, 10) ?? '',
+        sequencia: item.sequencia != null ? String(item.sequencia) : '',
+        tipoEntradaId: item.tipoEntrada ?? TIPOS_ENTRADA[0] ?? 'Compra',
         fornecedor: cnpjDisplay,
         modeloNotaId: item.modeloNota ?? modelosNota[0] ?? '',
         formaPagamentoId: item.formaPagamento ?? formasPagamento[0] ?? '',
@@ -237,6 +245,9 @@ export function EntradaPage() {
     }
     const body = {
       data: formData.data.slice(0, 10),
+      dataEmissao: formData.dataEmissao?.slice(0, 10) || undefined,
+      sequencia: formData.sequencia.trim() ? (Number(formData.sequencia) || formData.sequencia) : undefined,
+      tipoEntrada: formData.tipoEntradaId || undefined,
       fornecedor: fornecedorNumeros,
       modeloNota: formData.modeloNotaId,
       formaPagamento: formData.formaPagamentoId,
@@ -296,16 +307,31 @@ export function EntradaPage() {
         accessorKey: 'data',
         header: ({ column }) => (
           <button className="flex items-center gap-1 font-medium" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-            Data <ArrowUpDown className="h-4 w-4" />
+            Data entrada <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
         cell: ({ row }) => formatDate(row.getValue('data')),
+      },
+      {
+        accessorKey: 'dataEmissao',
+        header: 'Data emissao',
+        cell: ({ row }) => (row.original.dataEmissao ? formatDate(row.original.dataEmissao) : '-'),
+      },
+      {
+        accessorKey: 'sequencia',
+        header: 'Seq.',
+        cell: ({ row }) => row.original.sequencia ?? '-',
       },
       { accessorKey: 'fornecedor', header: 'Fornecedor' },
       {
         accessorKey: 'modeloNota',
         header: 'Modelo nota',
         cell: ({ row }) => row.original.modeloNota ?? '-',
+      },
+      {
+        accessorKey: 'tipoEntrada',
+        header: 'Tipo',
+        cell: ({ row }) => row.original.tipoEntrada ?? '-',
       },
       {
         accessorKey: 'formaPagamento',
@@ -468,9 +494,29 @@ export function EntradaPage() {
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <DialogBody className="overflow-y-auto overflow-x-hidden min-w-0">
               <div className="space-y-4 mt-4 mb-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Data</label>
-                  <input type="date" value={formData.data} onChange={(e) => setFormData({ ...formData, data: e.target.value })} className={inputClass} required />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Data entrada</label>
+                    <input type="date" value={formData.data} onChange={(e) => setFormData({ ...formData, data: e.target.value })} className={inputClass} required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Data emissao (nota)</label>
+                    <input type="date" value={formData.dataEmissao} onChange={(e) => setFormData({ ...formData, dataEmissao: e.target.value })} className={inputClass} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Sequencia</label>
+                    <input type="text" inputMode="numeric" placeholder="Opcional" value={formData.sequencia} onChange={(e) => setFormData({ ...formData, sequencia: e.target.value })} className={inputClass} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Tipo</label>
+                    <select value={formData.tipoEntradaId} onChange={(e) => setFormData({ ...formData, tipoEntradaId: e.target.value })} className={inputClass}>
+                      {TIPOS_ENTRADA.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">CNPJ do fornecedor</label>

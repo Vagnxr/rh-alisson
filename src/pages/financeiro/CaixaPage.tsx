@@ -32,8 +32,8 @@ import {
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { CaixaRow } from '@/types/financeiro';
-import type { TableColumnConfigFromApi } from '@/types/configuracao';
-import type { ColunaConfig } from '@/types/configuracao';
+import { ID_TABELA_CAIXA } from '@/types/configuracao';
+import type { TableColumnConfigFromApi, ColunaConfig } from '@/types/configuracao';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { useConfiguracaoStore } from '@/stores/configuracaoStore';
 import { buildTableColumns } from '@/lib/buildTableColumns';
@@ -135,6 +135,7 @@ function columnsApiToColunaConfig(cols: TableColumnConfigFromApi[]): ColunaConfi
     isVisible: true,
     isRequired: c.id === 'dia' || c.id === 'total',
     somarNoTotal: c.id !== 'dia' && c.id !== 'total',
+    subtrairNoTotal: false,
   }));
 }
 
@@ -149,7 +150,7 @@ export function CaixaPage() {
   /** Colunas vindas do GET caixa (prioridade sobre o store) */
   const [colunasFromApi, setColunasFromApi] = useState<TableColumnConfigFromApi[] | null>(null);
   const getColunasVisiveis = useConfiguracaoStore((s) => s.getColunasVisiveis);
-  const colunasStore = getColunasVisiveis('caixa');
+  const colunasStore = getColunasVisiveis(ID_TABELA_CAIXA);
   const colunasVisiveis = useMemo<ColunaConfig[]>(() => {
     if (colunasFromApi && colunasFromApi.length > 0) return columnsApiToColunaConfig(colunasFromApi);
     return colunasStore;
@@ -183,8 +184,13 @@ export function CaixaPage() {
 
   const totalFromForm = useMemo(() => {
     return colunasVisiveis
-      .filter((c) => c.somarNoTotal)
-      .reduce((sum, c) => sum + parseNum(formData[c.id] ?? '0'), 0);
+      .filter((c) => c.id !== 'dia' && c.id !== 'total')
+      .reduce((sum, c) => {
+        const val = parseNum(formData[c.id] ?? '0');
+        if (c.subtrairNoTotal) return sum - val;
+        if (c.somarNoTotal) return sum + val;
+        return sum;
+      }, 0);
   }, [colunasVisiveis, formData]);
 
   const fetchList = useCallback(() => {
@@ -278,7 +284,8 @@ export function CaixaPage() {
           cell: ({ row }) => {
             const val = (row.original as Record<string, unknown>)[col.id];
             const num = typeof val === 'number' ? val : Number(val) || 0;
-            return col.somarNoTotal !== false ? formatCurrency(num) : String(val ?? '');
+            if (col.subtrairNoTotal || col.somarNoTotal !== false) return formatCurrency(num);
+            return String(val ?? '');
           },
         };
       });

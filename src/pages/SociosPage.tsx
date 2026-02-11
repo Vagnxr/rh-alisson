@@ -56,6 +56,16 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('pt-BR');
 }
 
+/** Formata CPF para exibicao: 000.000.000-00 */
+function formatCpf(cpf: string | undefined): string {
+  if (!cpf) return '';
+  const digits = cpf.replace(/\D/g, '');
+  if (digits.length < 3) return digits;
+  if (digits.length < 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length < 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+}
+
 // Componente de Card de Socio para a pre-pagina
 interface SocioCardProps {
   resumo: ResumoSocio;
@@ -79,7 +89,7 @@ function SocioCard({ resumo, onClick, onEdit, onDelete }: SocioCardProps) {
           </div>
           <div>
             <h3 className="font-semibold text-slate-900">{socio.nome}</h3>
-            <p className="text-sm text-slate-500">{socio.cpf}</p>
+            <p className="text-sm text-slate-500">{formatCpf(socio.cpf)}</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -650,7 +660,7 @@ export function SociosPage() {
           <div>
             <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">{selectedSocio.nome}</h1>
             <p className="text-sm text-slate-500">
-              {selectedSocio.cpf} - {selectedSocio.percentualSociedade}% de participacao
+              {formatCpf(selectedSocio.cpf)} - {selectedSocio.percentualSociedade}% de participacao
             </p>
           </div>
         </div>

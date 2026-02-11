@@ -5,6 +5,10 @@ export interface DespesaBase {
   descricao: string;
   valor: number;
   comunicarAgenda?: boolean; // Se deve comunicar a agenda
+  /** Recorrencia: unica, mensal, bimestral, etc. Se informado e comunicarAgenda, backend gera itens na agenda */
+  recorrencia?: string;
+  /** Data limite da recorrencia (YYYY-MM-DD). Opcional */
+  recorrenciaFim?: string;
   createdAt: string;
   updatedAt: string;
   /** Despesa banco: id do banco (UUID) */
@@ -19,12 +23,14 @@ export interface DespesaInput {
   descricao: string;
   valor: number;
   comunicarAgenda?: boolean;
+  recorrencia?: string;
+  recorrenciaFim?: string;
 }
 
 // Tipos padrao por categoria de despesa
 export const TIPOS_DESPESA: Record<DespesaCategoria, string[]> = {
   'despesa-fixa': ['ALUGUEL', 'AGUA', 'LUZ', 'INTERNET', 'TELEFONE', 'CONDOMINIO', 'SEGURO', 'OUTROS'],
-  'despesa-extra': ['MANUTENCAO', 'MATERIAL', 'EQUIPAMENTO', 'SERVICO', 'OUTROS'],
+  'despesa-extra': ['MANUTENCAO', 'SERVICO', 'OUTROS'],
   'despesa-funcionario': ['SALARIO', 'VALE TRANSPORTE', 'VALE ALIMENTACAO', 'PLANO SAUDE', 'FERIAS', '13º SALARIO', 'RESCISAO', 'OUTROS'],
   'despesa-imposto': ['ICMS', 'ISS', 'INSS', 'FGTS', 'PIS', 'COFINS', 'IRPJ', 'CSLL', 'SIMPLES', 'OUTROS'],
   'despesa-veiculo': ['COMBUSTIVEL', 'MANUTENCAO', 'SEGURO', 'IPVA', 'LICENCIAMENTO', 'MULTA', 'PEDAGIO', 'ESTACIONAMENTO', 'OUTROS'],

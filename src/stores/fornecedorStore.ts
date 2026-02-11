@@ -23,6 +23,7 @@ interface FornecedorActions {
   deleteFornecedor: (id: string) => Promise<void>;
   toggleFornecedorStatus: (id: string) => Promise<void>;
   getFornecedoresByTipo: (tipo: 'cnpj' | 'cpf') => Fornecedor[];
+  reset: () => void;
 }
 
 type FornecedorStore = FornecedorState & FornecedorActions;
@@ -123,6 +124,14 @@ export const useFornecedorStore = create<FornecedorStore>()(
 
       getFornecedoresByTipo: (tipo: 'cnpj' | 'cpf') =>
         get().fornecedores.filter((f) => f.tipo === tipo),
+
+      reset: () =>
+        set({
+          fornecedores: [],
+          columns: null,
+          isLoading: false,
+          error: null,
+        }),
     }),
     {
       name: 'fornecedor-storage',

@@ -111,10 +111,17 @@ export interface EntradaValorItem {
 /** Linha Entrada */
 export interface EntradaRow {
   id: string;
+  /** Data da entrada (recebimento) */
   data: string;
+  /** Data de emissao da nota fiscal (opcional) */
+  dataEmissao?: string;
+  /** Numero de sequencia do registro (opcional) */
+  sequencia?: number | string;
   fornecedor: string;
   /** Modelo da nota: NF-e, NFC-e, etc. */
   modeloNota?: string;
+  /** Tipo de entrada: compra, devolucao, etc. */
+  tipoEntrada?: string;
   /** Forma de pagamento */
   formaPagamento?: string;
   /** Valor informado no pagamento (dinheiro/pix), para conferencia */
@@ -132,10 +139,15 @@ export interface EntradaRow {
   gas?: number;
 }
 
+/** Formas de pagamento permitidas na Saida (apenas boleto ou cartao). */
+export type SaidaFormaPagamento = 'BOLETO' | 'CARTAO';
+
 /** Linha Saida */
 export interface SaidaRow {
   id: string;
   data: string;
+  /** Forma de pagamento: apenas BOLETO ou CARTAO sobem para saida. Opcional para compatibilidade com API. */
+  formaPagamento?: SaidaFormaPagamento;
   fornecedor: string;
   industrializacao: number;
   comercializacao: number;

@@ -227,7 +227,7 @@ export function RelatoriosPage() {
     switch (tipoRelatorio) {
       case 'despesas':
         return [
-          { key: 'categoria', label: 'Categoria' },
+          { key: 'categoria', label: 'Nome despesas' },
           { key: 'valor', label: 'Valor' },
           { key: 'percentual', label: 'Percentual' },
         ];

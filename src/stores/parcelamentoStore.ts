@@ -17,6 +17,7 @@ interface ParcelamentoActions {
   deleteItem: (id: string) => Promise<void>;
   /** Ajustar parcelas (datas/sequencia). Backend: PATCH parcelamentos/:id/ajustar-parcelas */
   ajustarParcelas: (id: string, payload?: { data?: string; parcela?: string }) => Promise<void>;
+  reset: () => void;
 }
 
 type ParcelamentoStore = ParcelamentoState & ParcelamentoActions;
@@ -26,6 +27,8 @@ export const useParcelamentoStore = create<ParcelamentoStore>((set, get) => ({
   columns: null,
   isLoading: false,
   error: null,
+
+  reset: () => set({ items: [], columns: null, isLoading: false, error: null }),
 
   fetchItems: async (params?: { dataInicio?: string; dataFim?: string }) => {
     set({ isLoading: true, error: null });

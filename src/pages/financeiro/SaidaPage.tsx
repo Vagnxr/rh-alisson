@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
-import type { SaidaRow } from '@/types/financeiro';
+import type { SaidaRow, SaidaFormaPagamento } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
 
 function formatCurrency(value: number) {
@@ -59,8 +59,11 @@ const CAMPOS_NUMERICOS = [
   'gas',
 ] as const;
 
+const FORMAS_SAIDA: SaidaFormaPagamento[] = ['BOLETO', 'CARTAO'];
+
 const defaultForm = () => ({
   data: new Date().toISOString().split('T')[0],
+  formaPagamento: 'BOLETO' as SaidaFormaPagamento,
   fornecedor: '',
   industrializacao: '',
   comercializacao: '',
@@ -84,7 +87,10 @@ export function SaidaPage() {
     setLoading(true);
     api
       .get<SaidaRow[]>('financeiro/saida', { params: dateFilterToParams(dateFilter) })
-      .then((res) => setItems(Array.isArray(res.data) ? res.data : []))
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        setItems(list.filter((r) => !r.formaPagamento || r.formaPagamento === 'BOLETO' || r.formaPagamento === 'CARTAO'));
+      })
       .catch((err) => toast.error(err?.message ?? 'Erro ao carregar'))
       .finally(() => setLoading(false));
   }, [dateFilter]);
@@ -98,6 +104,7 @@ export function SaidaPage() {
       setEditingItem(item);
       setFormData({
         data: item.data.split('T')[0] || item.data.slice(0, 10),
+        formaPagamento: item.formaPagamento && (item.formaPagamento === 'BOLETO' || item.formaPagamento === 'CARTAO') ? item.formaPagamento : 'BOLETO',
         fornecedor: item.fornecedor,
         industrializacao: String(item.industrializacao),
         comercializacao: String(item.comercializacao),
@@ -123,6 +130,7 @@ export function SaidaPage() {
     const data = formData.data.slice(0, 10);
     const body = {
       data,
+      formaPagamento: formData.formaPagamento,
       fornecedor: formData.fornecedor,
       industrializacao: parseNum(formData.industrializacao),
       comercializacao: parseNum(formData.comercializacao),
@@ -177,6 +185,11 @@ export function SaidaPage() {
           </button>
         ),
         cell: ({ row }) => formatDate(row.getValue('data')),
+      },
+      {
+        accessorKey: 'formaPagamento',
+        header: 'Forma pagamento',
+        cell: ({ row }) => (row.original.formaPagamento ?? '-') as string,
       },
       { accessorKey: 'fornecedor', header: 'Fornecedor' },
       {
@@ -250,6 +263,7 @@ export function SaidaPage() {
           <ExportButtons
             data={items.map((r) => ({
               data: formatDate(r.data),
+              formaPagamento: r.formaPagamento ?? '',
               fornecedor: r.fornecedor,
               industrializacao: formatCurrency(Number(r.industrializacao)),
               comercializacao: formatCurrency(Number(r.comercializacao)),
@@ -260,6 +274,7 @@ export function SaidaPage() {
             }))}
             columns={[
               { key: 'data', label: 'Data' },
+              { key: 'formaPagamento', label: 'Forma pagamento' },
               { key: 'fornecedor', label: 'Fornecedor' },
               { key: 'industrializacao', label: 'Industrializacao' },
               { key: 'comercializacao', label: 'Comercializacao' },
@@ -340,6 +355,15 @@ export function SaidaPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Data</label>
                 <input type="date" value={formData.data} onChange={(e) => setFormData({ ...formData, data: e.target.value })} className={inputClass} required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Forma de pagamento</label>
+                <select value={formData.formaPagamento} onChange={(e) => setFormData({ ...formData, formaPagamento: e.target.value as SaidaFormaPagamento })} className={inputClass} required>
+                  {FORMAS_SAIDA.map((fp) => (
+                    <option key={fp} value={fp}>{fp}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-500">Apenas boleto ou cartao sobem para saida.</p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Fornecedor</label>

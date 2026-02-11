@@ -16,12 +16,15 @@ export interface BalancoState {
   error: string | null;
 
   fetchBalanco: (filtros?: BalancoFiltros) => Promise<void>;
+  reset: () => void;
 }
 
 export const useBalancoStore = create<BalancoState>()((set) => ({
   balanco: null,
   isLoading: false,
   error: null,
+
+  reset: () => set({ balanco: null, isLoading: false, error: null }),
 
   fetchBalanco: async (filtros) => {
     set({ isLoading: true, error: null });

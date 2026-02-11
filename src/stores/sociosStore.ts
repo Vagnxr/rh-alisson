@@ -28,6 +28,7 @@ interface SociosActions {
   deleteMovimentacao: (id: string) => Promise<void>;
   getResumosPorSocio: () => ResumoSocio[];
   getMovimentacoesPorSocio: (socioId: string) => MovimentacaoSocio[];
+  reset: () => void;
 }
 
 type SociosStore = SociosState & SociosActions;
@@ -200,4 +201,14 @@ export const useSociosStore = create<SociosStore>((set, get) => ({
 
   getMovimentacoesPorSocio: (socioId: string) =>
     get().movimentacoes.filter((m) => m.socioId === socioId),
+
+  reset: () =>
+    set({
+      socios: [],
+      resumos: [],
+      movimentacoes: [],
+      movimentacoesColumns: null,
+      isLoading: false,
+      error: null,
+    }),
 }));

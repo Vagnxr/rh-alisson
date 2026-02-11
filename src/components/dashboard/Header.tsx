@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useTenantStore } from '@/stores/tenantStore';
 import { useLojaStore } from '@/stores/lojaStore';
+import { clearTenantCache } from '@/lib/clearTenantCache';
 import { useNavigate, Link } from 'react-router-dom';
 import { useState, useRef, useEffect, useMemo } from 'react';
 
@@ -69,6 +70,7 @@ export function Header() {
   };
 
   const handleChangeTenant = () => {
+    clearTenantCache();
     clearTenant();
     setLojaAtual(null);
     setShowTenantMenu(false);

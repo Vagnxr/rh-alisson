@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Loader2, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Check, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import type { DiaAgenda, AgendaItem } from '@/types/agenda';
+import type { DiaAgenda, AgendaItem, AgendaItemDirectInput } from '@/types/agenda';
 import { useAgendaStore } from '@/stores/agendaStore';
 import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import {
@@ -80,10 +80,18 @@ function getDaysInMonthGrid(year: number, month: number): { date: Date; dateStr:
   return grid;
 }
 
+const initialFormDirect: AgendaItemDirectInput = {
+  data: formatDateToLocalYYYYMMDD(new Date()),
+  descricao: '',
+  valor: 0,
+};
+
 export function AgendaPage() {
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [month, setMonth] = useState(() => new Date().getMonth());
   const [confirmarPagoIds, setConfirmarPagoIds] = useState<string[] | null>(null);
+  const [openLancarDirect, setOpenLancarDirect] = useState(false);
+  const [formDirect, setFormDirect] = useState(initialFormDirect);
 
   const {
     dias,
@@ -93,6 +101,7 @@ export function AgendaPage() {
     error,
     fetchDias,
     fetchDia,
+    addItemDirect,
     marcarPago,
     marcarPagoLote,
     setDiaSelecionado,
@@ -153,6 +162,28 @@ export function AgendaPage() {
     setConfirmarPagoIds(Array.from(selectedIds));
   };
 
+  const handleLancarDirectSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formDirect.valor <= 0) {
+      toast.error('Informe o valor.');
+      return;
+    }
+    try {
+      const payload: AgendaItemDirectInput = {
+        data: formDirect.data,
+        valor: formDirect.valor,
+        ...(formDirect.descricao?.trim() && { descricao: formDirect.descricao.trim() }),
+      };
+      await addItemDirect(payload);
+      toast.success('Lancamento adicionado na agenda.');
+      setOpenLancarDirect(false);
+      setFormDirect(initialFormDirect);
+      fetchDias({ dataInicio, dataFim }).catch(() => {});
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao lancar na agenda.');
+    }
+  };
+
   const handleConfirmarMarcarPago = async () => {
     if (!confirmarPagoIds || confirmarPagoIds.length === 0) {
       setConfirmarPagoIds(null);
@@ -188,11 +219,21 @@ export function AgendaPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Agenda</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Visualize entradas e saidas por dia e marque itens como pagos
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Agenda</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Visualize entradas e saidas por dia e marque itens como pagos
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpenLancarDirect(true)}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+        >
+          <Plus className="h-4 w-4" />
+          Lancar na agenda
+        </button>
       </div>
 
       {error && (
@@ -274,9 +315,7 @@ export function AgendaPage() {
                 </span>
                 {isCurrentMonth && temValor && (
                   <div className="mt-1 text-[10px] leading-tight text-slate-600">
-                    <span className="text-emerald-600">+{formatCurrency(totalE)}</span>
-                    <br />
-                    <span className="text-red-600">-{formatCurrency(totalS)}</span>
+                    {formatCurrency(totalE - totalS)}
                   </div>
                 )}
               </button>
@@ -366,6 +405,77 @@ export function AgendaPage() {
       </DialogContent>
       </Dialog>
 
+      {/* Dialog lancar direto na agenda */}
+      <Dialog open={openLancarDirect} onOpenChange={setOpenLancarDirect}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Lancar na agenda</DialogTitle>
+            <DialogDescription>
+              O item ficara apenas na agenda (nao vincula a despesa).
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleLancarDirectSubmit} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="direct-data" className="text-sm font-medium text-slate-700">
+                Data
+              </label>
+              <input
+                id="direct-data"
+                type="date"
+                value={formDirect.data}
+                onChange={(e) => setFormDirect({ ...formDirect, data: e.target.value })}
+                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="direct-descricao" className="text-sm font-medium text-slate-700">
+                Descricao (opcional)
+              </label>
+              <input
+                id="direct-descricao"
+                type="text"
+                value={formDirect.descricao ?? ''}
+                onChange={(e) => setFormDirect({ ...formDirect, descricao: e.target.value })}
+                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="direct-valor" className="text-sm font-medium text-slate-700">
+                Valor (R$)
+              </label>
+              <input
+                id="direct-valor"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formDirect.valor || ''}
+                onChange={(e) =>
+                  setFormDirect({ ...formDirect, valor: parseFloat(e.target.value) || 0 })
+                }
+                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                required
+              />
+            </div>
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => setOpenLancarDirect(false)}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              >
+                Adicionar
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Confirmar marcar como pago */}
       <AlertDialog
         open={!!confirmarPagoIds?.length}
@@ -419,8 +529,10 @@ function ItemRow({
         <span className="font-medium text-slate-800">
           {item.descricao || 'Sem descricao'}
         </span>
-        {item.origem && (
-          <span className="ml-2 text-xs text-slate-500">({item.origem})</span>
+        {(item.tipoDespesa || item.origem) && (
+          <span className="ml-2 block text-xs text-slate-500">
+            {[item.tipoDespesa, item.origem].filter(Boolean).join(' · ')}
+          </span>
         )}
       </div>
       <span

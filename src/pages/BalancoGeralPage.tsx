@@ -7,15 +7,20 @@ import type { Loja } from '@/types/loja';
 import type { BalancoItem, BalancoSecao } from '@/types/balanco';
 import { cn } from '@/lib/cn';
 
+function safeNumber(value: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+  return value;
+}
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(value);
+  }).format(safeNumber(value));
 }
 
 function formatPercent(value: number) {
-  return `${value.toFixed(2)}%`;
+  return `${safeNumber(value).toFixed(2)}%`;
 }
 
 // Agrupa items por descricao e retorna valores por loja
@@ -176,7 +181,7 @@ function BalancoTable({
           {showPercent && <div className="text-right">% Venda</div>}
         </div>
         {items.map((item, i) => {
-          const percentual = valorTotalVendas ? (item.valor / valorTotalVendas) * 100 : item.percentual;
+          const percentual = valorTotalVendas ? (item.valor / valorTotalVendas) * 100 : safeNumber(item.percentual ?? 0);
           return (
             <div
               key={i}
@@ -365,7 +370,7 @@ export function BalancoGeralPage() {
                 {formatCurrency(filteredData.despesas.total)}
               </p>
               <p className="text-xs text-slate-500">
-                {formatPercent((filteredData.despesas.total / filteredData.vendas.total) * 100 || 0)} das
+                {formatPercent(filteredData.vendas.total ? (filteredData.despesas.total / filteredData.vendas.total) * 100 : 0)} das
                 vendas
               </p>
             </div>

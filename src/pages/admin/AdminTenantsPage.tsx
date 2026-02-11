@@ -69,6 +69,7 @@ export function AdminTenantsPage() {
     isActive: true,
     isMultiloja: false,
     paginasPermitidas: [],
+    logo: '',
   });
 
   useEffect(() => {
@@ -216,6 +217,7 @@ export function AdminTenantsPage() {
       isActive: true,
       isMultiloja: false,
       paginasPermitidas: [],
+      logo: '',
     });
     setIsDialogOpen(true);
   };
@@ -232,6 +234,7 @@ export function AdminTenantsPage() {
       isActive: tenant.isActive,
       isMultiloja: tenant.isMultiloja ?? false,
       paginasPermitidas: Array.isArray(tenant.paginasPermitidas) ? [...tenant.paginasPermitidas] : [],
+      logo: (tenant as { logo?: string }).logo || '',
     });
     setIsDialogOpen(true);
   };
@@ -399,6 +402,36 @@ export function AdminTenantsPage() {
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   placeholder="Razao Social da Empresa"
                 />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Logo / Imagem da empresa
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="block w-full text-sm text-slate-600 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-emerald-700"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => setFormData((f) => ({ ...f, logo: String(reader.result ?? '') }));
+                    reader.readAsDataURL(file);
+                  }}
+                />
+                {formData.logo && (
+                  <div className="mt-2 flex items-center gap-3">
+                    <img src={formData.logo} alt="Logo" className="h-14 w-14 rounded border border-slate-200 object-contain bg-white" />
+                    <button
+                      type="button"
+                      onClick={() => setFormData((f) => ({ ...f, logo: '' }))}
+                      className="text-sm text-red-600 hover:underline"
+                    >
+                      Remover imagem
+                    </button>
+                  </div>
+                )}
               </div>
 
               <InputCNPJ

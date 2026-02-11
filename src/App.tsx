@@ -15,6 +15,7 @@ import { InvestimentoPage } from '@/pages/InvestimentoPage';
 import { SociosPage } from '@/pages/SociosPage';
 import { BalancoGeralPage } from '@/pages/BalancoGeralPage';
 import { ConfiguracoesPage } from '@/pages/ConfiguracoesPage';
+import { CriarDespesaPage } from '@/pages/CriarDespesaPage';
 import { FornecedoresPage } from '@/pages/FornecedoresPage';
 import { LojasPage } from '@/pages/LojasPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
@@ -24,6 +25,7 @@ import { LembretesPage } from '@/pages/LembretesPage';
 import {
   CaixaPage,
   ControleCartoesPage,
+  TaxasPrazosPage,
   VendasPage,
   ControleDinheiroPage,
   ControleDepositoPage,
@@ -86,6 +88,7 @@ function App() {
           <Route path="/financeiro" element={<Navigate to="/financeiro/caixa" replace />} />
           <Route path="/financeiro/caixa" element={<CaixaPage />} />
           <Route path="/financeiro/controle-cartoes" element={<ControleCartoesPage />} />
+          <Route path="/financeiro/controle-cartoes/taxas-prazos" element={<TaxasPrazosPage />} />
           <Route path="/financeiro/vendas" element={<VendasPage />} />
           <Route path="/financeiro/controle-dinheiro" element={<ControleDinheiroPage />} />
           <Route path="/financeiro/controle-deposito" element={<ControleDepositoPage />} />
@@ -106,6 +109,7 @@ function App() {
           
           {/* Configuracoes */}
           <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+          <Route path="/configuracoes/criar-despesa" element={<CriarDespesaPage />} />
         </Route>
 
         {/* Redirect padrao */}

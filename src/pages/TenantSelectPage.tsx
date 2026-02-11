@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Building2, Loader2, LogOut, ChevronRight } from 'lucide-react';
 import { useTenantStore } from '@/stores/tenantStore';
 import { useAuthStore } from '@/stores/authStore';
+import { clearTenantCache } from '@/lib/clearTenantCache';
 import type { Tenant } from '@/types/tenant';
 
 export function TenantSelectPage() {
@@ -20,6 +21,7 @@ export function TenantSelectPage() {
   }, [fetchAvailableTenants]);
 
   const handleSelectTenant = (tenant: Tenant) => {
+    clearTenantCache();
     setCurrentTenant(tenant);
     navigate('/dashboard');
   };

@@ -10,6 +10,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -45,12 +46,24 @@ interface ColunaItemProps {
   tabelaId: string;
   onToggle: (isVisible: boolean) => void;
   onToggleSomarNoTotal?: (somarNoTotal: boolean) => void;
+  onToggleSubtrairNoTotal?: (subtrairNoTotal: boolean) => void;
   showSomarNoTotal?: boolean;
+  showSubtrairNoTotal?: boolean;
   onRemove?: (colunaId: string) => void;
   canAddRemoveColunas?: boolean;
 }
 
-function ColunaItem({ coluna, tabelaId, onToggle, onToggleSomarNoTotal, showSomarNoTotal, onRemove, canAddRemoveColunas }: ColunaItemProps) {
+function ColunaItem({
+  coluna,
+  tabelaId,
+  onToggle,
+  onToggleSomarNoTotal,
+  onToggleSubtrairNoTotal,
+  showSomarNoTotal,
+  showSubtrairNoTotal,
+  onRemove,
+  canAddRemoveColunas,
+}: ColunaItemProps) {
   const podeRemover = canAddRemoveColunas && onRemove && !coluna.isRequired;
   return (
     <div
@@ -71,21 +84,44 @@ function ColunaItem({ coluna, tabelaId, onToggle, onToggleSomarNoTotal, showSoma
               Coluna obrigatoria
             </p>
           )}
-          {showSomarNoTotal && onToggleSomarNoTotal && (
-            <p className="mt-1 flex items-center gap-2 text-xs text-slate-600">
-              <span>Somar no total:</span>
-              <button
-                type="button"
-                onClick={() => onToggleSomarNoTotal(!coluna.somarNoTotal)}
-                className={cn(
-                  'rounded px-2 py-0.5 text-xs font-medium',
-                  coluna.somarNoTotal
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-slate-100 text-slate-600'
-                )}
-              >
-                {coluna.somarNoTotal !== false ? 'Sim' : 'Nao'}
-              </button>
+          {(showSomarNoTotal || showSubtrairNoTotal) && (
+            <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+              {showSomarNoTotal && onToggleSomarNoTotal && (
+                <span className="flex items-center gap-2">
+                  Somar no total:
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onToggleSomarNoTotal(true);
+                      onToggleSubtrairNoTotal?.(false);
+                    }}
+                    className={cn(
+                      'rounded px-2 py-0.5 text-xs font-medium',
+                      coluna.somarNoTotal ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                    )}
+                  >
+                    {coluna.somarNoTotal ? 'Sim' : 'Nao'}
+                  </button>
+                </span>
+              )}
+              {showSubtrairNoTotal && onToggleSubtrairNoTotal && (
+                <span className="flex items-center gap-2">
+                  Subtrair no total:
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onToggleSubtrairNoTotal(true);
+                      onToggleSomarNoTotal?.(false);
+                    }}
+                    className={cn(
+                      'rounded px-2 py-0.5 text-xs font-medium',
+                      coluna.subtrairNoTotal ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'
+                    )}
+                  >
+                    {coluna.subtrairNoTotal ? 'Sim' : 'Nao'}
+                  </button>
+                </span>
+              )}
             </p>
           )}
         </div>
@@ -124,17 +160,57 @@ interface TabelaConfigCardProps {
   tabela: TabelaConfig;
   onToggleColuna: (colunaId: string, isVisible: boolean) => void;
   onToggleSomarNoTotal?: (colunaId: string, somarNoTotal: boolean) => void;
+  onToggleSubtrairNoTotal?: (colunaId: string, subtrairNoTotal: boolean) => void;
   onReset: () => void;
   onRemoveColuna?: (tabelaId: string, colunaId: string) => void;
+  onReorderColunas?: (tabelaId: string, colunas: ColunaConfig[]) => void;
 }
 
-function TabelaConfigCard({ tabela, onToggleColuna, onToggleSomarNoTotal, onReset, onRemoveColuna }: TabelaConfigCardProps) {
+function TabelaConfigCard({
+  tabela,
+  onToggleColuna,
+  onToggleSomarNoTotal,
+  onToggleSubtrairNoTotal,
+  onReset,
+  onRemoveColuna,
+  onReorderColunas,
+}: TabelaConfigCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [dialogNovaColuna, setDialogNovaColuna] = useState(false);
   const [novaColunaLabel, setNovaColunaLabel] = useState('');
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const colunasVisiveis = tabela.colunas.filter((c) => c.isVisible).length;
   const canAddRemoveColunas =
     tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa';
+
+  const colunasOrdenadas = [...tabela.colunas].sort((a, b) => a.order - b.order);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.setData('text/plain', String(index));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    setDraggedIndex(null);
+    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if (Number.isNaN(fromIndex) || fromIndex === dropIndex || !onReorderColunas) return;
+    const reordered = [...colunasOrdenadas];
+    const [removed] = reordered.splice(fromIndex, 1);
+    reordered.splice(dropIndex, 0, removed);
+    const withNewOrder = reordered.map((c, i) => ({ ...c, order: i + 1 }));
+    onReorderColunas(tabela.id, withNewOrder);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -199,11 +275,20 @@ function TabelaConfigCard({ tabela, onToggleColuna, onToggleSomarNoTotal, onRese
           </div>
 
           <div className="space-y-2">
-            {tabela.colunas
-              .sort((a, b) => a.order - b.order)
-              .map((coluna) => (
+            {colunasOrdenadas.map((coluna, index) => (
+              <div
+                key={coluna.id}
+                draggable={!!onReorderColunas}
+                onDragStart={(e) => onReorderColunas && handleDragStart(e, index)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => onReorderColunas && handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+                className={cn(
+                  onReorderColunas && 'cursor-grab active:cursor-grabbing',
+                  draggedIndex === index && 'opacity-50'
+                )}
+              >
                 <ColunaItem
-                  key={coluna.id}
                   coluna={coluna}
                   tabelaId={tabela.id}
                   onToggle={(isVisible) => onToggleColuna(coluna.id, isVisible)}
@@ -213,10 +298,15 @@ function TabelaConfigCard({ tabela, onToggleColuna, onToggleSomarNoTotal, onRese
                       : undefined
                   }
                   showSomarNoTotal={tabela.id === 'balanco' || tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa'}
+                  showSubtrairNoTotal={tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa'}
+                  onToggleSubtrairNoTotal={
+                    onToggleSubtrairNoTotal ? (subtrairNoTotal) => onToggleSubtrairNoTotal(tabela.id, coluna.id, subtrairNoTotal) : undefined
+                  }
                   onRemove={onRemoveColuna ? (colunaId) => onRemoveColuna(tabela.id, colunaId) : undefined}
                   canAddRemoveColunas={canAddRemoveColunas}
                 />
-              ))}
+              </div>
+            ))}
           </div>
 
           {canAddRemoveColunas && (
@@ -285,6 +375,8 @@ export function ConfiguracoesPage() {
     fetchConfiguracoes,
     updateColunaVisibilidade,
     updateColunaSomarNoTotal,
+    updateColunaSubtrairNoTotal,
+    updateColunaOrdem,
     resetTabela,
     removeColuna,
   } = useConfiguracaoStore();
@@ -303,19 +395,34 @@ export function ConfiguracoesPage() {
     toast.success(somarNoTotal ? 'Coluna somada no total' : 'Coluna nao somada no total');
   };
 
+  const handleToggleSubtrairNoTotal = (tabelaId: string, colunaId: string, subtrairNoTotal: boolean) => {
+    updateColunaSubtrairNoTotal?.(tabelaId, colunaId, subtrairNoTotal);
+    toast.success(subtrairNoTotal ? 'Coluna subtraida no total' : 'Coluna nao subtraida no total');
+  };
+
   const handleReset = (tabelaId: string) => {
     resetTabela(tabelaId);
     toast.success('Configuracoes restauradas para o padrao');
   };
 
+  const handleReorderColunas = (tabelaId: string, colunas: ColunaConfig[]) => {
+    updateColunaOrdem(tabelaId, colunas);
+    toast.success('Ordem das colunas atualizada.');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Configuracoes</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Personalize a exibicao de colunas em cada tabela do sistema
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Configuracoes</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Personalize a exibicao de colunas em cada tabela do sistema
+          </p>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/configuracoes/criar-despesa">Criar despesa</Link>
+        </Button>
       </div>
 
       {/* Info card */}
@@ -344,6 +451,11 @@ export function ConfiguracoesPage() {
                 ? (colunaId, somarNoTotal) => handleToggleSomarNoTotal(tabela.id, colunaId, somarNoTotal)
                 : undefined
             }
+            onToggleSubtrairNoTotal={
+              updateColunaSubtrairNoTotal
+                ? (colunaId, subtrairNoTotal) => handleToggleSubtrairNoTotal(tabela.id, colunaId, subtrairNoTotal)
+                : undefined
+            }
             onReset={() => handleReset(tabela.id)}
             onRemoveColuna={
               tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa'
@@ -353,6 +465,7 @@ export function ConfiguracoesPage() {
                   }
                 : undefined
             }
+            onReorderColunas={handleReorderColunas}
           />
         ))}
       </div>

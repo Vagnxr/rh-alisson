@@ -15,6 +15,7 @@ interface DespesaActions {
   addItem: (data: DespesaInput) => Promise<void>;
   updateItem: (id: string, data: Partial<DespesaInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
+  reset: () => void;
 }
 
 type DespesaStore = DespesaState & DespesaActions;
@@ -27,6 +28,8 @@ function normalizeDespesa(item: Record<string, unknown>): DespesaBase {
     descricao: String(item.descricao ?? ''),
     valor: Number(item.valor ?? 0),
     comunicarAgenda: Boolean(item.comunicarAgenda),
+    recorrencia: item.recorrencia != null ? String(item.recorrencia) : undefined,
+    recorrenciaFim: item.recorrenciaFim != null ? String(item.recorrenciaFim).slice(0, 10) : undefined,
     createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
     updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
   };
@@ -109,6 +112,8 @@ function createDespesaStore(categoria: DespesaCategoria) {
         throw err;
       }
     },
+
+    reset: () => set({ items: [], columns: null, isLoading: false, error: null }),
   }));
 }
 

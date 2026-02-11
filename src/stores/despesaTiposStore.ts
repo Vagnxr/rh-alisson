@@ -106,4 +106,7 @@ export const useDespesaTiposStore = create<DespesaTiposState & DespesaTiposActio
   getTipos: (categoria: DespesaCategoria | string) => {
     return get().tiposByCategoria[categoria] ?? [];
   },
+
+  reset: () =>
+    set({ tiposByCategoria: {}, isLoading: false, error: null }),
 }));

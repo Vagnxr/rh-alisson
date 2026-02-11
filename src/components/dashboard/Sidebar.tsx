@@ -19,6 +19,11 @@ import {
   PinOff,
   FileText,
   Bell,
+  CreditCard,
+  ArrowUp,
+  ArrowDown,
+  Building,
+  Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSidebarStore } from '@/stores/sidebarStore';
@@ -58,20 +63,14 @@ const MENU_ITEMS: MenuItem[] = [
       { label: 'Despesa Banco', href: '/despesa-banco', permissionId: 'despesa-banco' },
     ],
   },
-  { label: 'Parcelamento', icon: Calendar, href: '/parcelamento', permissionId: 'parcelamento' },
-  { label: 'Renda Extra', icon: TrendingUp, href: '/renda-extra', permissionId: 'renda-extra' },
-  { label: 'Investimento', icon: PiggyBank, href: '/investimento', permissionId: 'investimento' },
+  { label: 'Socios', icon: UsersRound, href: '/socios', permissionId: 'socios' },
   {
     label: 'Financeiro',
     icon: DollarSign,
     permissionId: 'financeiro',
     subItems: [
       { label: 'Caixa', href: '/financeiro/caixa', permissionId: 'financeiro-caixa' },
-      {
-        label: 'Controle Cartoes',
-        href: '/financeiro/controle-cartoes',
-        permissionId: 'financeiro-controle-cartoes',
-      },
+
       { label: 'Vendas', href: '/financeiro/vendas', permissionId: 'financeiro-vendas' },
       {
         label: 'Controle Dinheiro',
@@ -88,27 +87,24 @@ const MENU_ITEMS: MenuItem[] = [
         href: '/financeiro/venda-cartoes',
         permissionId: 'financeiro-venda-cartoes',
       },
-      {
-        label: 'Ativo Imobilizado',
-        href: '/financeiro/ativo-imobilizado',
-        permissionId: 'financeiro-ativo-imobilizado',
-      },
-      { label: 'Entrada', href: '/financeiro/entrada', permissionId: 'financeiro-entrada' },
-      { label: 'Saida', href: '/financeiro/saida', permissionId: 'financeiro-saida' },
+
       {
         label: 'Pago em Dinheiro',
         href: '/financeiro/pago-dinheiro',
         permissionId: 'financeiro-pago-dinheiro',
       },
+    ],
+  },
+  {
+    label: 'Controle Cartoes',
+    href: '/financeiro/controle-cartoes',
+    permissionId: 'financeiro-controle-cartoes',
+    icon: CreditCard,
+    subItems: [
       {
-        label: 'Calculadora de Margem',
-        href: '/financeiro/calculadora-margem',
-        permissionId: 'financeiro-calculadora-margem',
-      },
-      {
-        label: 'Pedido de Venda',
-        href: '/financeiro/pedido-venda',
-        permissionId: 'financeiro-pedido-venda',
+        label: 'Taxas e prazos',
+        href: '/financeiro/controle-cartoes/taxas-prazos',
+        permissionId: 'financeiro-controle-cartoes',
       },
       {
         label: 'A receber',
@@ -120,23 +116,64 @@ const MENU_ITEMS: MenuItem[] = [
         href: '/financeiro/outras-funcoes/venda-perda',
         permissionId: 'financeiro-venda-perda',
       },
-      { label: 'Agenda', href: '/financeiro/agenda', permissionId: 'financeiro-agenda' },
     ],
   },
-  { label: 'Fornecedores', icon: Truck, href: '/fornecedores', permissionId: 'fornecedores' },
-  { label: 'Lojas', icon: Store, href: '/lojas', permissionId: 'lojas' },
+  {
+    label: 'Entrada',
+    href: '/financeiro/entrada',
+    permissionId: 'financeiro-entrada',
+    icon: ArrowUp,
+  },
+  { label: 'Saida', href: '/financeiro/saida', permissionId: 'financeiro-saida', icon: ArrowDown },
+  {
+    label: 'Agenda',
+    href: '/financeiro/agenda',
+    permissionId: 'financeiro-agenda',
+    icon: Calendar,
+  },
   {
     label: 'Recursos Humanos',
     icon: UserCog,
     href: '/recursos-humanos',
     permissionId: 'recursos-humanos',
   },
-  { label: 'Socios', icon: UsersRound, href: '/socios', permissionId: 'socios' },
+  {
+    label: 'Ativo Imobilizado',
+    href: '/financeiro/ativo-imobilizado',
+    permissionId: 'financeiro-ativo-imobilizado',
+    icon: Building,
+  },
+
+  { label: 'Parcelamento', icon: Calendar, href: '/parcelamento', permissionId: 'parcelamento' },
+  { label: 'Renda Extra', icon: TrendingUp, href: '/renda-extra', permissionId: 'renda-extra' },
+  { label: 'Investimento', icon: PiggyBank, href: '/investimento', permissionId: 'investimento' },
+
+  { label: 'Fornecedores', icon: Truck, href: '/fornecedores', permissionId: 'fornecedores' },
+  { label: 'Lojas', icon: Store, href: '/lojas', permissionId: 'lojas' },
+
   {
     label: 'Balanco Geral',
     icon: BarChart3,
     href: '/balanco-geral',
     permissionId: 'balanco-geral',
+  },
+  {
+    label: 'Outras Funções',
+    icon: Plus,
+    href: '/outras-funcoes',
+    permissionId: 'outras-funcoes',
+    subItems: [
+      {
+        label: 'Calculadora de Margem',
+        href: '/financeiro/calculadora-margem',
+        permissionId: 'financeiro-calculadora-margem',
+      },
+      {
+        label: 'Pedido de Venda',
+        href: '/financeiro/pedido-venda',
+        permissionId: 'financeiro-pedido-venda',
+      },
+    ],
   },
   { label: 'Relatorios', icon: FileText, href: '/relatorios', permissionId: 'relatorios' },
   { label: 'Lembretes', icon: Bell, href: '/lembretes', permissionId: 'lembretes' },
@@ -360,7 +397,7 @@ export function Sidebar() {
       >
         {/* Header */}
         <div className="flex h-16 items-center border-b border-slate-200 px-3">
-          <div className={cn('flex shrink-0 items-center overflow-hidden justify-around')}>
+          <div className={cn('flex shrink-0 items-center justify-around overflow-hidden')}>
             {isExpanded ? (
               <img
                 src="/logotipo-colorido.svg"
@@ -371,7 +408,10 @@ export function Sidebar() {
               <img
                 src="/logo.svg"
                 alt=""
-                className={cn('object-contain object-left ml-[-20px]', isExpanded ? 'h-36 w-36' : 'h-20 w-20')}
+                className={cn(
+                  'ml-[-20px] object-contain object-left',
+                  isExpanded ? 'h-36 w-36' : 'h-20 w-20',
+                )}
               />
             )}
           </div>

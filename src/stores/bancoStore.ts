@@ -10,15 +10,18 @@ interface BancoState {
 
 interface BancoActions {
   fetchBancos: () => Promise<void>;
-  addBanco: (data: { nome: string; codigo?: string }) => Promise<Banco>;
-  updateBanco: (id: string, data: Partial<Pick<Banco, 'nome' | 'codigo' | 'cor'>>) => Promise<void>;
+  addBanco: (data: { nome: string; codigo?: string; cor?: string; logo?: string }) => Promise<Banco>;
+  updateBanco: (id: string, data: Partial<Pick<Banco, 'nome' | 'codigo' | 'cor' | 'logo'>>) => Promise<void>;
   deleteBanco: (id: string) => Promise<void>;
+  reset: () => void;
 }
 
 export const useBancoStore = create<BancoState & BancoActions>((set, get) => ({
   bancos: [],
   isLoading: false,
   error: null,
+
+  reset: () => set({ bancos: [], isLoading: false, error: null }),
 
   fetchBancos: async () => {
     set({ isLoading: true, error: null });
@@ -34,7 +37,8 @@ export const useBancoStore = create<BancoState & BancoActions>((set, get) => ({
   addBanco: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await api.post<Banco>('bancos', data);
+      const body = { nome: data.nome, codigo: data.codigo, cor: data.cor, logo: data.logo };
+      const res = await api.post<Banco>('bancos', body);
       set((state) => ({ bancos: [...state.bancos, res.data], isLoading: false }));
       return res.data;
     } catch (err) {

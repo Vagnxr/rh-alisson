@@ -14,8 +14,9 @@ import type { DespesaBase, DespesaInput } from '@/types/despesa';
 import { TIPOS_DESPESA } from '@/types/despesa';
 import { getBancoIcon, type Banco } from '@/types/banco';
 import { useBancoStore } from '@/stores/bancoStore';
+import { useDespesaTiposStore } from '@/stores/despesaTiposStore';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
-import { formatDateToLocalYYYYMMDD } from '@/lib/date';
+import { formatDateToLocalYYYYMMDD, formatDateStringToBR } from '@/lib/date';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import {
   Dialog,
@@ -61,7 +62,7 @@ function formatCurrency(value: number) {
 }
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
+  return formatDateStringToBR(date);
 }
 
 function formatDateForInput(date: string) {
@@ -168,9 +169,13 @@ export function DespesaBancoPageComponent({
   const updateBanco = useBancoStore((s) => s.updateBanco);
   const deleteBanco = useBancoStore((s) => s.deleteBanco);
 
+  const { fetchTipos, getTipos, addTipo, deleteTipo } = useDespesaTiposStore();
+  const [isTiposDialogOpen, setIsTiposDialogOpen] = useState(false);
+  const [novoTipoLabel, setNovoTipoLabel] = useState('');
+
   const [isBancosDialogOpen, setIsBancosDialogOpen] = useState(false);
   const [editingBanco, setEditingBanco] = useState<Banco | null>(null);
-  const [bancoForm, setBancoForm] = useState({ nome: '', codigo: '', cor: '#64748B' });
+  const [bancoForm, setBancoForm] = useState({ nome: '', codigo: '', cor: '#64748B', logo: '' as string });
   const [deleteBancoId, setDeleteBancoId] = useState<string | null>(null);
   const [isBancoSaving, setIsBancoSaving] = useState(false);
 
@@ -183,7 +188,14 @@ export function DespesaBancoPageComponent({
     comunicarAgenda: false,
   });
 
-  const tiposDisponiveis = TIPOS_DESPESA['despesa-banco'] || ['OUTROS'];
+  const tiposPadrao = TIPOS_DESPESA['despesa-banco'] || ['OUTROS'];
+  const tiposFromStore = getTipos('despesa-banco');
+  const customTipos = tiposFromStore.filter((t) => !tiposPadrao.includes(t.label));
+  const tiposDisponiveis = [...tiposPadrao, ...customTipos.map((t) => t.label)];
+  const tiposParaListar = [
+    ...tiposPadrao.map((label) => ({ label, id: undefined as string | undefined })),
+    ...customTipos.map((t) => ({ label: t.label, id: t.id })),
+  ];
 
   const dateParams = useMemo(() => ({
     dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
@@ -198,7 +210,11 @@ export function DespesaBancoPageComponent({
     fetchBancos();
   }, [fetchBancos]);
 
-  // Backend ja retorna itens filtrados por data; so filtrar no cliente apenas por banco
+  useEffect(() => {
+    fetchTipos('despesa-banco').catch(() => {});
+  }, [fetchTipos]);
+
+  // Backend ja retorna itens filtrados por data; filtrar no cliente por banco
   const filteredItems = useMemo(() => {
     if (!items) return [];
     if (!bancoFilter) return items;
@@ -219,7 +235,7 @@ export function DespesaBancoPageComponent({
     } else {
       setEditingItem(null);
       setFormData({
-        data: new Date().toISOString().split('T')[0],
+        data: formatDateToLocalYYYYMMDD(new Date()),
         tipo: tiposDisponiveis[0] || '',
         descricao: '',
         valor: 0,
@@ -456,6 +472,13 @@ export function DespesaBancoPageComponent({
           />
 
           <button
+            onClick={() => setIsTiposDialogOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            <Settings2 className="h-4 w-4" />
+            <span>Gerenciar tipos</span>
+          </button>
+          <button
             onClick={() => setIsBancosDialogOpen(true)}
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
           >
@@ -477,7 +500,7 @@ export function DespesaBancoPageComponent({
         if (!open) {
           setIsBancosDialogOpen(false);
           setEditingBanco(null);
-          setBancoForm({ nome: '', codigo: '', cor: '#64748B' });
+          setBancoForm({ nome: '', codigo: '', cor: '#64748B', logo: '' });
         } else setIsBancosDialogOpen(open);
       }}>
         <DialogContent className="sm:max-w-md">
@@ -510,15 +533,40 @@ export function DespesaBancoPageComponent({
                 />
               </div>
               {editingBanco && (
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-slate-600">Cor:</label>
-                  <input
-                    type="color"
-                    value={bancoForm.cor}
-                    onChange={(e) => setBancoForm((f) => ({ ...f, cor: e.target.value }))}
-                    className="h-8 w-14 cursor-pointer rounded border border-slate-200"
-                  />
-                </div>
+                <>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-slate-600">Cor:</label>
+                    <input
+                      type="color"
+                      value={bancoForm.cor}
+                      onChange={(e) => setBancoForm((f) => ({ ...f, cor: e.target.value }))}
+                      className="h-8 w-14 cursor-pointer rounded border border-slate-200"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm text-slate-600">Logo (upload):</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="block w-full text-sm text-slate-600 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-emerald-700"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => setBancoForm((f) => ({ ...f, logo: String(reader.result ?? '') }));
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    {bancoForm.logo && (
+                      <div className="mt-1 flex items-center gap-2">
+                        <img src={bancoForm.logo} alt="" className="h-10 w-10 rounded object-contain bg-white border" />
+                        <button type="button" onClick={() => setBancoForm((f) => ({ ...f, logo: '' }))} className="text-xs text-red-600 hover:underline">
+                          Remover logo
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
               <div className="flex gap-2">
                 {editingBanco ? (
@@ -536,10 +584,11 @@ export function DespesaBancoPageComponent({
                             nome: bancoForm.nome.trim(),
                             codigo: bancoForm.codigo.trim() || undefined,
                             cor: bancoForm.cor,
+                            logo: bancoForm.logo || undefined,
                           });
                           toast.success('Banco atualizado');
                           setEditingBanco(null);
-                          setBancoForm({ nome: '', codigo: '', cor: '#64748B' });
+                          setBancoForm({ nome: '', codigo: '', cor: '#64748B', logo: '' });
                         } catch (err) {
                           toast.error(err instanceof Error ? err.message : 'Erro ao atualizar');
                         } finally {
@@ -555,7 +604,7 @@ export function DespesaBancoPageComponent({
                       type="button"
                       onClick={() => {
                         setEditingBanco(null);
-                        setBancoForm({ nome: '', codigo: '', cor: '#64748B' });
+                        setBancoForm({ nome: '', codigo: '', cor: '#64748B', logo: '' });
                       }}
                       className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                     >
@@ -575,9 +624,11 @@ export function DespesaBancoPageComponent({
                         await addBanco({
                           nome: bancoForm.nome.trim(),
                           codigo: bancoForm.codigo.trim() || undefined,
+                          cor: bancoForm.cor,
+                          logo: bancoForm.logo || undefined,
                         });
                         toast.success('Banco adicionado');
-                        setBancoForm({ nome: '', codigo: '', cor: '#64748B' });
+                        setBancoForm({ nome: '', codigo: '', cor: '#64748B', logo: '' });
                       } catch (err) {
                         toast.error(err instanceof Error ? err.message : 'Erro ao adicionar');
                       } finally {
@@ -614,7 +665,7 @@ export function DespesaBancoPageComponent({
                         type="button"
                         onClick={() => {
                           setEditingBanco(b);
-                          setBancoForm({ nome: b.nome, codigo: b.codigo || '', cor: b.cor || '#64748B' });
+                          setBancoForm({ nome: b.nome, codigo: b.codigo || '', cor: b.cor || '#64748B', logo: b.logo || '' });
                         }}
                         className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                         title="Editar"
@@ -667,25 +718,58 @@ export function DespesaBancoPageComponent({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Cards de resumo por banco */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {bancos.slice(0, 4).map((banco) => {
+      {/* Cards por banco (estilo similar ao modulo Socios) */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {bancos.map((banco) => {
           const totalBanco = items
             .filter((i) => i.bancoId === banco.id)
             .reduce((acc, i) => acc + i.valor, 0);
-          if (totalBanco === 0) return null;
           return (
             <div
               key={banco.id}
-              className="rounded-xl border border-slate-200 bg-white p-4 cursor-pointer hover:shadow-md transition-shadow"
+              className="cursor-pointer rounded-xl border border-slate-200 bg-white p-5 transition-all hover:border-emerald-300 hover:shadow-lg"
               onClick={() => setBancoFilter(bancoFilter === banco.id ? '' : banco.id)}
             >
-              <div className="flex items-center gap-3">
-                <BancoLogo banco={banco} size="lg" />
-                <div>
-                  <p className="text-xs font-medium text-slate-500">{banco.nome}</p>
-                  <p className="text-lg font-bold text-slate-900">{formatCurrency(totalBanco)}</p>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <BancoLogo banco={banco} size="lg" />
+                  <div>
+                    <h3 className="font-semibold text-slate-900">{banco.nome}</h3>
+                    {banco.codigo && (
+                      <p className="text-sm text-slate-500">{banco.codigo}</p>
+                    )}
+                  </div>
                 </div>
+                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingBanco(banco);
+                      setBancoForm({ nome: banco.nome, codigo: banco.codigo || '', cor: banco.cor || '#64748B', logo: banco.logo || '' });
+                      setIsBancosDialogOpen(true);
+                    }}
+                    className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    title="Editar banco"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 rounded-lg bg-slate-100 p-2.5">
+                <p className="text-xs text-slate-600">Total despesas</p>
+                <p className="text-lg font-semibold text-slate-900">{formatCurrency(totalBanco)}</p>
+              </div>
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setBancoFilter(bancoFilter === banco.id ? '' : banco.id);
+                  }}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Ver detalhes
+                </button>
               </div>
             </div>
           );
@@ -891,19 +975,6 @@ export function DespesaBancoPageComponent({
                   required
                 />
               </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  id="comunicarAgenda"
-                  type="checkbox"
-                  checked={formData.comunicarAgenda || false}
-                  onChange={(e) => setFormData({ ...formData, comunicarAgenda: e.target.checked })}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <label htmlFor="comunicarAgenda" className="text-sm font-medium text-slate-700">
-                  Comunicar Agenda
-                </label>
-              </div>
             </div>
 
             <DialogFooter>
@@ -924,6 +995,87 @@ export function DespesaBancoPageComponent({
               </button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Gerenciar Tipos */}
+      <Dialog open={isTiposDialogOpen} onOpenChange={setIsTiposDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerenciar tipos</DialogTitle>
+            <DialogDescription>
+              Adicione ou remova tipos de despesa bancaria. Tipos padrao nao podem ser excluidos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Nome do tipo"
+                value={novoTipoLabel}
+                onChange={(e) => setNovoTipoLabel(e.target.value.trim().toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (novoTipoLabel.trim()) {
+                      addTipo('despesa-banco', novoTipoLabel.trim().toUpperCase())
+                        .then(() => {
+                          setNovoTipoLabel('');
+                          toast.success('Tipo adicionado.');
+                        })
+                        .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao adicionar tipo'));
+                    }
+                  }
+                }}
+                className="flex flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm uppercase placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              />
+              <button
+                type="button"
+                disabled={!novoTipoLabel.trim()}
+                onClick={() => {
+                  const label = novoTipoLabel.trim().toUpperCase();
+                  if (!label) return;
+                  addTipo('despesa-banco', label)
+                    .then(() => {
+                      setNovoTipoLabel('');
+                      toast.success('Tipo adicionado.');
+                    })
+                    .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao adicionar tipo'));
+                }}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                Adicionar
+              </button>
+            </div>
+            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2">
+              {tiposParaListar.length === 0 ? (
+                <li className="py-4 text-center text-sm text-slate-500">Nenhum tipo. Adicione acima.</li>
+              ) : (
+                tiposParaListar.map((t) => (
+                  <li
+                    key={t.id ?? t.label}
+                    className="flex items-center justify-between rounded bg-white px-3 py-2 text-sm text-slate-800"
+                  >
+                    <span>{t.label}</span>
+                    {t.id ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteTipo(t.id!)
+                            .then(() => toast.success('Tipo removido.'))
+                            .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao remover'));
+                        }}
+                        className="rounded p-1 text-red-600 hover:bg-red-50"
+                        title="Excluir tipo"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { DiaAgenda, AgendaItem } from '@/types/agenda';
+import type { DiaAgenda, AgendaItem, AgendaItemDirectInput } from '@/types/agenda';
 import { api } from '@/lib/api';
 
 interface AgendaState {
@@ -13,10 +13,12 @@ interface AgendaState {
 interface AgendaActions {
   fetchDias: (params?: { dataInicio?: string; dataFim?: string; lojaId?: string }) => Promise<DiaAgenda[]>;
   fetchDia: (data: string) => Promise<DiaAgenda | null>;
+  addItemDirect: (data: AgendaItemDirectInput) => Promise<void>;
   marcarPago: (itemId: string) => Promise<void>;
   marcarPagoLote: (ids: string[]) => Promise<void>;
   setDiaSelecionado: (dia: DiaAgenda | null) => void;
   clearError: () => void;
+  reset: () => void;
 }
 
 function normalizeItem(raw: unknown): AgendaItem {
@@ -27,6 +29,7 @@ function normalizeItem(raw: unknown): AgendaItem {
     valor: Number(o.valor) || 0,
     tipo: (o.tipo === 'entrada' || o.tipo === 'saida' ? o.tipo : 'saida') as 'entrada' | 'saida',
     origem: o.origem != null ? String(o.origem) : undefined,
+    tipoDespesa: o.tipoDespesa != null ? String(o.tipoDespesa) : undefined,
     pago: Boolean(o.pago),
   };
 }
@@ -85,6 +88,17 @@ export const useAgendaStore = create<AgendaState & AgendaActions>((set, get) => 
       });
       return null;
     }
+  },
+
+  addItemDirect: async (payload: AgendaItemDirectInput) => {
+    set({ error: null });
+    const body = {
+      data: payload.data,
+      valor: payload.valor,
+      ...(payload.descricao != null && payload.descricao !== '' && { descricao: payload.descricao }),
+      ...(payload.lojaId != null && payload.lojaId !== '' && { lojaId: payload.lojaId }),
+    };
+    await api.post('agenda/itens', body);
   },
 
   marcarPago: async (itemId: string) => {
@@ -149,4 +163,13 @@ export const useAgendaStore = create<AgendaState & AgendaActions>((set, get) => 
   setDiaSelecionado: (dia) => set({ diaSelecionado: dia }),
 
   clearError: () => set({ error: null }),
+
+  reset: () =>
+    set({
+      dias: [],
+      diaSelecionado: null,
+      isLoading: false,
+      isLoadingDetalhe: false,
+      error: null,
+    }),
 }));

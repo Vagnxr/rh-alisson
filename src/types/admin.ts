@@ -45,6 +45,8 @@ export interface AdminTenantFormData {
   isMultiloja?: boolean;
   /** Ids das paginas que a empresa tem acesso. Enviado no POST/PATCH. */
   paginasPermitidas?: string[];
+  /** URL ou data URL da imagem/logo da empresa (upload). */
+  logo?: string;
 }
 
 export const ROLE_LABELS: Record<AdminUser['role'], string> = {

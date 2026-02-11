@@ -106,6 +106,16 @@ export const useLojaStore = create<LojaState>()(
       getLojasByTenant: (tenantId: string): Loja[] => {
         return get().lojas.filter((l) => l.tenantId === tenantId);
       },
+
+      reset: () =>
+        set({
+          lojas: [],
+          columns: null,
+          lojaAtual: null,
+          isMultiLoja: false,
+          isLoading: false,
+          error: null,
+        }),
     }),
     {
       name: 'loja-storage',

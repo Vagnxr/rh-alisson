@@ -110,6 +110,7 @@ export interface LojaState {
   updateLoja: (id: string, data: UpdateLojaDTO) => Promise<Loja>;
   deleteLoja: (id: string) => Promise<void>;
   getLojasByTenant: (tenantId: string) => Loja[];
+  reset: () => void;
 }
 
 // Mock de lojas para desenvolvimento (vinculadas ao tenant-001)
