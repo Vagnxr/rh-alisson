@@ -111,6 +111,8 @@ export const useConfiguracaoStore = create<ConfiguracaoState>()(
 
       getTabela: (tabelaId: string) => get().tabelas.find((t) => t.id === tabelaId),
 
+      reset: () => set({ tabelas: TABELAS_CONFIGURACOES }),
+
       addColuna: (tabelaId: string, coluna: Omit<ColunaConfig, 'order'> & { order?: number }) => {
         set((state) => {
           const tabela = state.tabelas.find((t) => t.id === tabelaId);

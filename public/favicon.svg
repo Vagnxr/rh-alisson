@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="145 158 185 130">
+  <defs>
+    <style>
+      .cls-1 { fill: url(#Gradiente_sem_nome_36-3); }
+      .cls-2 { fill: url(#Gradiente_sem_nome_36-2); }
+      .cls-3 { fill: url(#Fading_Sky-2); opacity: .4; }
+      .cls-4 { fill: url(#Gradiente_sem_nome_36); }
+      .cls-5 { fill: url(#Gradiente_sem_nome_36-5); }
+      .cls-6 { fill: url(#Fading_Sky); }
+      .cls-7 { fill: url(#Gradiente_sem_nome_36-4); }
+    </style>
+    <linearGradient id="Fading_Sky" x1="-18.31" y1="114.13" x2="10.19" y2="36.37" gradientTransform="translate(281.24 120.12) rotate(-27.31) scale(1.06 1.33) skewX(-15.91)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5083c2"/>
+      <stop offset="1" stop-color="#5082c2" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="Gradiente_sem_nome_36" x1="-84.51" y1="89.87" x2="-56.01" y2="12.11" gradientTransform="translate(281.24 120.12) rotate(-27.31) scale(1.06 1.33) skewX(-15.91)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00b553"/>
+      <stop offset="1" stop-color="#5082c2" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="Gradiente_sem_nome_36-2" x1="286.96" y1="246.77" x2="319.67" y2="246.77" gradientTransform="matrix(1,0,0,1,0,0)" xlink:href="#Gradiente_sem_nome_36"/>
+    <linearGradient id="Fading_Sky-2" x1="216.46" y1="246.77" x2="249.17" y2="246.77" gradientTransform="matrix(1,0,0,1,0,0)" xlink:href="#Fading_Sky"/>
+    <linearGradient id="Gradiente_sem_nome_36-3" x1="-84.33" y1="26.17" x2="-11.89" y2="-6.72" gradientTransform="translate(366.6 253.27) rotate(22.65) scale(.98 .87) skewX(5.21)" xlink:href="#Gradiente_sem_nome_36"/>
+    <linearGradient id="Gradiente_sem_nome_36-4" x1="-178.73" y1="119.35" x2="-109.6" y2="106.35" gradientTransform="translate(482.91 115.78) rotate(12.69) scale(1.06 1.33) skewX(-15.91)" xlink:href="#Gradiente_sem_nome_36"/>
+    <linearGradient id="Gradiente_sem_nome_36-5" x1="-240.51" y1="130.97" x2="-171.39" y2="117.97" gradientTransform="translate(482.91 115.78) rotate(12.69) scale(1.06 1.33) skewX(-15.91)" xlink:href="#Gradiente_sem_nome_36"/>
+  </defs>
+  <path class="cls-6" d="M303.32,279.97h0c-9.03,0-16.35-7.32-16.35-16.35v-83.97c0-9.03,7.32-16.35,16.35-16.35h0c9.03,0,16.35,7.32,16.35,16.35v83.97c0,9.03-7.32,16.35-16.35,16.35Z"/>
+  <rect class="cls-4" x="216.46" y="163.29" width="32.71" height="116.68" rx="8.64" ry="8.64"/>
+  <path class="cls-2" d="M319.67,213.58l-31.4,37.42c-.48.57-.91,1.16-1.31,1.77v10.85c0,9.03,7.32,16.35,16.35,16.35s16.35-7.32,16.35-16.35v-50.03Z"/>
+  <path class="cls-3" d="M249.17,213.58l-31.4,37.42c-.48.57-.91,1.16-1.31,1.77v10.85c0,9.03,7.32,16.35,16.35,16.35s16.35-7.32,16.35-16.35v-50.03Z"/>
+  <path class="cls-1" d="M292.81,276.15h0c-6.92-5.81-7.82-16.12-2.02-23.04l34.34-40.92c5.81-6.92,16.12-7.82,23.04-2.02h0c6.92,5.81,7.82,16.12,2.02,23.04l-34.34,40.92c-5.81,6.92-16.12,7.82-23.04,2.02Z"/>
+  <path class="cls-7" d="M222.34,276.15h0c-6.92-5.81-7.82-16.12-2.02-23.04l70.47-83.98c5.81-6.92,16.12-7.82,23.04-2.02h0c6.92,5.81,7.82,16.12,2.02,23.04l-70.47,83.98c-5.81,6.92-16.12,7.82-23.04,2.02Z"/>
+  <path class="cls-5" d="M151.83,276.15h0c-6.92-5.81-7.82-16.12-2.02-23.04l70.47-83.98c5.81-6.92,16.12-7.82,23.04-2.02h0c6.92,5.81,7.82,16.12,2.02,23.04l-70.47,83.98c-5.81,6.92-16.12,7.82-23.04,2.02Z"/>
+</svg>

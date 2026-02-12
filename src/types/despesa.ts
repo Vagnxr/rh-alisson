@@ -27,17 +27,29 @@ export interface DespesaInput {
   recorrenciaFim?: string;
 }
 
-// Tipos padrao por categoria de despesa
+// Tipos padrao por categoria de despesa (conforme planilha)
 export const TIPOS_DESPESA: Record<DespesaCategoria, string[]> = {
-  'despesa-fixa': ['ALUGUEL', 'AGUA', 'LUZ', 'INTERNET', 'TELEFONE', 'CONDOMINIO', 'SEGURO', 'OUTROS'],
-  'despesa-extra': ['MANUTENCAO', 'SERVICO', 'OUTROS'],
-  'despesa-funcionario': ['SALARIO', 'VALE TRANSPORTE', 'VALE ALIMENTACAO', 'PLANO SAUDE', 'FERIAS', '13º SALARIO', 'RESCISAO', 'OUTROS'],
-  'despesa-imposto': ['ICMS', 'ISS', 'INSS', 'FGTS', 'PIS', 'COFINS', 'IRPJ', 'CSLL', 'SIMPLES', 'OUTROS'],
-  'despesa-veiculo': ['COMBUSTIVEL', 'MANUTENCAO', 'SEGURO', 'IPVA', 'LICENCIAMENTO', 'MULTA', 'PEDAGIO', 'ESTACIONAMENTO', 'OUTROS'],
-  'despesa-banco': ['TARIFA MENSAL', 'TED', 'DOC', 'PIX', 'TAXA CARTAO', 'JUROS', 'IOF', 'OUTROS'],
+  'despesa-fixa': ['AGUA', 'ALUGUEL', 'ENERGIA ELETRICA', 'INTERNET', 'TELEFONIA'],
+  'despesa-extra': ['MANUTENCAO'],
+  'despesa-funcionario': [
+    'ADIANTAMENTO DE SALARIO',
+    'EXAMES ADMISSIONAIS',
+    'EXAMES PERIODICOS',
+    'FERIAS',
+    'HORAS EXTRAS',
+    'PAGAMENTO DE SALARIO',
+    'RESCISAO',
+    'VALE ALIMENTACAO',
+    'VALE REFEICAO',
+    'VALE TRANSPORTE',
+    '13º SALARIO',
+  ],
+  'despesa-imposto': ['CSLL', 'DAS', 'ICMS', 'IPI', 'IRPJ', 'ISS', 'PIS/COFINS'],
+  'despesa-veiculo': ['COMBUSTIVEL', 'MANUTENCAO', 'SEGURO', 'IPVA', 'LICENCIAMENTO', 'MULTAS', 'PEDAGIO', 'REVISAO'],
+  'despesa-banco': ['ENCARGOS', 'IOF', 'JUROS', 'MENSALIDADE', 'PIX', 'TARIFAS BANCARIAS', 'TED/DOC'],
   'investimento': ['CDB', 'TESOURO DIRETO', 'FUNDOS', 'ACOES', 'IMOVEIS', 'OUTROS'],
   'renda-extra': ['CONSULTORIA', 'VENDA', 'COMISSAO', 'ALUGUEL', 'RENDIMENTOS', 'OUTROS'],
-  'socios': ['PRO-LABORE', 'DISTRIBUICAO', 'RETIRADA', 'EMPRESTIMO', 'OUTROS'],
+  socios: ['ADIANTAMENTO', 'DISTRIBUICAO DE LUCROS', 'PRO-LABORE', 'RETIRADA'],
 };
 
 // Tipos específicos (herdam de DespesaBase)

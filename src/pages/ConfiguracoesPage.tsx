@@ -92,8 +92,12 @@ function ColunaItem({
                   <button
                     type="button"
                     onClick={() => {
-                      onToggleSomarNoTotal(true);
-                      onToggleSubtrairNoTotal?.(false);
+                      if (coluna.somarNoTotal) {
+                        onToggleSomarNoTotal(false);
+                      } else {
+                        onToggleSomarNoTotal(true);
+                        onToggleSubtrairNoTotal?.(false);
+                      }
                     }}
                     className={cn(
                       'rounded px-2 py-0.5 text-xs font-medium',
@@ -110,8 +114,12 @@ function ColunaItem({
                   <button
                     type="button"
                     onClick={() => {
-                      onToggleSubtrairNoTotal(true);
-                      onToggleSomarNoTotal?.(false);
+                      if (coluna.subtrairNoTotal) {
+                        onToggleSubtrairNoTotal(false);
+                      } else {
+                        onToggleSubtrairNoTotal(true);
+                        onToggleSomarNoTotal?.(false);
+                      }
                     }}
                     className={cn(
                       'rounded px-2 py-0.5 text-xs font-medium',
@@ -420,8 +428,8 @@ export function ConfiguracoesPage() {
             Personalize a exibicao de colunas em cada tabela do sistema
           </p>
         </div>
-        <Link to="/configuracoes/criar-despesa" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          Criar despesa
+        <Link to="/configuracoes/nova-pagina-despesa" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+          Criar pagina de despesa
         </Link>
       </div>
 

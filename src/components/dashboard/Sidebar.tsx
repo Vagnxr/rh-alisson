@@ -180,6 +180,41 @@ const MENU_ITEMS: MenuItem[] = [
   { label: 'Configuracoes', icon: Settings, href: '/configuracoes', permissionId: 'configuracoes' },
 ];
 
+const DESPESA_FIXED_IDS = [
+  'despesa-fixa',
+  'despesa-extra',
+  'despesa-funcionario',
+  'despesa-imposto',
+  'despesa-veiculo',
+  'despesa-banco',
+] as const;
+
+function slugToTitle(slug: string): string {
+  return slug
+    .split('-')
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function buildDespesasSubItems(permissoes: string[]): SubMenuItem[] {
+  const fixed: SubMenuItem[] = [
+    { label: 'Despesa Fixa', href: '/despesa-fixa', permissionId: 'despesa-fixa' },
+    { label: 'Despesa Extra', href: '/despesa-extra', permissionId: 'despesa-extra' },
+    { label: 'Despesa Funcionario', href: '/despesa-funcionario', permissionId: 'despesa-funcionario' },
+    { label: 'Despesa Imposto', href: '/despesa-imposto', permissionId: 'despesa-imposto' },
+    { label: 'Despesa Veiculo', href: '/despesa-veiculo', permissionId: 'despesa-veiculo' },
+    { label: 'Despesa Banco', href: '/despesa-banco', permissionId: 'despesa-banco' },
+  ];
+  const custom = permissoes
+    .filter((p) => p.startsWith('despesa-') && !DESPESA_FIXED_IDS.includes(p as (typeof DESPESA_FIXED_IDS)[number]))
+    .map((permissionId) => ({
+      label: slugToTitle(permissionId),
+      href: `/despesa/${permissionId}`,
+      permissionId,
+    }));
+  return [...fixed, ...custom];
+}
+
 function hasPermission(permissoes: string[], permissionId: string): boolean {
   if (!permissoes || permissoes.length === 0) return true;
   if (permissoes.includes('*')) return true;
@@ -346,6 +381,12 @@ export function Sidebar() {
 
   const menuItems = useMemo(() => {
     const withPermissions = MENU_ITEMS.map(item => {
+      if (item.permissionId === 'despesas') {
+        const subItems = buildDespesasSubItems(permissoes);
+        const allowedSub = subItems.filter(sub => hasPermission(permissoes, sub.permissionId));
+        if (allowedSub.length === 0) return null;
+        return { ...item, subItems: allowedSub };
+      }
       if (item.subItems) {
         const allowedSub = item.subItems.filter(sub => hasPermission(permissoes, sub.permissionId));
         if (allowedSub.length === 0) return null;

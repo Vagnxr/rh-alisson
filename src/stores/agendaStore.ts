@@ -92,11 +92,14 @@ export const useAgendaStore = create<AgendaState & AgendaActions>((set, get) => 
 
   addItemDirect: async (payload: AgendaItemDirectInput) => {
     set({ error: null });
-    const body = {
+    const body: Record<string, unknown> = {
       data: payload.data,
       valor: payload.valor,
       ...(payload.descricao != null && payload.descricao !== '' && { descricao: payload.descricao }),
       ...(payload.lojaId != null && payload.lojaId !== '' && { lojaId: payload.lojaId }),
+      ...(payload.tipo != null && { tipo: payload.tipo }),
+      ...(payload.recorrencia != null && payload.recorrencia !== 'unica' && { recorrencia: payload.recorrencia }),
+      ...(payload.recorrenciaFim != null && payload.recorrenciaFim !== '' && { recorrenciaFim: payload.recorrenciaFim }),
     };
     await api.post('agenda/itens', body);
   },

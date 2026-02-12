@@ -230,6 +230,8 @@ Se o usuario ainda nao tiver configuracao salva para essa tabela, o backend reto
       "descricao": "string",
       "valor": 2500.00,
       "comunicarAgenda": false,
+      "recorrencia": "mensal",
+      "recorrenciaFim": "2026-12-05",
       "createdAt": "string",
       "updatedAt": "string"
     }
@@ -239,12 +241,15 @@ Se o usuario ainda nao tiver configuracao salva para essa tabela, o backend reto
     { "id": "data", "label": "Data", "order": 1, "isRequired": true },
     { "id": "tipo", "label": "Tipo", "order": 2 },
     { "id": "descricao", "label": "Descricao", "order": 3, "isRequired": true },
-    { "id": "valor", "label": "Valor", "order": 4, "isRequired": true }
+    { "id": "valor", "label": "Valor", "order": 4, "isRequired": true },
+    { "id": "recorrencia", "label": "Recorrencia", "order": 5 }
   ]
 }
 ```
 
-**POST Body:** `data`, `tipo`, `descricao`, `valor`, `comunicarAgenda` (opcional). Backend deve receber tambem `categoria` (ou inferir pelo contexto do modulo) e `lojaId` (opcional).
+**POST Body:** `data`, `tipo`, `descricao`, `valor`, `comunicarAgenda` (opcional), `recorrencia` (opcional, ex.: `unica`, `mensal`, `bimestral`), `recorrenciaFim` (opcional, YYYY-MM-DD). Backend deve receber tambem `categoria` (ou inferir pelo contexto do modulo) e `lojaId` (opcional).
+
+**GET Response (cada item):** Incluir `recorrencia` e `recorrenciaFim` quando existirem, para o front exibir a coluna Recorrencia. Valores de `recorrencia`: `unica`, `semanal`, `quinzenal`, `mensal`, `bimestral`, `trimestral`, `semestral`, `anual`.
 
 **Tipos por categoria (front usa como opcoes no select):**
 - despesa-fixa: ALUGUEL, AGUA, LUZ, INTERNET, TELEFONE, CONDOMINIO, SEGURO, OUTROS

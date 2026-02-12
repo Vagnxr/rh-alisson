@@ -12,13 +12,19 @@ import {
   Plus,
   Pencil,
   Trash2,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
+  Loader2,
   Percent,
 } from 'lucide-react';
 import { useSociosStore } from '@/stores/sociosStore';
-import { TIPOS_MOVIMENTACAO, type TipoMovimentacaoSocio, type Socio, type MovimentacaoSocio, type ResumoSocio } from '@/types/socio';
+import { useDespesaTiposStore } from '@/stores/despesaTiposStore';
+import {
+  TIPOS_MOVIMENTACAO,
+  getTipoMovimentacaoDisplay,
+  type TipoMovimentacaoSocio,
+  type Socio,
+  type MovimentacaoSocio,
+  type ResumoSocio,
+} from '@/types/socio';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
@@ -75,7 +81,7 @@ interface SocioCardProps {
 }
 
 function SocioCard({ resumo, onClick, onEdit, onDelete }: SocioCardProps) {
-  const { socio, totalProLabore, totalDistribuicao, totalRetiradas, saldoTotal } = resumo;
+  const { socio, saldoTotal } = resumo;
 
   return (
     <div
@@ -118,23 +124,9 @@ function SocioCard({ resumo, onClick, onEdit, onDelete }: SocioCardProps) {
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-blue-50 p-2.5">
-          <p className="text-xs text-blue-600">Pro-labore</p>
-          <p className="text-sm font-semibold text-blue-700">{formatCurrency(totalProLabore)}</p>
-        </div>
-        <div className="rounded-lg bg-emerald-50 p-2.5">
-          <p className="text-xs text-emerald-600">Distribuicao</p>
-          <p className="text-sm font-semibold text-emerald-700">{formatCurrency(totalDistribuicao)}</p>
-        </div>
-        <div className="rounded-lg bg-amber-50 p-2.5">
-          <p className="text-xs text-amber-600">Retiradas</p>
-          <p className="text-sm font-semibold text-amber-700">{formatCurrency(totalRetiradas)}</p>
-        </div>
-        <div className="rounded-lg bg-slate-100 p-2.5">
-          <p className="text-xs text-slate-600">Total</p>
-          <p className="text-sm font-semibold text-slate-900">{formatCurrency(saldoTotal)}</p>
-        </div>
+      <div className="mt-4 rounded-lg bg-slate-100 p-3">
+        <p className="text-xs text-slate-600">Total lancado</p>
+        <p className="text-lg font-semibold text-slate-900">{formatCurrency(saldoTotal)}</p>
       </div>
 
       <div className="mt-4 text-center">
@@ -168,10 +160,10 @@ function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }:
         accessorKey: 'tipo',
         header: 'Tipo',
         cell: ({ row }) => {
-          const tipoConfig = TIPOS_MOVIMENTACAO[row.original.tipo];
+          const { label, cor } = getTipoMovimentacaoDisplay(row.original.tipo);
           return (
-            <span className={cn('rounded-full px-2 py-1 text-xs font-medium', tipoConfig.cor)}>
-              {tipoConfig.label}
+            <span className={cn('rounded-full px-2 py-1 text-xs font-medium', cor)}>
+              {label}
             </span>
           );
         },
@@ -314,10 +306,21 @@ export function SociosPage() {
   // Form state (movimentacao)
   const [formData, setFormData] = useState({
     data: '',
-    tipo: 'pro-labore' as TipoMovimentacaoSocio,
+    tipo: 'pro-labore' as string,
     descricao: '',
     valor: '',
   });
+
+  const { fetchTipos, getTipos, addTipo, deleteTipo, isLoading: isLoadingTipos } = useDespesaTiposStore();
+  const [isTiposDialogOpen, setIsTiposDialogOpen] = useState(false);
+  const [novoTipoLabel, setNovoTipoLabel] = useState('');
+  const TIPOS_FIXOS = Object.keys(TIPOS_MOVIMENTACAO) as TipoMovimentacaoSocio[];
+  const tiposCustom = getTipos('socios').filter((t) => !TIPOS_FIXOS.includes(t.label as TipoMovimentacaoSocio));
+  const tiposDisponiveis = [...TIPOS_FIXOS, ...tiposCustom.map((t) => t.label)];
+  const tiposParaListar = [
+    ...TIPOS_FIXOS.map((k) => ({ label: TIPOS_MOVIMENTACAO[k].label, id: undefined as string | undefined, key: k })),
+    ...tiposCustom.map((t) => ({ label: t.label, id: t.id, key: t.label })),
+  ];
 
   const movimentacoesFiltros = useMemo(() => ({
     dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
@@ -329,6 +332,10 @@ export function SociosPage() {
     fetchResumo();
     fetchMovimentacoes(selectedSocio?.id, movimentacoesFiltros);
   }, [fetchSocios, fetchResumo, fetchMovimentacoes, selectedSocio?.id, movimentacoesFiltros.dataInicio, movimentacoesFiltros.dataFim]);
+
+  useEffect(() => {
+    fetchTipos('socios').catch(() => {});
+  }, [fetchTipos]);
 
   const movimentacoesFiltradas = useMemo(() => {
     if (!selectedSocio) return [];
@@ -352,7 +359,7 @@ export function SociosPage() {
       setEditingMov(null);
       setFormData({
         data: new Date().toISOString().split('T')[0],
-        tipo: 'pro-labore',
+        tipo: tiposDisponiveis[0] ?? 'pro-labore',
         descricao: '',
         valor: '',
       });
@@ -644,8 +651,6 @@ export function SociosPage() {
   }
 
   // Pagina de detalhes do socio
-  const resumoAtual = resumos.find((r) => r.socio.id === selectedSocio.id);
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -677,65 +682,6 @@ export function SociosPage() {
         </div>
       </div>
 
-      {/* Cards de resumo */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-              <DollarSign className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Pro-labore</p>
-              <p className="text-lg font-bold text-slate-900">
-                {formatCurrency(resumoAtual?.totalProLabore || 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Distribuicao</p>
-              <p className="text-lg font-bold text-slate-900">
-                {formatCurrency(resumoAtual?.totalDistribuicao || 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
-              <TrendingDown className="h-5 w-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Retiradas</p>
-              <p className="text-lg font-bold text-slate-900">
-                {formatCurrency(resumoAtual?.totalRetiradas || 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
-              <Users className="h-5 w-5 text-slate-600" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500">Total</p>
-              <p className="text-lg font-bold text-emerald-600">
-                {formatCurrency(resumoAtual?.saldoTotal || 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Tabela de movimentacoes */}
       <MovimentacoesTable
         movimentacoes={movimentacoesFiltradas}
@@ -759,7 +705,7 @@ export function SociosPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 pb-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Data</label>
@@ -772,19 +718,35 @@ export function SociosPage() {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Tipo</label>
-                <select
-                  value={formData.tipo}
-                  onChange={(e) =>
-                    setFormData({ ...formData, tipo: e.target.value as TipoMovimentacaoSocio })
-                  }
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                >
-                  {Object.entries(TIPOS_MOVIMENTACAO).map(([key, config]) => (
-                    <option key={key} value={key}>
-                      {config.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-1">
+                  <select
+                    value={formData.tipo}
+                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                    className="flex h-10 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  >
+                    {TIPOS_FIXOS.map((key) => (
+                      <option key={key} value={key}>
+                        {TIPOS_MOVIMENTACAO[key].label}
+                      </option>
+                    ))}
+                    {tiposCustom.map((t) => (
+                      <option key={t.id} value={t.label}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNovoTipoLabel('');
+                      setIsTiposDialogOpen(true);
+                    }}
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-emerald-600"
+                    title="Adicionar ou gerenciar tipos"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -811,12 +773,89 @@ export function SociosPage() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="pt-4 border-t border-slate-200">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancelar
             </Button>
             <Button onClick={handleSubmit}>{editingMov ? 'Salvar' : 'Adicionar'}</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Gerenciar Tipos */}
+      <Dialog open={isTiposDialogOpen} onOpenChange={setIsTiposDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerenciar tipos</DialogTitle>
+            <DialogDescription>
+              Adicione ou remova tipos de movimentacao. Tipos padrao (Pro-labore, Distribuicao, etc.) nao podem ser excluidos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Nome do tipo"
+                value={novoTipoLabel}
+                onChange={(e) => setNovoTipoLabel(e.target.value.trim().toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && novoTipoLabel.trim()) {
+                    e.preventDefault();
+                    addTipo('socios', novoTipoLabel.trim())
+                      .then(() => {
+                        setNovoTipoLabel('');
+                        toast.success('Tipo adicionado.');
+                      })
+                      .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao adicionar tipo'));
+                  }
+                }}
+                className="flex flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase"
+              />
+              <Button
+                disabled={!novoTipoLabel.trim() || isLoadingTipos}
+                onClick={() => {
+                  const label = novoTipoLabel.trim();
+                  if (!label) return;
+                  addTipo('socios', label)
+                    .then(() => {
+                      setNovoTipoLabel('');
+                      toast.success('Tipo adicionado.');
+                    })
+                    .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao adicionar tipo'));
+                }}
+              >
+                {isLoadingTipos ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Adicionar'}
+              </Button>
+            </div>
+            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2">
+              {tiposParaListar.length === 0 ? (
+                <li className="py-4 text-center text-sm text-slate-500">Nenhum tipo.</li>
+              ) : (
+                tiposParaListar.map((t) => (
+                  <li
+                    key={t.id ?? t.key}
+                    className="flex items-center justify-between rounded bg-white px-3 py-2 text-sm text-slate-800"
+                  >
+                    <span>{t.label}</span>
+                    {t.id ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteTipo(t.id!)
+                            .then(() => toast.success('Tipo removido.'))
+                            .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao remover'));
+                        }}
+                        className="rounded p-1 text-red-600 hover:bg-red-50"
+                        title="Excluir tipo"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
         </DialogContent>
       </Dialog>
 

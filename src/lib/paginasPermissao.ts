@@ -1,9 +1,51 @@
+import { api } from '@/lib/api';
+
+export interface PaginaPermissaoItem {
+  id: string;
+  label: string;
+  custom?: boolean;
+  /** Preenchido pela API em GET /admin/paginas?tenantId= para preencher os checkboxes. */
+  permitido?: boolean;
+}
+
+/** Resposta do backend: usa "nome" e "permitido". */
+interface AdminPaginaFromApi {
+  id: string;
+  nome: string;
+  custom?: boolean;
+  permitido?: boolean;
+}
+
+/**
+ * Busca paginas permitidas no backend (inclui custom, ex.: despesa-marketing).
+ * Usado nos formularios de Empresa e Usuario. Fallback para PAGINAS_PERMISSAO se a API falhar.
+ * Normaliza "nome" da API para "label" usado no front.
+ */
+export async function fetchAdminPaginas(tenantId?: string | null): Promise<PaginaPermissaoItem[]> {
+  try {
+    const params = tenantId ? { tenantId } : {};
+    const res = await api.get<AdminPaginaFromApi[]>(
+      'admin/paginas',
+      Object.keys(params).length ? { params: params as Record<string, string> } : undefined
+    );
+    if (!Array.isArray(res.data)) return PAGINAS_PERMISSAO;
+    return res.data.map((p) => ({
+      id: p.id,
+      label: p.nome ?? p.id,
+      custom: p.custom,
+      permitido: p.permitido,
+    }));
+  } catch {
+    return PAGINAS_PERMISSAO;
+  }
+}
+
 /**
  * Lista de paginas (ids de permissao) usada na Sidebar e no admin (Empresas e Usuarios).
  * Empresas: selecao de telas permitidas (paginasPermitidas).
  * Usuarios: selecao de paginas que o usuario acessa (subconjunto das da empresa).
  */
-export const PAGINAS_PERMISSAO: { id: string; label: string }[] = [
+export const PAGINAS_PERMISSAO: PaginaPermissaoItem[] = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'despesa-fixa', label: 'Despesa Fixa' },
   { id: 'despesa-extra', label: 'Despesa Extra' },
@@ -81,17 +123,32 @@ export const PATH_TO_PERMISSION_ID: Record<string, string> = Object.fromEntries(
   Object.entries(PERMISSION_ID_TO_PATH).map(([id, path]) => [path, id])
 );
 
+/** Path para permissao de despesa dinamica (ex.: despesa-marketing). */
+export function pathForDespesaPermission(permissionId: string): string {
+  return `/despesa/${permissionId}`;
+}
+
 /** Retorna a rota para a primeira permissao do array que tiver path, ou /dashboard. */
 export function getFirstAllowedPath(permissoes: string[]): string {
   if (permissoes?.includes('dashboard')) return '/dashboard';
   const first = permissoes?.[0];
   if (first && PERMISSION_ID_TO_PATH[first]) return PERMISSION_ID_TO_PATH[first];
+  if (first?.startsWith('despesa-')) return pathForDespesaPermission(first);
   return '/dashboard';
+}
+
+/** Obtem permissionId a partir do pathname (inclui rotas dinamicas /despesa/:slug). */
+export function getPermissionIdFromPath(pathname: string): string | undefined {
+  if (pathname.startsWith('/despesa/')) {
+    const slug = pathname.slice(9).replace(/\/$/, '');
+    return slug || undefined;
+  }
+  return PATH_TO_PERMISSION_ID[pathname];
 }
 
 /** Verifica se o usuario tem permissao para acessar o pathname. Mesma regra do Sidebar. */
 export function hasRoutePermission(permissoes: string[] | undefined, pathname: string): boolean {
-  const permissionId = PATH_TO_PERMISSION_ID[pathname];
+  const permissionId = getPermissionIdFromPath(pathname);
   if (!permissionId) return true; // rota sem mapeamento (ex.: redirect) deixa passar
   if (!permissoes || permissoes.length === 0) return true;
   if (permissoes.includes('*')) return true;

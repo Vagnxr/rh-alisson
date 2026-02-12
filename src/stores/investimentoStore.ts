@@ -28,6 +28,7 @@ interface InvestimentoActions {
   addItem: (data: DespesaInput) => Promise<void>;
   updateItem: (id: string, data: Partial<DespesaInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
+  reset: () => void;
 }
 
 type InvestimentoStore = InvestimentoState & InvestimentoActions;
@@ -98,4 +99,6 @@ export const useInvestimentoStore = create<InvestimentoStore>((set) => ({
       throw err;
     }
   },
+
+  reset: () => set({ items: [], columns: null, isLoading: false, error: null }),
 }));

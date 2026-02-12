@@ -9,6 +9,7 @@ import { DespesaFuncionarioPage } from '@/pages/DespesaFuncionarioPage';
 import { DespesaImpostoPage } from '@/pages/DespesaImpostoPage';
 import { DespesaVeiculoPage } from '@/pages/DespesaVeiculoPage';
 import { DespesaBancoPage } from '@/pages/DespesaBancoPage';
+import { DespesaCategoriaPage } from '@/pages/DespesaCategoriaPage';
 import { ParcelamentoPage } from '@/pages/ParcelamentoPage';
 import { RendaExtraPage } from '@/pages/RendaExtraPage';
 import { InvestimentoPage } from '@/pages/InvestimentoPage';
@@ -16,6 +17,7 @@ import { SociosPage } from '@/pages/SociosPage';
 import { BalancoGeralPage } from '@/pages/BalancoGeralPage';
 import { ConfiguracoesPage } from '@/pages/ConfiguracoesPage';
 import { CriarDespesaPage } from '@/pages/CriarDespesaPage';
+import { NovaPaginaDespesaPage } from '@/pages/NovaPaginaDespesaPage';
 import { FornecedoresPage } from '@/pages/FornecedoresPage';
 import { LojasPage } from '@/pages/LojasPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
@@ -74,6 +76,7 @@ function App() {
           <Route path="/despesa-imposto" element={<DespesaImpostoPage />} />
           <Route path="/despesa-veiculo" element={<DespesaVeiculoPage />} />
           <Route path="/despesa-banco" element={<DespesaBancoPage />} />
+          <Route path="/despesa/:categoria" element={<DespesaCategoriaPage />} />
           
           {/* Outras paginas */}
           <Route path="/parcelamento" element={<ParcelamentoPage />} />
@@ -110,6 +113,7 @@ function App() {
           {/* Configuracoes */}
           <Route path="/configuracoes" element={<ConfiguracoesPage />} />
           <Route path="/configuracoes/criar-despesa" element={<CriarDespesaPage />} />
+          <Route path="/configuracoes/nova-pagina-despesa" element={<NovaPaginaDespesaPage />} />
         </Route>
 
         {/* Redirect padrao */}

@@ -40,15 +40,17 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAdminTenantsStore } from '@/stores/adminTenantsStore';
+import { useAuthStore } from '@/stores/authStore';
 import type { AdminTenant, AdminTenantFormData } from '@/types/admin';
 import { cn } from '@/lib/cn';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { InputCNPJ, InputTelefone } from '@/components/ui/input-masked';
-import { PAGINAS_PERMISSAO } from '@/lib/paginasPermissao';
+import { PAGINAS_PERMISSAO, fetchAdminPaginas } from '@/lib/paginasPermissao';
 
 const ADMIN_TENANTS_TABLE_DEFAULT_ORDER = ['name', 'responsavel', 'telefone', 'usersCount', 'isActive', 'createdAt'];
 
 export function AdminTenantsPage() {
+  const user = useAuthStore((s) => s.user);
   const { tenants, columns: columnsFromApi, isLoading, fetchTenants, addTenant, updateTenant, deleteTenant, toggleTenantStatus } =
     useAdminTenantsStore();
 
@@ -58,6 +60,8 @@ export function AdminTenantsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<AdminTenant | null>(null);
   const [tenantToDelete, setTenantToDelete] = useState<AdminTenant | null>(null);
+  const [paginasList, setPaginasList] = useState<typeof PAGINAS_PERMISSAO>(PAGINAS_PERMISSAO);
+  const [loadingPaginas, setLoadingPaginas] = useState(false);
 
   const [formData, setFormData] = useState<AdminTenantFormData>({
     name: '',
@@ -205,6 +209,20 @@ export function AdminTenantsPage() {
     getFilteredRowModel: getFilteredRowModel(),
   });
 
+  const loadPaginasForDialog = (
+    tenantId?: string | null,
+    onLoaded?: (list: Awaited<ReturnType<typeof fetchAdminPaginas>>) => void
+  ) => {
+    setLoadingPaginas(true);
+    setPaginasList(PAGINAS_PERMISSAO);
+    fetchAdminPaginas(tenantId)
+      .then((list) => {
+        setPaginasList(list);
+        onLoaded?.(list);
+      })
+      .finally(() => setLoadingPaginas(false));
+  };
+
   const handleAdd = () => {
     setEditingTenant(null);
     setFormData({
@@ -220,6 +238,7 @@ export function AdminTenantsPage() {
       logo: '',
     });
     setIsDialogOpen(true);
+    loadPaginasForDialog();
   };
 
   const handleEdit = (tenant: AdminTenant) => {
@@ -237,6 +256,13 @@ export function AdminTenantsPage() {
       logo: (tenant as { logo?: string }).logo || '',
     });
     setIsDialogOpen(true);
+    const tenantIdForPaginas = user?.isSuperAdmin ? undefined : tenant.id;
+    loadPaginasForDialog(tenantIdForPaginas, (list) => {
+      const ids = list.every((p) => p.permitido === undefined)
+        ? list.map((p) => p.id)
+        : list.filter((p) => p.permitido).map((p) => p.id);
+      setFormData((prev) => ({ ...prev, paginasPermitidas: ids }));
+    });
   };
 
   const handleDeleteClick = (tenant: AdminTenant) => {
@@ -520,9 +546,12 @@ export function AdminTenantsPage() {
               <p className="mb-3 text-xs text-slate-500">
                 Selecione quais paginas todos os usuarios desta empresa poderao acessar. Deixe em branco para permitir todas (conforme backend).
               </p>
+              {loadingPaginas && (
+                <p className="text-xs text-slate-500">Carregando paginas...</p>
+              )}
               <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {PAGINAS_PERMISSAO.map((pagina) => {
+                  {paginasList.map((pagina) => {
                     const checked = (formData.paginasPermitidas ?? []).includes(pagina.id);
                     return (
                       <label

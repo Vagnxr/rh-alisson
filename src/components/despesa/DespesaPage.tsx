@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+/** Ordem padrao das colunas; recorrencia vem do backend e e exibida na tabela. */
 const DESPESA_TABLE_DEFAULT_ORDER = ['data', 'tipo', 'descricao', 'valor', 'recorrencia'];
 
 interface DespesaPageProps {
@@ -339,7 +340,7 @@ export function DespesaPage({
         columnsFromApi ?? null,
         DESPESA_TABLE_DEFAULT_ORDER,
         actionsColumn,
-        ['tipo']
+        ['tipo', 'recorrencia']
       ),
     [columnDefsByKey, columnsFromApi, actionsColumn]
   );
@@ -384,12 +385,14 @@ export function DespesaPage({
               tipo: item.tipo || '-',
               descricao: item.descricao,
               valor: formatCurrency(item.valor),
+              recorrencia: item.recorrencia ?? 'unica',
             }))}
             columns={[
               { key: 'data', label: 'Data' },
               { key: 'tipo', label: 'Tipo' },
               { key: 'descricao', label: 'Descricao' },
               { key: 'valor', label: 'Valor' },
+              { key: 'recorrencia', label: 'Recorrencia' },
             ]}
             filename={config.key}
             title={config.title}

@@ -44,7 +44,7 @@ import { cn } from '@/lib/cn';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { InputCelular } from '@/components/ui/input-masked';
 import { InputPassword } from '@/components/ui/input-password';
-import { PAGINAS_PERMISSAO } from '@/lib/paginasPermissao';
+import { PAGINAS_PERMISSAO, fetchAdminPaginas } from '@/lib/paginasPermissao';
 
 const ADMIN_USERS_TABLE_DEFAULT_ORDER = ['nome', 'tenantName', 'role', 'isActive', 'lastLogin'];
 
@@ -59,6 +59,8 @@ export function AdminUsersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+  const [paginasList, setPaginasList] = useState<typeof PAGINAS_PERMISSAO>(PAGINAS_PERMISSAO);
+  const [loadingPaginas, setLoadingPaginas] = useState(false);
 
   const [formData, setFormData] = useState<AdminUserFormData>({
     nome: '',
@@ -198,23 +200,38 @@ export function AdminUsersPage() {
 
   const paginasDisponiveisParaUsuario = useMemo(() => {
     const ids = selectedTenant?.paginasPermitidas;
-    if (ids && ids.length > 0) return PAGINAS_PERMISSAO.filter((p) => ids.includes(p.id));
-    return PAGINAS_PERMISSAO;
-  }, [selectedTenant?.paginasPermitidas]);
+    if (ids && ids.length > 0) return paginasList.filter((p) => ids.includes(p.id));
+    return paginasList;
+  }, [selectedTenant?.paginasPermitidas, paginasList]);
+
+  const loadPaginasForDialog = (tenantId: string | null) => {
+    if (!tenantId) {
+      setPaginasList(PAGINAS_PERMISSAO);
+      return;
+    }
+    setLoadingPaginas(true);
+    setPaginasList(PAGINAS_PERMISSAO);
+    fetchAdminPaginas(tenantId).then((list) => {
+      setPaginasList(list);
+      setLoadingPaginas(false);
+    }).catch(() => setLoadingPaginas(false));
+  };
 
   const handleAdd = () => {
+    const defaultTenantId = tenants[0]?.id || '';
     setEditingUser(null);
     setFormData({
       nome: '',
       email: '',
       telefone: '',
-      tenantId: tenants[0]?.id || '',
+      tenantId: defaultTenantId,
       role: 'user',
       password: '',
       isActive: true,
       permissoes: [],
     });
     setIsDialogOpen(true);
+    loadPaginasForDialog(defaultTenantId || null);
   };
 
   const handleEdit = (user: AdminUser) => {
@@ -230,6 +247,7 @@ export function AdminUsersPage() {
       permissoes: Array.isArray(user.permissoes) ? [...user.permissoes] : [],
     });
     setIsDialogOpen(true);
+    loadPaginasForDialog(user.tenantId || null);
   };
 
   const handleDeleteClick = (user: AdminUser) => {
@@ -421,12 +439,12 @@ export function AdminUsersPage() {
                 onChange={(e) => {
                   const newTenantId = e.target.value;
                   const newTenant = tenants.find((t) => t.id === newTenantId);
-                  const allowedIds = newTenant?.paginasPermitidas?.length
-                    ? newTenant.paginasPermitidas
-                    : PAGINAS_PERMISSAO.map((p) => p.id);
-                  const permissoesValidas = (formData.permissoes ?? []).filter((id) =>
-                    allowedIds.includes(id)
-                  );
+                  loadPaginasForDialog(newTenantId || null);
+                  const allowedIds = newTenant?.paginasPermitidas;
+                  const permissoesValidas =
+                    allowedIds?.length ?
+                      (formData.permissoes ?? []).filter((id) => allowedIds.includes(id))
+                    : (formData.permissoes ?? []);
                   setFormData({
                     ...formData,
                     tenantId: newTenantId,
@@ -470,6 +488,9 @@ export function AdminUsersPage() {
                   ? 'Apenas as telas permitidas para a empresa estao listadas. O usuario so vera o que estiver marcado.'
                   : 'Selecione as telas para este usuario. Se a empresa nao tiver restricao, todas aparecem aqui.'}
               </p>
+              {loadingPaginas && (
+                <p className="text-xs text-slate-500">Carregando paginas...</p>
+              )}
               <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="grid gap-2 sm:grid-cols-2">
                   {paginasDisponiveisParaUsuario.map((pagina) => {

@@ -129,4 +129,6 @@ export interface ConfiguracaoState {
   removeColuna: (tabelaId: string, colunaId: string) => void;
   /** Retorna todas as colunas da tabela (para checar se pode adicionar/remover). */
   getTabela: (tabelaId: string) => TabelaConfig | undefined;
+  /** Limpa para padrao (troca de tenant). */
+  reset: () => void;
 }

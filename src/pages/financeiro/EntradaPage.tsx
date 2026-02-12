@@ -54,21 +54,25 @@ const inputClass =
   'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 const CATEGORIAS_INICIAIS = [
-  { id: 'industrializacao', nome: 'Industrializacao' },
-  { id: 'comercializacao', nome: 'Comercializacao' },
-  { id: 'embalagem', nome: 'Embalagem' },
-  { id: 'materialUsoCons', nome: 'Material uso/cons.' },
-  { id: 'mercadoriaUsoCons', nome: 'Mercadoria uso/cons.' },
-  { id: 'gas', nome: 'Gas' },
+  { id: 'comercializacao', nome: 'COMERCIALIZAÇÃO' },
+  { id: 'industrializacao', nome: 'INDUSTRIALIZAÇÃO' },
+  { id: 'embalagem', nome: 'EMBALAGEM' },
+  { id: 'mat-uso-cons', nome: 'MAT USO/CONS' },
+  { id: 'merc-uso-cons', nome: 'MERC USO/CONS' },
+  { id: 'gas', nome: 'GÁS' },
+  { id: 'bonif-preco', nome: 'BONIF PREÇO' },
+  { id: 'bonif-troca', nome: 'BONIF TROCA' },
+  { id: 'bonif-loja', nome: 'BONIF LOJA' },
 ];
 
-const MODELOS_NOTA_INICIAIS = ['NF-e', 'NFC-e'];
+const MODELOS_NOTA_INICIAIS = ['NF-e', 'NFC-e', 'NFS-e', 'ENT SN', 'BONIFICAÇÃO'];
 
 const TIPOS_ENTRADA = ['Compra', 'Devolucao', 'Outros'];
 
-const FORMAS_PAGAMENTO_INICIAIS = ['Dinheiro', 'PIX', 'Cartao credito', 'Cartao debito'];
+/** Formas de pagamento padrao (sem Bradesco e Santander). */
+const FORMAS_PAGAMENTO_INICIAIS = ['DINHEIRO', 'PIX', 'BOLETO'];
 
-const FORMAS_PAGAMENTO_LANCAMENTO_DIRETO = ['Dinheiro', 'PIX'];
+const FORMAS_PAGAMENTO_LANCAMENTO_DIRETO = ['DINHEIRO', 'PIX'];
 
 function slugify(s: string): string {
   return s

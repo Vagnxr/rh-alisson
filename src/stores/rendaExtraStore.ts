@@ -28,6 +28,7 @@ interface RendaExtraActions {
   addItem: (data: DespesaInput) => Promise<void>;
   updateItem: (id: string, data: Partial<DespesaInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
+  reset: () => void;
 }
 
 type RendaExtraStore = RendaExtraState & RendaExtraActions;
@@ -98,4 +99,6 @@ export const useRendaExtraStore = create<RendaExtraStore>((set) => ({
       throw err;
     }
   },
+
+  reset: () => set({ items: [], columns: null, isLoading: false, error: null }),
 }));

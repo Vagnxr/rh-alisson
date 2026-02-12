@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, Check, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DiaAgenda, AgendaItem, AgendaItemDirectInput } from '@/types/agenda';
+import { RECORRENCIAS, type TipoRecorrencia } from '@/types/recorrencia';
 import { useAgendaStore } from '@/stores/agendaStore';
 import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import {
@@ -84,6 +85,9 @@ const initialFormDirect: AgendaItemDirectInput = {
   data: formatDateToLocalYYYYMMDD(new Date()),
   descricao: '',
   valor: 0,
+  tipo: 'saida',
+  recorrencia: 'unica',
+  recorrenciaFim: '',
 };
 
 export function AgendaPage() {
@@ -172,12 +176,17 @@ export function AgendaPage() {
       const payload: AgendaItemDirectInput = {
         data: formDirect.data,
         valor: formDirect.valor,
+        tipo: formDirect.tipo ?? 'saida',
         ...(formDirect.descricao?.trim() && { descricao: formDirect.descricao.trim() }),
+        ...(formDirect.recorrencia && formDirect.recorrencia !== 'unica' && { recorrencia: formDirect.recorrencia }),
+        ...(formDirect.recorrenciaFim?.trim() && { recorrenciaFim: formDirect.recorrenciaFim.trim().slice(0, 10) }),
       };
       await addItemDirect(payload);
       toast.success('Lancamento adicionado na agenda.');
       setOpenLancarDirect(false);
       setFormDirect(initialFormDirect);
+      fetchDias({ dataInicio, dataFim }).catch(() => {});
+      fetchDia(payload.data).catch(() => {});
       fetchDias({ dataInicio, dataFim }).catch(() => {});
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao lancar na agenda.');
@@ -313,11 +322,19 @@ export function AgendaPage() {
                 >
                   {date.getDate()}
                 </span>
-                {isCurrentMonth && temValor && (
-                  <div className="mt-1 text-[10px] leading-tight text-slate-600">
-                    {formatCurrency(totalE - totalS)}
-                  </div>
-                )}
+                {isCurrentMonth && temValor && (() => {
+                  const totalDia = totalE - totalS;
+                  const absTotal = Math.abs(totalDia);
+                  return (
+                    <div
+                      className={`mt-1 text-[10px] leading-tight ${
+                        totalDia >= 0 ? 'text-emerald-600' : 'text-red-600'
+                      }`}
+                    >
+                      {formatCurrency(absTotal)}
+                    </div>
+                  );
+                })()}
               </button>
             );
           })}
@@ -357,14 +374,19 @@ export function AgendaPage() {
           <div className="space-y-4 py-4">
             {diaSelecionado && (
               <>
-                <div className="flex gap-4 text-sm">
-                  <span className="text-emerald-600 font-medium">
-                    Entradas: {formatCurrency(diaSelecionado.totalEntradas)}
-                  </span>
-                  <span className="text-red-600 font-medium">
-                    Saidas: {formatCurrency(diaSelecionado.totalSaidas)}
-                  </span>
-                </div>
+                {(() => {
+                  const totalDia = diaSelecionado.totalEntradas - diaSelecionado.totalSaidas;
+                  const absTotal = Math.abs(totalDia);
+                  return (
+                    <div
+                      className={`text-sm font-medium ${
+                        totalDia >= 0 ? 'text-emerald-600' : 'text-red-600'
+                      }`}
+                    >
+                      Total do dia: {formatCurrency(absTotal)}
+                    </div>
+                  );
+                })()}
                 <ul className="max-h-64 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2">
                   {(diaSelecionado.itens ?? []).length === 0 ? (
                     <li className="py-4 text-center text-sm text-slate-500">
@@ -416,6 +438,22 @@ export function AgendaPage() {
           </DialogHeader>
           <form onSubmit={handleLancarDirectSubmit} className="space-y-4 py-4">
             <div className="space-y-2">
+              <label htmlFor="direct-tipo" className="text-sm font-medium text-slate-700">
+                Tipo
+              </label>
+              <select
+                id="direct-tipo"
+                value={formDirect.tipo ?? 'saida'}
+                onChange={(e) =>
+                  setFormDirect({ ...formDirect, tipo: e.target.value as 'entrada' | 'saida' })
+                }
+                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="entrada">Entrada</option>
+                <option value="saida">Saida</option>
+              </select>
+            </div>
+            <div className="space-y-2">
               <label htmlFor="direct-data" className="text-sm font-medium text-slate-700">
                 Data
               </label>
@@ -457,6 +495,39 @@ export function AgendaPage() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <label htmlFor="direct-recorrencia" className="text-sm font-medium text-slate-700">
+                Recorrencia
+              </label>
+              <select
+                id="direct-recorrencia"
+                value={formDirect.recorrencia ?? 'unica'}
+                onChange={(e) =>
+                  setFormDirect({ ...formDirect, recorrencia: e.target.value as TipoRecorrencia })
+                }
+                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+              >
+                {Object.entries(RECORRENCIAS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {(formDirect.recorrencia ?? 'unica') !== 'unica' && (
+              <div className="space-y-2">
+                <label htmlFor="direct-recorrencia-fim" className="text-sm font-medium text-slate-700">
+                  Data fim da recorrencia (opcional)
+                </label>
+                <input
+                  id="direct-recorrencia-fim"
+                  type="date"
+                  value={formDirect.recorrenciaFim ?? ''}
+                  onChange={(e) => setFormDirect({ ...formDirect, recorrenciaFim: e.target.value })}
+                  className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            )}
             <DialogFooter>
               <button
                 type="button"
@@ -526,13 +597,16 @@ function ItemRow({
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <span className="font-medium text-slate-800">
+        {item.origem && (
+          <span className="mb-1 inline-block rounded bg-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-700">
+            {item.origem}
+          </span>
+        )}
+        <span className="block font-medium text-slate-800">
           {item.descricao || 'Sem descricao'}
         </span>
-        {(item.tipoDespesa || item.origem) && (
-          <span className="ml-2 block text-xs text-slate-500">
-            {[item.tipoDespesa, item.origem].filter(Boolean).join(' · ')}
-          </span>
+        {item.tipoDespesa && (
+          <span className="block text-xs text-slate-500">{item.tipoDespesa}</span>
         )}
       </div>
       <span
@@ -540,7 +614,6 @@ function ItemRow({
           item.tipo === 'entrada' ? 'text-emerald-600' : 'text-red-600'
         }`}
       >
-        {item.tipo === 'entrada' ? '+' : '-'}
         {formatCurrency(item.valor)}
       </span>
       {item.pago && (

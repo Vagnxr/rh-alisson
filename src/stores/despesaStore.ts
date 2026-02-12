@@ -132,3 +132,91 @@ export const despesaStores = {
   'despesa-veiculo': useDespesaVeiculoStore,
   'despesa-banco': useDespesaBancoStore,
 } as const;
+
+/** Store para categorias de despesa dinamicas (ex.: despesa-marketing). Usa categoria atual em cada chamada. */
+interface DespesaDinamicaStore extends DespesaState, DespesaActions {
+  categoria: string | null;
+  setCategoria: (c: string | null) => void;
+}
+
+export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) => ({
+  items: [],
+  columns: null,
+  isLoading: false,
+  error: null,
+  categoria: null,
+
+  setCategoria: (c) => set({ categoria: c }),
+
+  fetchItems: async (params?: { dataInicio?: string; dataFim?: string }) => {
+    const categoria = get().categoria;
+    if (!categoria) return;
+    set({ isLoading: true, error: null });
+    try {
+      const requestParams: Record<string, string> = { categoria };
+      if (params?.dataInicio) requestParams.dataInicio = params.dataInicio;
+      if (params?.dataFim) requestParams.dataFim = params.dataFim;
+      const res = await api.get<DespesaBase[]>('despesas', { params: requestParams });
+      const list = Array.isArray(res.data) ? res.data : [];
+      const items = list.map((x) => normalizeDespesa(x as unknown as Record<string, unknown>));
+      const columns = res.columns ?? null;
+      set({ items, columns, isLoading: false });
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao carregar despesas',
+        isLoading: false,
+      });
+    }
+  },
+
+  addItem: async (data: DespesaInput) => {
+    const categoria = get().categoria;
+    if (!categoria) return;
+    set({ isLoading: true, error: null });
+    try {
+      const res = await api.post<DespesaBase>('despesas', { ...data, categoria });
+      const newItem = normalizeDespesa(res.data as unknown as Record<string, unknown>);
+      set((state) => ({ items: [...state.items, newItem], isLoading: false }));
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao salvar',
+        isLoading: false,
+      });
+      throw err;
+    }
+  },
+
+  updateItem: async (id: string, data: Partial<DespesaInput>) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await api.patch<DespesaBase>(`despesas/${id}`, data);
+      const updated = normalizeDespesa(res.data as unknown as Record<string, unknown>);
+      set((state) => ({
+        items: state.items.map((item) => (item.id === id ? updated : item)),
+        isLoading: false,
+      }));
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao atualizar',
+        isLoading: false,
+      });
+      throw err;
+    }
+  },
+
+  deleteItem: async (id: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.delete(`despesas/${id}`);
+      set((state) => ({ items: state.items.filter((item) => item.id !== id), isLoading: false }));
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao excluir',
+        isLoading: false,
+      });
+      throw err;
+    }
+  },
+
+  reset: () => set({ items: [], columns: null, isLoading: false, error: null, categoria: null }),
+}));

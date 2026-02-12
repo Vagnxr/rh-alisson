@@ -13,7 +13,8 @@ export interface MovimentacaoSocio {
   socioId: string;
   socioNome: string;
   data: string;
-  tipo: TipoMovimentacaoSocio;
+  /** Tipo fixo ou customizado (backend pode aceitar string). */
+  tipo: TipoMovimentacaoSocio | string;
   descricao: string;
   valor: number;
   createdAt: string;
@@ -29,6 +30,13 @@ export const TIPOS_MOVIMENTACAO: Record<TipoMovimentacaoSocio, { label: string; 
   'aporte': { label: 'Aporte', cor: 'bg-purple-100 text-purple-700' },
   'outro': { label: 'Outro', cor: 'bg-slate-100 text-slate-700' },
 };
+
+/** Retorna label e cor para exibicao (tipos fixos ou customizados). */
+export function getTipoMovimentacaoDisplay(tipo: string): { label: string; cor: string } {
+  const fixed = TIPOS_MOVIMENTACAO[tipo as TipoMovimentacaoSocio];
+  if (fixed) return fixed;
+  return { label: tipo, cor: 'bg-slate-100 text-slate-700' };
+}
 
 export interface ResumoSocio {
   socio: Socio;
