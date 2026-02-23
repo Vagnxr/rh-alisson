@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Loader2, Check, Plus } from 'lucide-react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, Plus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DiaAgenda, AgendaItem, AgendaItemDirectInput } from '@/types/agenda';
 import { RECORRENCIAS, type TipoRecorrencia } from '@/types/recorrencia';
@@ -25,6 +25,11 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -85,7 +90,6 @@ const initialFormDirect: AgendaItemDirectInput = {
   data: formatDateToLocalYYYYMMDD(new Date()),
   descricao: '',
   valor: 0,
-  tipo: 'saida',
   recorrencia: 'unica',
   recorrenciaFim: '',
 };
@@ -96,6 +100,10 @@ export function AgendaPage() {
   const [confirmarPagoIds, setConfirmarPagoIds] = useState<string[] | null>(null);
   const [openLancarDirect, setOpenLancarDirect] = useState(false);
   const [formDirect, setFormDirect] = useState(initialFormDirect);
+  const [openMonthYear, setOpenMonthYear] = useState(false);
+  const monthYearRef = useRef<HTMLDivElement>(null);
+  const [editingDirectItem, setEditingDirectItem] = useState<AgendaItem | null>(null);
+  const [formEditDirect, setFormEditDirect] = useState({ data: '', descricao: '', valor: 0 });
 
   const {
     dias,
@@ -106,8 +114,10 @@ export function AgendaPage() {
     fetchDias,
     fetchDia,
     addItemDirect,
+    updateItemDirect,
     marcarPago,
     marcarPagoLote,
+    desmarcarPago,
     setDiaSelecionado,
     clearError,
   } = useAgendaStore();
@@ -125,10 +135,34 @@ export function AgendaPage() {
     fetchDias({ dataInicio, dataFim }).catch(() => {});
   }, [dataInicio, dataFim, fetchDias]);
 
+  useEffect(() => {
+    if (!openMonthYear) return;
+    const close = (e: MouseEvent) => {
+      if (monthYearRef.current && !monthYearRef.current.contains(e.target as Node)) {
+        setOpenMonthYear(false);
+      }
+    };
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [openMonthYear]);
+
   const grid = useMemo(
     () => getDaysInMonthGrid(year, month),
     [year, month]
   );
+
+  /** Agenda e so soma: total do mes = soma dos valores de cada dia (sem subtracao). */
+  const totalMes = useMemo(() => {
+    return grid
+      .filter((g) => g.isCurrentMonth)
+      .reduce(
+        (acc, g) => {
+          const d = diasByDate.get(g.dateStr);
+          return acc + (d?.totalEntradas ?? 0) + (d?.totalSaidas ?? 0);
+        },
+        0
+      );
+  }, [grid, diasByDate]);
 
   const handleClickDia = (dateStr: string) => {
     const existente = diasByDate.get(dateStr);
@@ -168,16 +202,21 @@ export function AgendaPage() {
 
   const handleLancarDirectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const data = formDirect.data?.trim().slice(0, 10) ?? '';
+    const descricao = formDirect.descricao?.trim() ?? '';
+    if (!data || !descricao) {
+      toast.error('Preencha Data, Descricao e Valor.');
+      return;
+    }
     if (formDirect.valor <= 0) {
-      toast.error('Informe o valor.');
+      toast.error('Preencha Data, Descricao e Valor.');
       return;
     }
     try {
       const payload: AgendaItemDirectInput = {
-        data: formDirect.data,
+        data,
+        descricao,
         valor: formDirect.valor,
-        tipo: formDirect.tipo ?? 'saida',
-        ...(formDirect.descricao?.trim() && { descricao: formDirect.descricao.trim() }),
         ...(formDirect.recorrencia && formDirect.recorrencia !== 'unica' && { recorrencia: formDirect.recorrencia }),
         ...(formDirect.recorrenciaFim?.trim() && { recorrenciaFim: formDirect.recorrenciaFim.trim().slice(0, 10) }),
       };
@@ -186,10 +225,60 @@ export function AgendaPage() {
       setOpenLancarDirect(false);
       setFormDirect(initialFormDirect);
       fetchDias({ dataInicio, dataFim }).catch(() => {});
-      fetchDia(payload.data).catch(() => {});
+      fetchDia(data).catch(() => {});
       fetchDias({ dataInicio, dataFim }).catch(() => {});
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao lancar na agenda.');
+    }
+  };
+
+  const handleOpenEditDirect = (item: AgendaItem) => {
+    if (!diaSelecionado) return;
+    setEditingDirectItem(item);
+    setFormEditDirect({
+      data: diaSelecionado.data,
+      descricao: item.descricao ?? '',
+      valor: item.valor,
+    });
+  };
+
+  const handleSubmitEditDirect = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDirectItem) return;
+    const descricao = formEditDirect.descricao.trim();
+    if (!descricao) {
+      toast.error('Preencha Data, Descricao e Valor.');
+      return;
+    }
+    if (formEditDirect.valor <= 0) {
+      toast.error('Preencha Data, Descricao e Valor.');
+      return;
+    }
+    try {
+      await updateItemDirect(editingDirectItem.id, {
+        data: formEditDirect.data,
+        descricao,
+        valor: formEditDirect.valor,
+      });
+      toast.success('Item atualizado.');
+      setEditingDirectItem(null);
+      await fetchDias({ dataInicio, dataFim });
+      if (diaSelecionado) await fetchDia(diaSelecionado.data);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar.');
+    }
+  };
+
+  const handleDesmarcarPago = async (itemId: string) => {
+    try {
+      await desmarcarPago(itemId);
+      toast.success('Item desmarcado como pago.');
+      if (diaSelecionado?.data) {
+        await fetchDia(diaSelecionado.data);
+        fetchDias({ dataInicio, dataFim }).catch(() => {});
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao desmarcar.');
     }
   };
 
@@ -255,8 +344,64 @@ export function AgendaPage() {
       )}
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-800 capitalize">{monthTitle}</h2>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative" ref={monthYearRef}>
+              <button
+                type="button"
+                onClick={() => setOpenMonthYear((v) => !v)}
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-lg font-semibold text-slate-800 capitalize hover:bg-slate-50"
+              >
+                {monthTitle}
+                <ChevronDown className={`h-5 w-5 text-slate-500 transition-transform ${openMonthYear ? 'rotate-180' : ''}`} />
+              </button>
+              {openMonthYear && (
+                <div className="absolute left-0 top-full z-10 mt-1 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-sm font-medium text-slate-600">Ano</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setYear((y) => y - 1)}
+                        className="rounded border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <span className="min-w-[4ch] text-center font-medium text-slate-800">{year}</span>
+                      <button
+                        type="button"
+                        onClick={() => setYear((y) => y + 1)}
+                        className="rounded border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {MONTH_NAMES.map((name, i) => (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => {
+                          setMonth(i);
+                          setOpenMonthYear(false);
+                        }}
+                        className={`rounded px-2 py-1.5 text-sm ${
+                          i === month ? 'bg-emerald-100 font-semibold text-emerald-800' : 'text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2">
+              <span className="text-xs font-medium text-slate-500 block">Total do mes</span>
+              <span className="text-lg font-bold text-slate-900">{formatCurrency(totalMes)}</span>
+            </div>
+          </div>
           <div className="flex gap-1">
             <button
               type="button"
@@ -301,18 +446,19 @@ export function AgendaPage() {
             const dia = diasByDate.get(dateStr);
             const totalE = dia?.totalEntradas ?? 0;
             const totalS = dia?.totalSaidas ?? 0;
-            const temValor = totalE > 0 || totalS > 0;
+            const somaDia = totalE + totalS;
+            const temValor = somaDia > 0;
             return (
               <button
                 key={dateStr}
                 type="button"
-                onClick={() => isCurrentMonth && handleClickDia(dateStr)}
-                className={`min-h-[72px] rounded-lg border p-2 text-left transition-colors ${
+                onClick={() => (isCurrentMonth || temValor) && handleClickDia(dateStr)}
+                className={`min-h-[80px] rounded-lg border p-2 flex flex-col items-center justify-center text-center transition-colors ${
                   isCurrentMonth
                     ? temValor
                       ? 'border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/50 cursor-pointer'
                       : 'border-slate-100 bg-slate-50/50 hover:bg-slate-100 cursor-pointer'
-                    : 'border-transparent bg-transparent cursor-default'
+                    : 'border-transparent bg-transparent cursor-pointer'
                 }`}
               >
                 <span
@@ -322,22 +468,26 @@ export function AgendaPage() {
                 >
                   {date.getDate()}
                 </span>
-                {isCurrentMonth && temValor && (() => {
-                  const totalDia = totalE - totalS;
-                  const absTotal = Math.abs(totalDia);
-                  return (
-                    <div
-                      className={`mt-1 text-[10px] leading-tight ${
-                        totalDia >= 0 ? 'text-emerald-600' : 'text-red-600'
-                      }`}
-                    >
-                      {formatCurrency(absTotal)}
-                    </div>
-                  );
-                })()}
+                {temValor && (
+                  <div
+                    className={`mt-1.5 w-full flex justify-center font-semibold ${
+                      isCurrentMonth
+                        ? 'text-base text-slate-900'
+                        : 'text-[10px] text-slate-400'
+                    }`}
+                  >
+                    {formatCurrency(somaDia)}
+                  </div>
+                )}
               </button>
             );
           })}
+        </div>
+        <div className="mt-4 pt-4 border-t border-slate-200 flex justify-end">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-right">
+            <span className="text-xs font-medium text-slate-500 block">Total do mes</span>
+            <span className="text-lg font-bold text-slate-900">{formatCurrency(totalMes)}</span>
+          </div>
         </div>
       </div>
 
@@ -363,7 +513,7 @@ export function AgendaPage() {
               : ''}
           </DialogTitle>
           <DialogDescription>
-            Entradas e saidas do dia. Marque itens como pagos.
+            Entradas e saidas do dia. Marque itens como pagos. Para corrigir na origem (despesa, entrada ou agenda), use &quot;Pago · Desmarcar&quot; antes.
           </DialogDescription>
         </DialogHeader>
         {isLoadingDetalhe ? (
@@ -374,19 +524,9 @@ export function AgendaPage() {
           <div className="space-y-4 py-4">
             {diaSelecionado && (
               <>
-                {(() => {
-                  const totalDia = diaSelecionado.totalEntradas - diaSelecionado.totalSaidas;
-                  const absTotal = Math.abs(totalDia);
-                  return (
-                    <div
-                      className={`text-sm font-medium ${
-                        totalDia >= 0 ? 'text-emerald-600' : 'text-red-600'
-                      }`}
-                    >
-                      Total do dia: {formatCurrency(absTotal)}
-                    </div>
-                  );
-                })()}
+                <div className="text-sm font-medium text-slate-900">
+                  Total do dia (soma): {formatCurrency(diaSelecionado.totalEntradas + diaSelecionado.totalSaidas)}
+                </div>
                 <ul className="max-h-64 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2">
                   {(diaSelecionado.itens ?? []).length === 0 ? (
                     <li className="py-4 text-center text-sm text-slate-500">
@@ -399,6 +539,9 @@ export function AgendaPage() {
                         item={item}
                         selected={selectedIds.has(item.id)}
                         onToggleSelect={() => handleToggleSelect(item.id)}
+                        editavel={!item.origem || item.origem === 'Agenda'}
+                        onEdit={() => handleOpenEditDirect(item)}
+                        onDesmarcarPago={() => handleDesmarcarPago(item.id)}
                       />
                     ))
                   )}
@@ -433,29 +576,13 @@ export function AgendaPage() {
           <DialogHeader>
             <DialogTitle>Lancar na agenda</DialogTitle>
             <DialogDescription>
-              O item ficara apenas na agenda (nao vincula a despesa).
+              O item ficara apenas na agenda (nao vincula a despesa). Data, Descricao e Valor sao obrigatorios.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleLancarDirectSubmit} className="space-y-4 py-4">
             <div className="space-y-2">
-              <label htmlFor="direct-tipo" className="text-sm font-medium text-slate-700">
-                Tipo
-              </label>
-              <select
-                id="direct-tipo"
-                value={formDirect.tipo ?? 'saida'}
-                onChange={(e) =>
-                  setFormDirect({ ...formDirect, tipo: e.target.value as 'entrada' | 'saida' })
-                }
-                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="entrada">Entrada</option>
-                <option value="saida">Saida</option>
-              </select>
-            </div>
-            <div className="space-y-2">
               <label htmlFor="direct-data" className="text-sm font-medium text-slate-700">
-                Data
+                Data <span className="text-red-500">*</span>
               </label>
               <input
                 id="direct-data"
@@ -468,7 +595,7 @@ export function AgendaPage() {
             </div>
             <div className="space-y-2">
               <label htmlFor="direct-descricao" className="text-sm font-medium text-slate-700">
-                Descricao (opcional)
+                Descricao <span className="text-red-500">*</span>
               </label>
               <input
                 id="direct-descricao"
@@ -476,11 +603,12 @@ export function AgendaPage() {
                 value={formDirect.descricao ?? ''}
                 onChange={(e) => setFormDirect({ ...formDirect, descricao: e.target.value })}
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                required
               />
             </div>
             <div className="space-y-2">
               <label htmlFor="direct-valor" className="text-sm font-medium text-slate-700">
-                Valor (R$)
+                Valor (R$) <span className="text-red-500">*</span>
               </label>
               <input
                 id="direct-valor"
@@ -526,6 +654,9 @@ export function AgendaPage() {
                   onChange={(e) => setFormDirect({ ...formDirect, recorrenciaFim: e.target.value })}
                   className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 />
+                <p className="text-xs text-slate-500">
+                  Última data da série. A data do lançamento conta como primeira ocorrência. Deixe em branco para gerar até 12 meses.
+                </p>
               </div>
             )}
             <DialogFooter>
@@ -541,6 +672,78 @@ export function AgendaPage() {
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
               >
                 Adicionar
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog editar item direto da agenda */}
+      <Dialog open={!!editingDirectItem} onOpenChange={(open) => !open && setEditingDirectItem(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar item da agenda</DialogTitle>
+            <DialogDescription>
+              Alterar data, descricao e valor do lancamento direto.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmitEditDirect} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="edit-direct-data" className="text-sm font-medium text-slate-700">
+                Data <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="edit-direct-data"
+                type="date"
+                value={formEditDirect.data}
+                onChange={(e) => setFormEditDirect({ ...formEditDirect, data: e.target.value })}
+                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="edit-direct-descricao" className="text-sm font-medium text-slate-700">
+                Descricao <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="edit-direct-descricao"
+                type="text"
+                value={formEditDirect.descricao}
+                onChange={(e) => setFormEditDirect({ ...formEditDirect, descricao: e.target.value })}
+                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="edit-direct-valor" className="text-sm font-medium text-slate-700">
+                Valor (R$) <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="edit-direct-valor"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formEditDirect.valor || ''}
+                onChange={(e) =>
+                  setFormEditDirect({ ...formEditDirect, valor: parseFloat(e.target.value) || 0 })
+                }
+                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                required
+              />
+            </div>
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => setEditingDirectItem(null)}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              >
+                Salvar
               </button>
             </DialogFooter>
           </form>
@@ -577,10 +780,16 @@ function ItemRow({
   item,
   selected,
   onToggleSelect,
+  editavel,
+  onEdit,
+  onDesmarcarPago,
 }: {
   item: AgendaItem;
   selected: boolean;
   onToggleSelect: () => void;
+  editavel?: boolean;
+  onEdit?: () => void;
+  onDesmarcarPago?: () => void;
 }) {
   return (
     <li className="flex items-center gap-2 rounded bg-white px-3 py-2 text-sm">
@@ -604,19 +813,36 @@ function ItemRow({
         )}
         <span className="block font-medium text-slate-800">
           {item.descricao || 'Sem descricao'}
+          {item.parcela ? ` ${item.parcela}` : ''}
         </span>
         {item.tipoDespesa && (
           <span className="block text-xs text-slate-500">{item.tipoDespesa}</span>
         )}
       </div>
-      <span
-        className={`font-medium ${
-          item.tipo === 'entrada' ? 'text-emerald-600' : 'text-red-600'
-        }`}
-      >
+      <span className="font-medium text-slate-900">
         {formatCurrency(item.valor)}
       </span>
-      {item.pago && (
+      {editavel && onEdit && (
+        <button
+          type="button"
+          onClick={onEdit}
+          className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          title="Editar"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      )}
+      {item.pago && onDesmarcarPago && (
+        <button
+          type="button"
+          onClick={onDesmarcarPago}
+          className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-200"
+          title="Desmarcar como pago"
+        >
+          Pago · Desmarcar
+        </button>
+      )}
+      {item.pago && !onDesmarcarPago && (
         <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
           Pago
         </span>

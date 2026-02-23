@@ -27,6 +27,7 @@ export function RendaExtraPage() {
       addItem={addItem}
       updateItem={updateItem}
       deleteItem={deleteItem}
+      showComunicarAgenda={false}
     />
   );
 }

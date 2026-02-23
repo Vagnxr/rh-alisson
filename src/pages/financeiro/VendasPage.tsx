@@ -14,13 +14,10 @@ import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { VendasRow } from '@/types/financeiro';
+import { formatDateStringToBR } from '@/lib/date';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
 }
 
 function parseNum(v: string): number {
@@ -51,7 +48,7 @@ export function VendasPage() {
   }, [fetchList]);
 
   const exportColumns = useExportColumns<VendasRow>([
-    { key: 'dia', label: 'Dia', format: (v) => formatDate(String(v)) },
+    { key: 'dia', label: 'Dia', format: (v) => formatDateStringToBR(String(v)) },
     { key: 'valor', label: 'Valor', format: (v) => formatCurrency(Number(v)) },
   ]);
 
@@ -67,7 +64,7 @@ export function VendasPage() {
             Dia <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => formatDate(row.getValue('dia')),
+        cell: ({ row }) => formatDateStringToBR(String(row.getValue('dia') ?? '')),
       },
       {
         accessorKey: 'valor',

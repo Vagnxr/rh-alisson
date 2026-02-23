@@ -10,7 +10,6 @@ const config = {
 
 export function InvestimentoPage() {
   const items = useInvestimentoStore((s) => s.items);
-  const columns = useInvestimentoStore((s) => s.columns);
   const isLoading = useInvestimentoStore((s) => s.isLoading);
   const fetchItems = useInvestimentoStore((s) => s.fetchItems);
   const addItem = useInvestimentoStore((s) => s.addItem);
@@ -21,7 +20,7 @@ export function InvestimentoPage() {
     <DespesaPage
       config={config}
       items={items}
-      columns={columns}
+      columns={null}
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}

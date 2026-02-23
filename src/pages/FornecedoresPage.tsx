@@ -30,10 +30,6 @@ import type { CreateFornecedorDto, UpdateFornecedorDto } from '@/types/fornecedo
 
 const FORNECEDOR_TABLE_DEFAULT_ORDER = ['tipo', 'cnpj', 'razaoSocial', 'nomeFantasia', 'nome', 'documento', 'contatoEmpresa', 'endereco', 'isAtivo'];
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
-}
-
 export function FornecedoresPage() {
   const {
     fornecedores,
@@ -50,6 +46,7 @@ export function FornecedoresPage() {
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [deleteFornecedorId, setDeleteFornecedorId] = useState<string | null>(null);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [viewStatus, setViewStatus] = useState<'ativos' | 'inativos'>('ativos');
 
   useEffect(() => {
     fetchFornecedores();
@@ -300,8 +297,13 @@ export function FornecedoresPage() {
     [columnDefsByKey, columnsFromApi]
   );
 
+  const fornecedoresFiltrados = useMemo(() => {
+    if (viewStatus === 'ativos') return fornecedores.filter((f) => f.isAtivo !== false);
+    return fornecedores.filter((f) => f.isAtivo === false);
+  }, [fornecedores, viewStatus]);
+
   const table = useReactTable({
-    data: fornecedores,
+    data: fornecedoresFiltrados,
     columns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,
@@ -330,6 +332,33 @@ export function FornecedoresPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {/* Aba Ativos / Inativos */}
+          <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewStatus('ativos')}
+              className={cn(
+                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                viewStatus === 'ativos'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              )}
+            >
+              Ativos
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewStatus('inativos')}
+              className={cn(
+                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                viewStatus === 'inativos'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              )}
+            >
+              Inativos
+            </button>
+          </div>
           {/* Busca */}
           <input
             type="text"
@@ -401,7 +430,11 @@ export function FornecedoresPage() {
                     colSpan={columns.length}
                     className="px-6 py-12 text-center text-sm text-slate-500"
                   >
-                    {globalFilter ? 'Nenhum fornecedor encontrado' : 'Nenhum fornecedor cadastrado'}
+                    {globalFilter
+                      ? 'Nenhum fornecedor encontrado'
+                      : viewStatus === 'ativos'
+                        ? 'Nenhum fornecedor ativo'
+                        : 'Nenhum fornecedor inativo'}
                   </td>
                 </tr>
               ) : (
@@ -426,7 +459,11 @@ export function FornecedoresPage() {
         <div className="divide-y divide-slate-200 sm:hidden">
           {table.getRowModel().rows.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm text-slate-500">
-              {globalFilter ? 'Nenhum fornecedor encontrado' : 'Nenhum fornecedor cadastrado'}
+              {globalFilter
+                ? 'Nenhum fornecedor encontrado'
+                : viewStatus === 'ativos'
+                  ? 'Nenhum fornecedor ativo'
+                  : 'Nenhum fornecedor inativo'}
             </div>
           ) : (
             table.getRowModel().rows.map((row) => {

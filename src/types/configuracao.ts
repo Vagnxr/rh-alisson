@@ -32,6 +32,23 @@ export interface TabelaConfig {
 /** tabelaId do Caixa (contrato backend: GET /financeiro/caixa retorna columns com este id). */
 export const ID_TABELA_CAIXA = 'financeiro-caixa';
 
+/** Colunas padrao do sistema na tabela Caixa. Nao podem ser apagadas; o usuario pode apenas ocultar (inibir). */
+export const CAIXA_COLUNAS_PADRAO_IDS = [
+  'dia',
+  'dinheiroDeposito',
+  'pagamentoPdv',
+  'pagamentoEscritorio',
+  'pix',
+  'credito',
+  'debito',
+  'voucher',
+  'troca',
+  'devolucaoDinheiro',
+  'desconto',
+  'ifood',
+  'total',
+];
+
 // Configuracoes padrao de cada tabela
 export const TABELAS_CONFIGURACOES: TabelaConfig[] = [
   {
@@ -99,17 +116,21 @@ export const TABELAS_CONFIGURACOES: TabelaConfig[] = [
   {
     id: ID_TABELA_CAIXA,
     nome: 'Caixa',
-    descricao: 'Configuracoes da tabela de caixa (colunas e campos do formulario). Idêntico à planilha.',
+    descricao: 'Configuracoes da tabela de caixa (colunas e campos do formulario). Padrao menor para evitar barra de rolagem.',
     colunas: [
-      { id: 'dia', label: 'Dia', isVisible: true, order: 1, isRequired: true },
-      { id: 'dinheiroDeposito', label: 'Dinheiro (dep.)', isVisible: true, order: 2, somarNoTotal: true },
+      { id: 'dia', label: 'Data', isVisible: true, order: 1, isRequired: true },
+      { id: 'dinheiroDeposito', label: 'Dinheiro', isVisible: true, order: 2, somarNoTotal: true },
       { id: 'pagamentoPdv', label: 'Pag. (PDV)', isVisible: true, order: 3, somarNoTotal: true },
-      { id: 'pix', label: 'PIX', isVisible: true, order: 4, somarNoTotal: true },
-      { id: 'credito', label: 'Credito', isVisible: true, order: 5, somarNoTotal: true },
-      { id: 'debito', label: 'Debito', isVisible: true, order: 6, somarNoTotal: true },
-      { id: 'voucher', label: 'Voucher', isVisible: true, order: 7, somarNoTotal: true },
-      { id: 'ifood', label: 'iFood', isVisible: true, order: 8, somarNoTotal: true },
-      { id: 'total', label: 'Total', isVisible: true, order: 9, isRequired: true, somarNoTotal: false },
+      { id: 'pagamentoEscritorio', label: 'Pag. (Escrit.)', isVisible: true, order: 4, somarNoTotal: true },
+      { id: 'pix', label: 'PIX', isVisible: true, order: 5, somarNoTotal: true },
+      { id: 'credito', label: 'Credito', isVisible: true, order: 6, somarNoTotal: true },
+      { id: 'debito', label: 'Debito', isVisible: true, order: 7, somarNoTotal: true },
+      { id: 'voucher', label: 'Voucher', isVisible: true, order: 8, somarNoTotal: true },
+      { id: 'troca', label: 'Troca', isVisible: true, order: 9, somarNoTotal: true },
+      { id: 'devolucaoDinheiro', label: 'Devol. Dinheiro', isVisible: true, order: 10, somarNoTotal: true },
+      { id: 'desconto', label: 'Desconto', isVisible: true, order: 11, somarNoTotal: false, subtrairNoTotal: false },
+      { id: 'ifood', label: 'iFood', isVisible: true, order: 12, somarNoTotal: true },
+      { id: 'total', label: 'Total', isVisible: true, order: 13, isRequired: true, somarNoTotal: false },
     ],
   },
 ];

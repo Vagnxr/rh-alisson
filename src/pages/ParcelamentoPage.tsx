@@ -12,7 +12,8 @@ import { toast } from 'sonner';
 import type { Parcelamento, ParcelamentoInput } from '@/types/parcelamento';
 import { useParcelamentoStore } from '@/stores/parcelamentoStore';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
-import { formatDateToLocalYYYYMMDD } from '@/lib/date';
+import { formatDateToLocalYYYYMMDD, formatDateStringToBR } from '@/lib/date';
+import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import {
   Dialog,
   DialogContent,
@@ -42,10 +43,6 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
-}
-
 function formatDateForInput(date: string) {
   return date.split('T')[0];
 }
@@ -69,11 +66,11 @@ export function ParcelamentoPage() {
   const [ajustarParcela, setAjustarParcela] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
 
-  const [formData, setFormData] = useState<ParcelamentoInput>({
+  const [formData, setFormData] = useState<Omit<ParcelamentoInput, 'valor'> & { valor: string }>({
     data: '',
     descricao: '',
     parcela: '',
-    valor: 0,
+    valor: '',
     comunicarAgenda: false,
   });
 
@@ -96,16 +93,16 @@ export function ParcelamentoPage() {
         data: formatDateForInput(item.data),
         descricao: item.descricao,
         parcela: item.parcela,
-        valor: item.valor,
+        valor: formatValorForInput(item.valor),
         comunicarAgenda: item.comunicarAgenda ?? false,
       });
     } else {
       setEditingItem(null);
       setFormData({
-        data: new Date().toISOString().split('T')[0],
+        data: formatDateToLocalYYYYMMDD(new Date()),
         descricao: '',
         parcela: '',
-        valor: 0,
+        valor: '',
         comunicarAgenda: false,
       });
     }
@@ -115,34 +112,38 @@ export function ParcelamentoPage() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingItem(null);
-    setFormData({ data: '', descricao: '', parcela: '', valor: 0, comunicarAgenda: false });
+    setFormData({ data: '', descricao: '', parcela: '', valor: '', comunicarAgenda: false });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!formData.data?.trim()) {
+      toast.error('Data e obrigatoria');
+      return;
+    }
     if (!formData.descricao.trim()) {
       toast.error('Descricao e obrigatoria');
       return;
     }
-
     if (!editingItem && !formData.parcela.trim()) {
       toast.error('Parcela e obrigatoria (ex: 3/12)');
       return;
     }
 
-    if (formData.valor <= 0) {
+    const valorNum = parseValorFromInput(String(formData.valor));
+    if (valorNum <= 0) {
       toast.error('Valor deve ser maior que zero');
       return;
     }
 
     try {
       if (editingItem) {
-        const { parcela: _p, ...rest } = formData;
-        await updateItem(editingItem.id, { ...rest, parcela: editingItem.parcela });
+        const { parcela: _p, valor: _v, ...rest } = formData;
+        await updateItem(editingItem.id, { ...rest, parcela: editingItem.parcela, valor: valorNum });
         toast.success('Registro atualizado com sucesso!');
       } else {
-        await addItem(formData);
+        await addItem({ ...formData, valor: valorNum });
         toast.success('Registro adicionado com sucesso!');
       }
       handleCloseDialog();
@@ -197,7 +198,7 @@ export function ParcelamentoPage() {
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => formatDate(row.getValue('data')),
+        cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
       },
       descricao: {
         accessorKey: 'descricao',
@@ -415,7 +416,7 @@ export function ParcelamentoPage() {
                       </p>
                       <div className="mt-1 flex items-center gap-2">
                         <span className="text-xs text-slate-500">
-                          {formatDate(item.data)}
+                          {formatDateStringToBR(item.data)}
                         </span>
                         <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                           {item.parcela}
@@ -478,7 +479,7 @@ export function ParcelamentoPage() {
                   htmlFor="data"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Data
+                  Data <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="data"
@@ -496,7 +497,7 @@ export function ParcelamentoPage() {
                   htmlFor="descricao"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Descricao
+                  Descricao <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="descricao"
@@ -504,19 +505,19 @@ export function ParcelamentoPage() {
                   placeholder="Ex: Notebook Dell, Ar Condicionado..."
                   value={formData.descricao}
                   onChange={(e) =>
-                    setFormData({ ...formData, descricao: e.target.value })
+                    setFormData({ ...formData, descricao: e.target.value.toUpperCase() })
                   }
-                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
                   required
                 />
               </div>
-              {!editingItem && (
+              {!editingItem ? (
                 <div className="space-y-2">
                   <label
                     htmlFor="parcela"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Parcela
+                    Parcela <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="parcela"
@@ -530,27 +531,30 @@ export function ParcelamentoPage() {
                     required
                   />
                 </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Parcela
+                  </label>
+                  <div className="flex h-10 items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    {editingItem.parcela}
+                  </div>
+                </div>
               )}
               <div className="space-y-2">
                 <label
                   htmlFor="valor"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Valor (R$)
+                  Valor (R$) <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="valor"
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="0,00"
-                  value={formData.valor || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      valor: parseFloat(e.target.value) || 0,
-                    })
-                  }
+                  value={formData.valor ?? ''}
+                  onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   required
                 />

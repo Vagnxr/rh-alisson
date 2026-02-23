@@ -29,7 +29,6 @@ import {
   ControleCartoesPage,
   TaxasPrazosPage,
   VendasPage,
-  ControleDinheiroPage,
   ControleDepositoPage,
   VendaCartoesPage,
   AtivoImobilizadoPage,
@@ -93,7 +92,6 @@ function App() {
           <Route path="/financeiro/controle-cartoes" element={<ControleCartoesPage />} />
           <Route path="/financeiro/controle-cartoes/taxas-prazos" element={<TaxasPrazosPage />} />
           <Route path="/financeiro/vendas" element={<VendasPage />} />
-          <Route path="/financeiro/controle-dinheiro" element={<ControleDinheiroPage />} />
           <Route path="/financeiro/controle-deposito" element={<ControleDepositoPage />} />
           <Route path="/financeiro/venda-cartoes" element={<VendaCartoesPage />} />
           <Route path="/financeiro/ativo-imobilizado" element={<AtivoImobilizadoPage />} />

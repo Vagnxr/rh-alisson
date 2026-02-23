@@ -31,15 +31,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
-import type { AtivoImobilizadoRow } from '@/types/financeiro';
+import type { AtivoImobilizadoRow, AtivoImobilizadoFormaPagto } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
+import { formatDateStringToBR } from '@/lib/date';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
 }
 
 function parseNum(v: string): number {
@@ -69,6 +66,7 @@ export function AtivoImobilizadoPage() {
     nf: '',
     descricaoFornecedor: '',
     valor: '',
+    formaPagto: 'Dinheiro' as AtivoImobilizadoFormaPagto,
   });
   const [formSaida, setFormSaida] = useState({
     data: new Date().toISOString().split('T')[0],
@@ -87,6 +85,7 @@ export function AtivoImobilizadoPage() {
         nf: item.nf,
         descricaoFornecedor: item.descricaoFornecedor,
         valor: String(item.valor),
+        formaPagto: item.formaPagto ?? 'Dinheiro',
       });
     } else {
       setEditingEntrada(null);
@@ -95,6 +94,7 @@ export function AtivoImobilizadoPage() {
         nf: '',
         descricaoFornecedor: '',
         valor: '',
+        formaPagto: 'Dinheiro',
       });
     }
     setDialogEntrada(true);
@@ -155,11 +155,32 @@ export function AtivoImobilizadoPage() {
 
   const handleSubmitEntrada = (e: React.FormEvent) => {
     e.preventDefault();
+    const descricao = formEntrada.descricaoFornecedor.trim().toUpperCase();
+    if (!formEntrada.nf.trim()) {
+      toast.error('Preencha Data, N.F., Descricao/Fornecedor e Valor.');
+      return;
+    }
+    if (!descricao) {
+      toast.error('Preencha Data, N.F., Descricao/Fornecedor e Valor.');
+      return;
+    }
+    const valorNum = parseNum(formEntrada.valor);
+    if (formEntrada.valor.trim() === '' || !Number.isFinite(valorNum)) {
+      toast.error('Preencha Data, N.F., Descricao/Fornecedor e Valor.');
+      return;
+    }
     const data = formEntrada.data.slice(0, 10);
-    const body = { tipo: 'entrada' as const, data, nf: formEntrada.nf, descricaoFornecedor: formEntrada.descricaoFornecedor, valor: parseNum(formEntrada.valor) };
+    const body = {
+      tipo: 'entrada' as const,
+      data,
+      nf: formEntrada.nf.trim(),
+      descricaoFornecedor: descricao,
+      valor: valorNum,
+      formaPagto: formEntrada.formaPagto,
+    };
     if (editingEntrada) {
       api
-        .patch<AtivoImobilizadoRow>(`financeiro/ativo-imobilizado/${editingEntrada.id}`, { data, nf: formEntrada.nf, descricaoFornecedor: formEntrada.descricaoFornecedor, valor: parseNum(formEntrada.valor) })
+        .patch<AtivoImobilizadoRow>(`financeiro/ativo-imobilizado/${editingEntrada.id}`, { data, nf: formEntrada.nf.trim(), descricaoFornecedor: descricao, valor: valorNum, formaPagto: formEntrada.formaPagto })
         .then(() => {
           toast.success('Registro atualizado.');
           fetchEntradas();
@@ -258,7 +279,7 @@ export function AtivoImobilizadoPage() {
             Data <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => formatDate(row.getValue('data')),
+        cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
       },
       { accessorKey: 'nf', header: 'N.F.' },
       { accessorKey: 'descricaoFornecedor', header: 'Descricao / Fornecedor' },
@@ -301,7 +322,7 @@ export function AtivoImobilizadoPage() {
             Data <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => formatDate(row.getValue('data')),
+        cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
       },
       { accessorKey: 'nf', header: 'N.F.' },
       { accessorKey: 'descricaoFornecedor', header: 'Descricao / Fornecedor' },
@@ -431,7 +452,7 @@ export function AtivoImobilizadoPage() {
           <DateFilter value={dateFilter} onChange={setDateFilter} />
           <ExportButtons
             data={entradas.map((r) => ({
-              data: formatDate(r.data),
+              data: formatDateStringToBR(r.data),
               nf: r.nf,
               descricaoFornecedor: r.descricaoFornecedor,
               valor: formatCurrency(r.valor),
@@ -447,7 +468,7 @@ export function AtivoImobilizadoPage() {
           />
           <ExportButtons
             data={saidas.map((r) => ({
-              data: formatDate(r.data),
+              data: formatDateStringToBR(r.data),
               nf: r.nf,
               descricaoFornecedor: r.descricaoFornecedor,
               valor: formatCurrency(r.valor),
@@ -482,12 +503,9 @@ export function AtivoImobilizadoPage() {
           )}
         </div>
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="border-b border-slate-200 bg-slate-100 px-4 py-2 flex items-center justify-between">
+          <div className="border-b border-slate-200 bg-slate-100 px-4 py-2">
             <h2 className="text-sm font-semibold text-slate-800">Ativo Imobilizado - Saida</h2>
-            <button type="button" onClick={() => handleOpenDialogSaida()} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">
-              <Plus className="h-3 w-3" />
-              Novo
-            </button>
+            <p className="text-xs text-slate-500 mt-0.5">Preenchido automaticamente conforme Entrada e pagamentos na Agenda.</p>
           </div>
           {loading2 ? (
             <div className="flex items-center justify-center py-12">
@@ -503,26 +521,39 @@ export function AtivoImobilizadoPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{editingEntrada ? 'Editar Entrada' : 'Nova Entrada'}</DialogTitle>
-            <DialogDescription>Preencha data, N.F., descricao/fornecedor e valor.</DialogDescription>
+            <DialogDescription>Preencha data, N.F., descricao/fornecedor, valor e forma de pagto.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitEntrada} className="flex min-h-0 flex-1 flex-col">
             <DialogBody>
             <div className="space-y-4 mt-4 mb-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Data</label>
+                <label className="text-sm font-medium text-slate-700">Data <span className="text-red-500">*</span></label>
                 <input type="date" value={formEntrada.data} onChange={(e) => setFormEntrada({ ...formEntrada, data: e.target.value })} className={inputClass} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">N.F.</label>
-                <input type="text" value={formEntrada.nf} onChange={(e) => setFormEntrada({ ...formEntrada, nf: e.target.value })} className={inputClass} />
+                <label className="text-sm font-medium text-slate-700">N.F. <span className="text-red-500">*</span></label>
+                <input type="text" value={formEntrada.nf} onChange={(e) => setFormEntrada({ ...formEntrada, nf: e.target.value })} className={inputClass} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Descricao / Fornecedor</label>
-                <input type="text" value={formEntrada.descricaoFornecedor} onChange={(e) => setFormEntrada({ ...formEntrada, descricaoFornecedor: e.target.value })} className={inputClass} />
+                <label className="text-sm font-medium text-slate-700">Descricao / Fornecedor <span className="text-red-500">*</span></label>
+                <input type="text" value={formEntrada.descricaoFornecedor} onChange={(e) => setFormEntrada({ ...formEntrada, descricaoFornecedor: e.target.value.toUpperCase() })} className={`${inputClass} uppercase`} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Valor (R$)</label>
-                <input type="text" inputMode="decimal" placeholder="0,00" value={formEntrada.valor} onChange={(e) => setFormEntrada({ ...formEntrada, valor: e.target.value })} className={inputClass} />
+                <label className="text-sm font-medium text-slate-700">Valor (R$) <span className="text-red-500">*</span></label>
+                <input type="text" inputMode="decimal" placeholder="0,00" value={formEntrada.valor} onChange={(e) => setFormEntrada({ ...formEntrada, valor: e.target.value })} className={inputClass} required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Forma de Pagto <span className="text-red-500">*</span></label>
+                <select
+                  value={formEntrada.formaPagto}
+                  onChange={(e) => setFormEntrada({ ...formEntrada, formaPagto: e.target.value as AtivoImobilizadoFormaPagto })}
+                  className={inputClass}
+                  required
+                >
+                  <option value="Dinheiro">Dinheiro</option>
+                  <option value="PIX">PIX</option>
+                  <option value="Boleto">Boleto</option>
+                </select>
               </div>
             </div>
             </DialogBody>

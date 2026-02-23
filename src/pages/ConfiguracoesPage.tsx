@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
 import { useConfiguracaoStore } from '@/stores/configuracaoStore';
 import type { TabelaConfig, ColunaConfig } from '@/types/configuracao';
-import { ID_TABELA_CAIXA } from '@/types/configuracao';
+import { ID_TABELA_CAIXA, CAIXA_COLUNAS_PADRAO_IDS } from '@/types/configuracao';
 
 /** Gera id unico a partir do label (ex.: "Taxa cartao" -> "taxaCartao"). */
 function slugFromLabel(label: string): string {
@@ -51,6 +51,7 @@ interface ColunaItemProps {
   showSubtrairNoTotal?: boolean;
   onRemove?: (colunaId: string) => void;
   canAddRemoveColunas?: boolean;
+  canRemoveColuna?: (colunaId: string) => boolean;
 }
 
 function ColunaItem({
@@ -63,8 +64,13 @@ function ColunaItem({
   showSubtrairNoTotal,
   onRemove,
   canAddRemoveColunas,
+  canRemoveColuna,
 }: ColunaItemProps) {
-  const podeRemover = canAddRemoveColunas && onRemove && !coluna.isRequired;
+  const podeRemover =
+    canAddRemoveColunas &&
+    onRemove &&
+    !coluna.isRequired &&
+    (canRemoveColuna === undefined || canRemoveColuna(coluna.id));
   return (
     <div
       className={cn(
@@ -83,6 +89,9 @@ function ColunaItem({
               <Lock className="h-3 w-3" />
               Coluna obrigatoria
             </p>
+          )}
+          {canRemoveColuna && !canRemoveColuna(coluna.id) && canAddRemoveColunas && (
+            <p className="text-xs text-slate-500">Padrao do sistema; use desativar para ocultar.</p>
           )}
           {(showSomarNoTotal || showSubtrairNoTotal) && (
             <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
@@ -186,10 +195,12 @@ function TabelaConfigCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [dialogNovaColuna, setDialogNovaColuna] = useState(false);
   const [novaColunaLabel, setNovaColunaLabel] = useState('');
+  const [novaColunaTipo, setNovaColunaTipo] = useState<'soma' | 'subtrai' | 'neutro'>('soma');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const colunasVisiveis = tabela.colunas.filter((c) => c.isVisible).length;
   const canAddRemoveColunas =
     tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa';
+  const isCaixa = tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa';
 
   const colunasOrdenadas = [...tabela.colunas].sort((a, b) => a.order - b.order);
 
@@ -312,13 +323,18 @@ function TabelaConfigCard({
                   }
                   onRemove={onRemoveColuna ? (colunaId) => onRemoveColuna(tabela.id, colunaId) : undefined}
                   canAddRemoveColunas={canAddRemoveColunas}
+                  canRemoveColuna={
+                    tabela.id === ID_TABELA_CAIXA || tabela.nome.toLowerCase() === 'caixa'
+                      ? (colunaId) => !CAIXA_COLUNAS_PADRAO_IDS.includes(colunaId)
+                      : undefined
+                  }
                 />
               </div>
             ))}
           </div>
 
           {canAddRemoveColunas && (
-            <Dialog open={dialogNovaColuna} onOpenChange={setDialogNovaColuna}>
+            <Dialog open={dialogNovaColuna} onOpenChange={(open) => { setDialogNovaColuna(open); if (!open) setNovaColunaTipo('soma'); }}>
               <DialogContent className="sm:max-w-sm">
                 <DialogHeader>
                   <DialogTitle>Nova coluna</DialogTitle>
@@ -334,6 +350,27 @@ function TabelaConfigCard({
                     placeholder="Ex.: Taxa cartao"
                     className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
+                  {isCaixa && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-slate-700">No total do dia:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(['soma', 'subtrai', 'neutro'] as const).map((tipo) => (
+                          <label key={tipo} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                            <input
+                              type="radio"
+                              name="novaColunaTipo"
+                              checked={novaColunaTipo === tipo}
+                              onChange={() => setNovaColunaTipo(tipo)}
+                              className="text-emerald-600"
+                            />
+                            {tipo === 'soma' && 'SOMA'}
+                            {tipo === 'subtrai' && 'SUBTRAI'}
+                            {tipo === 'neutro' && 'NEUTRO'}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <DialogFooter className="mt-2">
                   <Button variant="outline" onClick={() => setDialogNovaColuna(false)}>
@@ -354,14 +391,18 @@ function TabelaConfigCard({
                         id = slugFromLabel(label) + String(n);
                         n++;
                       }
+                      const somarNoTotal = isCaixa ? novaColunaTipo === 'soma' : true;
+                      const subtrairNoTotal = isCaixa ? novaColunaTipo === 'subtrai' : false;
                       useConfiguracaoStore.getState().addColuna(tabela.id, {
                         id,
                         label,
                         isVisible: true,
-                        somarNoTotal: true,
+                        somarNoTotal,
+                        subtrairNoTotal,
                       });
                       toast.success('Coluna adicionada.');
                       setNovaColunaLabel('');
+                      setNovaColunaTipo('soma');
                       setDialogNovaColuna(false);
                     }}
                   >

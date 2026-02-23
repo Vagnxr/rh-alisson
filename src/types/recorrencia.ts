@@ -12,8 +12,8 @@ export interface RecorrenciaConfig {
 export const RECORRENCIAS: Record<TipoRecorrencia, RecorrenciaConfig> = {
   unica: {
     tipo: 'unica',
-    label: 'Unica',
-    descricao: 'Pagamento unico, sem repeticao',
+    label: 'Sem recorrência',
+    descricao: 'Pagamento único, sem repetição',
     diasIntervalo: null,
   },
   semanal: {

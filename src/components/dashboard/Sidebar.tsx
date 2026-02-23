@@ -73,11 +73,6 @@ const MENU_ITEMS: MenuItem[] = [
 
       { label: 'Vendas', href: '/financeiro/vendas', permissionId: 'financeiro-vendas' },
       {
-        label: 'Controle Dinheiro',
-        href: '/financeiro/controle-dinheiro',
-        permissionId: 'financeiro-controle-dinheiro',
-      },
-      {
         label: 'Controle Deposito',
         href: '/financeiro/controle-deposito',
         permissionId: 'financeiro-controle-deposito',

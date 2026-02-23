@@ -35,13 +35,10 @@ import type { ControleCartoesRow, BandeiraCartao } from '@/types/financeiro';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { ExportButtons } from '@/components/ui/export-buttons';
+import { formatDateStringToBR } from '@/lib/date';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
 }
 
 function parseNum(v: string): number {
@@ -250,7 +247,7 @@ export function ControleCartoesPage() {
             Data <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => formatDate(row.getValue('data')),
+        cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
       },
       ...(tab === 'credito'
         ? [
@@ -293,7 +290,7 @@ export function ControleCartoesPage() {
       {
         accessorKey: 'dataAReceber',
         header: 'Data a receber',
-        cell: ({ row }) => formatDate(row.getValue('dataAReceber')),
+        cell: ({ row }) => formatDateStringToBR(String(row.getValue('dataAReceber') ?? '')),
       },
       {
         id: 'actions',
@@ -348,12 +345,12 @@ export function ControleCartoesPage() {
           <DateFilter value={dateFilter} onChange={setDateFilter} />
           <ExportButtons
             data={items.map((r) => ({
-              data: formatDate(r.data),
+              data: formatDateStringToBR(r.data),
               valor: formatCurrency(r.valor),
               prazo: r.prazo != null ? `${r.prazo}` : '-',
               taxaPercent: r.taxaPercent != null ? `${r.taxaPercent}%` : '-',
               aReceber: formatCurrency(r.aReceber),
-              dataAReceber: formatDate(r.dataAReceber),
+              dataAReceber: formatDateStringToBR(r.dataAReceber),
             }))}
             columns={[
               { key: 'data', label: 'Data' },

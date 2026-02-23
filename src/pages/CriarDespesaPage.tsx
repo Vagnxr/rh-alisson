@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import type { DespesaCategoria } from '@/types/despesa';
-import { DESPESA_CATEGORIAS, TIPOS_DESPESA } from '@/types/despesa';
+import { DESPESA_CATEGORIAS, TIPOS_DESPESA, ABREVIACOES_TIPO_FUNCIONARIO } from '@/types/despesa';
 import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { useDespesaTiposStore } from '@/stores/despesaTiposStore';
 import { SelectRecorrencia } from '@/components/ui/select-recorrencia';
@@ -37,7 +37,9 @@ export function CriarDespesaPage() {
   const { getTipos, fetchTipos } = useDespesaTiposStore();
   const tiposPadrao = TIPOS_DESPESA[form.categoria] ?? ['OUTROS'];
   const tiposCustom = getTipos(form.categoria).filter((t) => !tiposPadrao.includes(t.label));
-  const tiposDisponiveis = [...tiposPadrao, ...tiposCustom.map((t) => t.label)];
+  const tiposDisponiveis = [...tiposPadrao, ...tiposCustom.map((t) => t.label)].sort((a, b) =>
+    a.localeCompare(b, 'pt-BR')
+  );
 
   useEffect(() => {
     fetchTipos(form.categoria).catch(() => {});
@@ -130,7 +132,9 @@ export function CriarDespesaPage() {
             >
               {tiposDisponiveis.map((t) => (
                 <option key={t} value={t}>
-                  {t}
+                  {form.categoria === 'despesa-funcionario' && ABREVIACOES_TIPO_FUNCIONARIO[t]
+                    ? ABREVIACOES_TIPO_FUNCIONARIO[t]
+                    : t}
                 </option>
               ))}
             </select>
@@ -188,6 +192,9 @@ export function CriarDespesaPage() {
                 onChange={(e) => setForm((f) => ({ ...f, recorrenciaFim: e.target.value }))}
                 className={inputClass}
               />
+              <p className="text-xs text-slate-500">
+                Última data de vencimento da série. A data informada conta como a primeira ocorrência. Deixe em branco para gerar até 12 meses.
+              </p>
             </div>
           </div>
         )}

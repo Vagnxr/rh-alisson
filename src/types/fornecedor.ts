@@ -85,6 +85,7 @@ export interface CreateFornecedorCNPJDto {
   contatoVendedor?: ContatoVendedor;
   observacoes?: string;
   logo?: File;
+  isAtivo?: boolean;
 }
 
 export interface CreateFornecedorCPFDto {
@@ -97,6 +98,7 @@ export interface CreateFornecedorCPFDto {
   contatoVendedor?: ContatoVendedor;
   observacoes?: string;
   logo?: File;
+  isAtivo?: boolean;
 }
 
 export type CreateFornecedorDto = CreateFornecedorCNPJDto | CreateFornecedorCPFDto;

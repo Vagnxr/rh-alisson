@@ -4,10 +4,12 @@ export interface AgendaItem {
   descricao?: string;
   valor: number;
   tipo: 'entrada' | 'saida';
-  /** Origem do item (ex.: "Despesa Fixa", "Despesa Extra"). */
+  /** Origem do item (ex.: "Despesa Fixa", "Parcelamento"). */
   origem?: string;
   /** Tipo da despesa quando vindo de despesa (ex.: ALUGUEL, LUZ). */
   tipoDespesa?: string;
+  /** Parcela quando origem e Parcelamento (ex.: "1/3"). Exibir na agenda para identificar qual parcela. */
+  parcela?: string;
   pago?: boolean;
 }
 
@@ -19,14 +21,12 @@ export interface DiaAgenda {
   itens?: AgendaItem[];
 }
 
-/** Payload para lancar item direto na agenda (apenas na agenda, sem despesa). Contrato backend: data, valor, descricao?, lojaId?. */
+/** Payload para lancar item direto na agenda (apenas na agenda, sem despesa). Agenda e so soma; sem campo tipo. */
 export interface AgendaItemDirectInput {
   data: string;
-  descricao?: string;
+  descricao: string;
   valor: number;
   lojaId?: string;
-  /** Apenas no formulario (backend nao suporta ainda). */
-  tipo?: 'entrada' | 'saida';
   recorrencia?: string;
   recorrenciaFim?: string;
 }

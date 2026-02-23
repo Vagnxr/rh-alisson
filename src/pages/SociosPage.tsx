@@ -28,7 +28,8 @@ import {
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
-import { formatDateToLocalYYYYMMDD } from '@/lib/date';
+import { formatDateToLocalYYYYMMDD, formatDateStringToBR } from '@/lib/date';
+import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -58,8 +59,11 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('pt-BR');
+/** Formata valor para exibicao em Socios: sem sinal negativo; valor absoluto com classe vermelha quando negativo. */
+function formatCurrencySocios(value: number) {
+  const abs = Math.abs(value);
+  const text = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(abs);
+  return { text, isNegative: value < 0 };
 }
 
 /** Formata CPF para exibicao: 000.000.000-00 */
@@ -126,7 +130,9 @@ function SocioCard({ resumo, onClick, onEdit, onDelete }: SocioCardProps) {
 
       <div className="mt-4 rounded-lg bg-slate-100 p-3">
         <p className="text-xs text-slate-600">Total lancado</p>
-        <p className="text-lg font-semibold text-slate-900">{formatCurrency(saldoTotal)}</p>
+        <p className={cn('text-lg font-semibold', formatCurrencySocios(saldoTotal).isNegative ? 'text-red-600' : 'text-slate-900')}>
+          {formatCurrencySocios(saldoTotal).text}
+        </p>
       </div>
 
       <div className="mt-4 text-center">
@@ -154,7 +160,7 @@ function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }:
       data: {
         accessorKey: 'data',
         header: 'Data',
-        cell: ({ row }) => formatDate(row.getValue('data')),
+        cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
       },
       tipo: {
         accessorKey: 'tipo',
@@ -296,6 +302,7 @@ export function SociosPage() {
   const [isSocioDialogOpen, setIsSocioDialogOpen] = useState(false);
   const [editingSocio, setEditingSocio] = useState<Socio | null>(null);
   const [deletingSocioId, setDeletingSocioId] = useState<string | null>(null);
+  const [showInativos, setShowInativos] = useState(false);
   const [socioFormData, setSocioFormData] = useState({
     nome: '',
     cpf: '',
@@ -320,7 +327,7 @@ export function SociosPage() {
   const tiposParaListar = [
     ...TIPOS_FIXOS.map((k) => ({ label: TIPOS_MOVIMENTACAO[k].label, id: undefined as string | undefined, key: k })),
     ...tiposCustom.map((t) => ({ label: t.label, id: t.id, key: t.label })),
-  ];
+  ].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 
   const movimentacoesFiltros = useMemo(() => ({
     dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
@@ -342,23 +349,32 @@ export function SociosPage() {
     return getMovimentacoesPorSocio(selectedSocio.id);
   }, [selectedSocio, movimentacoes, getMovimentacoesPorSocio]);
 
+  const resumosAtivos = useMemo(() => resumos.filter((r) => r.socio.isAtivo !== false), [resumos]);
+  const resumosInativos = useMemo(() => resumos.filter((r) => r.socio.isAtivo === false), [resumos]);
   const totalGeral = useMemo(() => {
-    return resumos.reduce((acc, r) => acc + r.saldoTotal, 0);
-  }, [resumos]);
+    return resumosAtivos.reduce((acc, r) => acc + r.saldoTotal, 0);
+  }, [resumosAtivos]);
+
+  function normalizarTipoParaSelect(tipo: string): string {
+    const keyLower = (tipo || '').toLowerCase();
+    const fixedKey = TIPOS_FIXOS.find((k) => k === keyLower);
+    return fixedKey ?? (tipo || '').toUpperCase();
+  }
 
   const handleOpenDialog = (mov?: MovimentacaoSocio) => {
     if (mov) {
       setEditingMov(mov);
+      const dataStr = typeof mov.data === 'string' ? mov.data.slice(0, 10) : '';
       setFormData({
-        data: mov.data,
-        tipo: mov.tipo,
-        descricao: mov.descricao,
-        valor: mov.valor.toString(),
+        data: dataStr,
+        tipo: normalizarTipoParaSelect(mov.tipo),
+        descricao: mov.descricao ?? '',
+        valor: formatValorForInput(mov.valor),
       });
     } else {
       setEditingMov(null);
       setFormData({
-        data: new Date().toISOString().split('T')[0],
+        data: formatDateToLocalYYYYMMDD(new Date()),
         tipo: tiposDisponiveis[0] ?? 'pro-labore',
         descricao: '',
         valor: '',
@@ -367,38 +383,60 @@ export function SociosPage() {
     setIsDialogOpen(true);
   };
 
+  // Ao abrir o dialog de edicao, garantir que o formulario mostra os dados da movimentacao (evita mostrar data atual por estado desatualizado)
+  useEffect(() => {
+    if (isDialogOpen && editingMov) {
+      const dataStr = typeof editingMov.data === 'string' ? editingMov.data.slice(0, 10) : '';
+      setFormData((prev) => ({
+        ...prev,
+        data: dataStr,
+        tipo: normalizarTipoParaSelect(editingMov.tipo),
+        descricao: editingMov.descricao ?? prev.descricao,
+        valor: formatValorForInput(editingMov.valor),
+      }));
+    }
+  }, [isDialogOpen, editingMov?.id]);
+
   const handleSubmit = async () => {
-    if (!formData.data || !formData.descricao || !formData.valor) {
-      toast.error('Preencha todos os campos');
+    if (!formData.data || !formData.tipo || !formData.valor) {
+      toast.error('Preencha Data, Tipo e Valor.');
       return;
     }
 
-    const valor = parseFloat(formData.valor.replace(',', '.'));
-    if (isNaN(valor) || valor <= 0) {
+    const valor = parseValorFromInput(formData.valor);
+    if (valor <= 0) {
       toast.error('Valor invalido');
       return;
     }
 
-    if (editingMov) {
-      await updateMovimentacao(editingMov.id, {
-        data: formData.data,
-        tipo: formData.tipo,
-        descricao: formData.descricao,
-        valor,
-      });
-      toast.success('Movimentacao atualizada com sucesso!');
-    } else {
-      await addMovimentacao({
-        socioId: selectedSocio!.id,
-        data: formData.data,
-        tipo: formData.tipo,
-        descricao: formData.descricao,
-        valor,
-      });
-      toast.success('Movimentacao adicionada com sucesso!');
-    }
+    const dataOnly = formData.data.slice(0, 10);
+    const tipoParaEnvio = TIPOS_FIXOS.includes(formData.tipo as TipoMovimentacaoSocio) ? formData.tipo : formData.tipo.toUpperCase();
+    const descricaoUpper = (formData.descricao || '').trim().toUpperCase();
 
-    setIsDialogOpen(false);
+    try {
+      if (editingMov) {
+        await updateMovimentacao(editingMov.id, {
+          data: dataOnly,
+          tipo: tipoParaEnvio,
+          descricao: descricaoUpper,
+          valor,
+        });
+        toast.success('Movimentacao atualizada com sucesso!');
+      } else {
+        await addMovimentacao({
+          socioId: selectedSocio!.id,
+          data: dataOnly,
+          tipo: tipoParaEnvio,
+          descricao: descricaoUpper,
+          valor,
+        });
+        toast.success('Movimentacao adicionada com sucesso!');
+      }
+      setIsDialogOpen(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao salvar movimentacao.';
+      toast.error(msg);
+    }
   };
 
   const handleDelete = async () => {
@@ -448,6 +486,14 @@ export function SociosPage() {
       return;
     }
 
+    const outrosSocios = editingSocio ? socios.filter((s) => s.id !== editingSocio.id) : socios;
+    const somaOutros = outrosSocios.reduce((acc, s) => acc + s.percentualSociedade, 0);
+    const somaTotal = somaOutros + percentual;
+    if (Math.abs(somaTotal - 100) > 0.01) {
+      toast.error('A soma dos percentuais de participacao deve ser 100%.');
+      return;
+    }
+
     try {
       if (editingSocio) {
         await updateSocio(editingSocio.id, {
@@ -474,8 +520,26 @@ export function SociosPage() {
       if (updated && selectedSocio?.id === updated.id) {
         setSelectedSocio(updated);
       }
+    } catch (err: unknown) {
+      const ax = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
+      const msg = String(ax?.response?.data?.message ?? ax?.message ?? '').toLowerCase();
+      const isCpfDuplicado = ax?.response?.status === 409 || msg.includes('cpf') || msg.includes('cadastrado');
+      if (isCpfDuplicado) {
+        toast.error('CPF já cadastrado.');
+      } else {
+        toast.error(ax?.message ?? 'Erro ao salvar socio.');
+      }
+    }
+  };
+
+  const handleAtivarSocio = async (socio: Socio) => {
+    try {
+      await updateSocio(socio.id, { isAtivo: true });
+      toast.success('Socio ativado.');
+      await fetchSocios();
+      await fetchResumo();
     } catch {
-      // erro ja tratado no store
+      toast.error('Erro ao ativar socio.');
     }
   };
 
@@ -510,6 +574,16 @@ export function SociosPage() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <DateFilter value={dateFilter} onChange={setDateFilter} />
+            {!showInativos && (
+              <Button variant="outline" onClick={() => setShowInativos(true)}>
+                Socios Inativos
+              </Button>
+            )}
+            {showInativos && (
+              <Button variant="outline" onClick={() => setShowInativos(false)}>
+                Voltar aos socios ativos
+              </Button>
+            )}
             <Button onClick={() => handleOpenSocioDialog()}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Socio
@@ -517,21 +591,55 @@ export function SociosPage() {
           </div>
         </div>
 
-        {/* Card de total geral */}
-        <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-emerald-500 to-emerald-600 p-5 text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20">
-              <Users className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-sm text-emerald-100">Total Geral - Todos os Socios</p>
-              <p className="text-2xl font-bold">{formatCurrency(totalGeral)}</p>
+        {/* Card de total geral (apenas na lista de ativos) */}
+        {!showInativos && (
+          <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-emerald-500 to-emerald-600 p-5 text-white">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20">
+                <Users className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm text-emerald-100">Total Geral - Todos os Socios</p>
+                <p className={cn('text-2xl font-bold', formatCurrencySocios(totalGeral).isNegative ? 'text-red-200' : '')}>
+                  {formatCurrencySocios(totalGeral).text}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Grid de socios */}
-        {resumos.length === 0 ? (
+        {/* Grid de socios ativos ou lista de inativos */}
+        {showInativos ? (
+          resumosInativos.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 border-dashed bg-slate-50 p-12 text-center">
+              <Users className="mx-auto h-12 w-12 text-slate-400" />
+              <p className="mt-3 text-sm font-medium text-slate-600">Nenhum socio inativo</p>
+              <p className="mt-1 text-sm text-slate-500">Socios desativados aparecem aqui e podem ser reativados.</p>
+              <Button className="mt-4" variant="outline" onClick={() => setShowInativos(false)}>
+                Voltar aos socios ativos
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {resumosInativos.map((resumo) => (
+                <div
+                  key={resumo.socio.id}
+                  className="flex flex-col rounded-xl border border-slate-200 bg-slate-50 p-5"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-slate-700">{resumo.socio.nome}</h3>
+                      <p className="text-sm text-slate-500">{formatCpf(resumo.socio.cpf)}</p>
+                    </div>
+                    <Button size="sm" onClick={() => handleAtivarSocio(resumo.socio)}>
+                      Ativar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : resumosAtivos.length === 0 ? (
           <div className="rounded-xl border border-slate-200 border-dashed bg-slate-50 p-12 text-center">
             <Users className="mx-auto h-12 w-12 text-slate-400" />
             <p className="mt-3 text-sm font-medium text-slate-600">Nenhum socio cadastrado</p>
@@ -543,7 +651,7 @@ export function SociosPage() {
           </div>
         ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {resumos.map((resumo) => (
+          {resumosAtivos.map((resumo) => (
             <SocioCard
               key={resumo.socio.id}
               resumo={resumo}
@@ -671,10 +779,6 @@ export function SociosPage() {
         </div>
         <div className="flex items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
-          <Button variant="outline" onClick={() => handleOpenSocioDialog(selectedSocio)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Editar Socio
-          </Button>
           <Button onClick={() => handleOpenDialog()}>
             <Plus className="mr-2 h-4 w-4" />
             Nova Movimentacao
@@ -708,30 +812,32 @@ export function SociosPage() {
           <div className="space-y-4 pb-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Data</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Data <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   value={formData.data}
                   onChange={(e) => setFormData({ ...formData, data: e.target.value })}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  required
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Tipo</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Tipo <span className="text-red-500">*</span></label>
                 <div className="flex gap-1">
                   <select
                     value={formData.tipo}
                     onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                    className="flex h-10 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    className="flex h-10 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase"
+                    required
                   >
                     {TIPOS_FIXOS.map((key) => (
                       <option key={key} value={key}>
-                        {TIPOS_MOVIMENTACAO[key].label}
+                        {TIPOS_MOVIMENTACAO[key].label.toUpperCase()}
                       </option>
                     ))}
                     {tiposCustom.map((t) => (
                       <option key={t.id} value={t.label}>
-                        {t.label}
+                        {t.label.toUpperCase()}
                       </option>
                     ))}
                   </select>
@@ -755,20 +861,21 @@ export function SociosPage() {
               <input
                 type="text"
                 value={formData.descricao}
-                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, descricao: e.target.value.toUpperCase() })}
                 placeholder="Ex: Pro-labore Janeiro"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Valor</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Valor <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={formData.valor}
                 onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
                 placeholder="0,00"
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                required
               />
             </div>
           </div>
@@ -802,9 +909,10 @@ export function SociosPage() {
                   if (e.key === 'Enter' && novoTipoLabel.trim()) {
                     e.preventDefault();
                     addTipo('socios', novoTipoLabel.trim())
-                      .then(() => {
+                      .then(async () => {
                         setNovoTipoLabel('');
                         toast.success('Tipo adicionado.');
+                        await fetchTipos('socios');
                       })
                       .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao adicionar tipo'));
                   }
@@ -817,9 +925,10 @@ export function SociosPage() {
                   const label = novoTipoLabel.trim();
                   if (!label) return;
                   addTipo('socios', label)
-                    .then(() => {
+                    .then(async () => {
                       setNovoTipoLabel('');
                       toast.success('Tipo adicionado.');
+                      await fetchTipos('socios');
                     })
                     .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao adicionar tipo'));
                 }}

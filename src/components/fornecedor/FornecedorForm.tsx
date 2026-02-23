@@ -29,44 +29,73 @@ interface FornecedorFormProps {
   isLoading?: boolean;
 }
 
+const defaultEndereco: EnderecoFornecedor = {
+  cep: '',
+  tipoLogradouro: 'Rua',
+  logradouro: '',
+  numero: '',
+  complemento: '',
+  bairro: '',
+  cidade: '',
+  uf: '',
+};
+
+const defaultContatoEmpresa: ContatoEmpresa = {
+  telefonePrincipal: '',
+  whatsapp: '',
+  emailPrincipal: '',
+  emailFinanceiro: '',
+  site: '',
+  instagram: '',
+};
+
+function mergeEndereco(from?: EnderecoFornecedor | null): EnderecoFornecedor {
+  if (!from || typeof from !== 'object') return { ...defaultEndereco };
+  return {
+    ...defaultEndereco,
+    ...from,
+    tipoLogradouro: (from.tipoLogradouro as EnderecoFornecedor['tipoLogradouro']) || 'Rua',
+    cep: from.cep ?? '',
+    logradouro: from.logradouro ?? '',
+    numero: from.numero ?? '',
+    complemento: from.complemento ?? '',
+    bairro: from.bairro ?? '',
+    cidade: from.cidade ?? '',
+    uf: from.uf ?? '',
+  };
+}
+
+function mergeContatoEmpresa(from?: ContatoEmpresa | null): ContatoEmpresa {
+  if (!from || typeof from !== 'object') return { ...defaultContatoEmpresa };
+  return {
+    ...defaultContatoEmpresa,
+    ...from,
+    telefonePrincipal: from.telefonePrincipal ?? '',
+    whatsapp: from.whatsapp ?? '',
+    emailPrincipal: from.emailPrincipal ?? '',
+    emailFinanceiro: from.emailFinanceiro ?? '',
+    site: from.site ?? '',
+    instagram: from.instagram ?? '',
+  };
+}
+
 const initialFormData = {
   tipo: 'cnpj' as TipoFornecedor,
-  // CNPJ
   cnpj: '',
   razaoSocial: '',
   nomeFantasia: '',
-  // CPF
   cpf: '',
   nomeCompleto: '',
   nomeComercial: '',
-  // Endereço
-  endereco: {
-    cep: '',
-    tipoLogradouro: 'Rua' as const,
-    logradouro: '',
-    numero: '',
-    complemento: '',
-    bairro: '',
-    cidade: '',
-    uf: '',
-  } as EnderecoFornecedor,
-  // Contato Empresa
-  contatoEmpresa: {
-    telefonePrincipal: '',
-    whatsapp: '',
-    emailPrincipal: '',
-    emailFinanceiro: '',
-    site: '',
-    instagram: '',
-  } as ContatoEmpresa,
-  // Contato Vendedor
+  endereco: defaultEndereco,
+  contatoEmpresa: defaultContatoEmpresa,
   contatoVendedor: {
     nome: '',
     whatsapp: '',
     email: '',
   } as ContatoVendedor,
-  // Outros
   observacoes: '',
+  isAtivo: true,
 };
 
 export function FornecedorForm({
@@ -81,19 +110,29 @@ export function FornecedorForm({
 
   useEffect(() => {
     if (fornecedor) {
+      const endereco = mergeEndereco(fornecedor.endereco);
+      const contatoEmpresa = mergeContatoEmpresa(fornecedor.contatoEmpresa);
+      const contatoVendedor = fornecedor.contatoVendedor
+        ? {
+            nome: fornecedor.contatoVendedor.nome ?? '',
+            whatsapp: fornecedor.contatoVendedor.whatsapp ?? '',
+            email: fornecedor.contatoVendedor.email ?? '',
+          }
+        : initialFormData.contatoVendedor;
       if (fornecedor.tipo === 'cnpj') {
         setFormData({
           tipo: 'cnpj',
-          cnpj: fornecedor.cnpj,
-          razaoSocial: fornecedor.razaoSocial,
-          nomeFantasia: fornecedor.nomeFantasia,
+          cnpj: fornecedor.cnpj ?? '',
+          razaoSocial: fornecedor.razaoSocial ?? '',
+          nomeFantasia: fornecedor.nomeFantasia ?? '',
           cpf: '',
           nomeCompleto: '',
           nomeComercial: '',
-          endereco: fornecedor.endereco,
-          contatoEmpresa: fornecedor.contatoEmpresa,
-          contatoVendedor: fornecedor.contatoVendedor || initialFormData.contatoVendedor,
-          observacoes: fornecedor.observacoes || '',
+          endereco,
+          contatoEmpresa,
+          contatoVendedor,
+          observacoes: fornecedor.observacoes ?? '',
+          isAtivo: fornecedor.isAtivo !== false,
         });
       } else {
         setFormData({
@@ -101,13 +140,14 @@ export function FornecedorForm({
           cnpj: '',
           razaoSocial: '',
           nomeFantasia: '',
-          cpf: fornecedor.cpf,
-          nomeCompleto: fornecedor.nomeCompleto,
-          nomeComercial: fornecedor.nomeComercial || '',
-          endereco: fornecedor.endereco,
-          contatoEmpresa: fornecedor.contatoEmpresa,
-          contatoVendedor: fornecedor.contatoVendedor || initialFormData.contatoVendedor,
-          observacoes: fornecedor.observacoes || '',
+          cpf: fornecedor.cpf ?? '',
+          nomeCompleto: fornecedor.nomeCompleto ?? '',
+          nomeComercial: fornecedor.nomeComercial ?? '',
+          endereco,
+          contatoEmpresa,
+          contatoVendedor,
+          observacoes: fornecedor.observacoes ?? '',
+          isAtivo: fornecedor.isAtivo !== false,
         });
       }
     } else {
@@ -143,10 +183,7 @@ export function FornecedorForm({
 
     const cont = formData.contatoEmpresa;
     if (!cont.whatsapp?.trim()) newErrors.whatsapp = 'WhatsApp é obrigatório';
-    if (!cont.emailPrincipal?.trim()) newErrors.emailPrincipal = 'E-mail Principal é obrigatório';
-    if (!cont.emailFinanceiro?.trim()) newErrors.emailFinanceiro = 'E-mail Financeiro é obrigatório';
-    if (!cont.site?.trim()) newErrors.site = 'Site é obrigatório';
-    if (!cont.instagram?.trim()) newErrors.instagram = 'Instagram é obrigatório';
+    // E-mail Principal, E-mail Financeiro, Site e Instagram sao opcionais
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -164,6 +201,7 @@ export function FornecedorForm({
         contatoEmpresa: formData.contatoEmpresa,
         contatoVendedor: formData.contatoVendedor.nome ? formData.contatoVendedor : undefined,
         observacoes: formData.observacoes || undefined,
+        isAtivo: formData.isAtivo,
       };
       await onSubmit(dto);
     } else {
@@ -176,6 +214,7 @@ export function FornecedorForm({
         contatoEmpresa: formData.contatoEmpresa,
         contatoVendedor: formData.contatoVendedor.nome ? formData.contatoVendedor : undefined,
         observacoes: formData.observacoes || undefined,
+        isAtivo: formData.isAtivo,
       };
       await onSubmit(dto);
     }
@@ -183,7 +222,7 @@ export function FornecedorForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{fornecedor ? 'Editar Fornecedor' : 'Novo Fornecedor'}</DialogTitle>
           <DialogDescription>
@@ -324,7 +363,7 @@ export function FornecedorForm({
                 required
               />
               <InputUppercase
-                label="E-mail Principal"
+                label="E-mail Principal (opcional)"
                 type="email"
                 isEmail
                 value={formData.contatoEmpresa.emailPrincipal}
@@ -335,10 +374,9 @@ export function FornecedorForm({
                   })
                 }
                 error={errors.emailPrincipal}
-                required
               />
               <InputUppercase
-                label="E-mail Financeiro"
+                label="E-mail Financeiro (opcional)"
                 type="email"
                 isEmail
                 value={formData.contatoEmpresa.emailFinanceiro || ''}
@@ -349,32 +387,6 @@ export function FornecedorForm({
                   })
                 }
                 error={errors.emailFinanceiro}
-                required
-              />
-              <InputUppercase
-                label="Site"
-                type="url"
-                value={formData.contatoEmpresa.site || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    contatoEmpresa: { ...formData.contatoEmpresa, site: e.target.value },
-                  })
-                }
-                error={errors.site}
-                required
-              />
-              <InputUppercase
-                label="Instagram"
-                value={formData.contatoEmpresa.instagram || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    contatoEmpresa: { ...formData.contatoEmpresa, instagram: e.target.value },
-                  })
-                }
-                error={errors.instagram}
-                required
               />
             </div>
           </div>
@@ -416,6 +428,38 @@ export function FornecedorForm({
                 }
               />
             </div>
+          </div>
+
+          {/* Status Ativo/Inativo */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">
+              Status <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-6">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="isAtivo"
+                  checked={formData.isAtivo === true}
+                  onChange={() => setFormData({ ...formData, isAtivo: true })}
+                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="text-sm text-slate-700">Ativo</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="isAtivo"
+                  checked={formData.isAtivo === false}
+                  onChange={() => setFormData({ ...formData, isAtivo: false })}
+                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="text-sm text-slate-700">Inativo</span>
+              </label>
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Inativos nao aparecem na lista principal e ficam na aba Inativos.
+            </p>
           </div>
 
           {/* Observações */}

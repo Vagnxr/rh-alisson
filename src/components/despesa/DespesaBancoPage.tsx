@@ -17,6 +17,7 @@ import { useBancoStore } from '@/stores/bancoStore';
 import { useDespesaTiposStore } from '@/stores/despesaTiposStore';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { formatDateToLocalYYYYMMDD, formatDateStringToBR } from '@/lib/date';
+import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import {
   Dialog,
@@ -179,11 +180,11 @@ export function DespesaBancoPageComponent({
   const [deleteBancoId, setDeleteBancoId] = useState<string | null>(null);
   const [isBancoSaving, setIsBancoSaving] = useState(false);
 
-  const [formData, setFormData] = useState<DespesaBancoInput>({
+  const [formData, setFormData] = useState<Omit<DespesaBancoInput, 'valor'> & { valor: string }>({
     data: '',
     tipo: '',
     descricao: '',
-    valor: 0,
+    valor: '',
     bancoId: '',
     comunicarAgenda: false,
   });
@@ -191,11 +192,13 @@ export function DespesaBancoPageComponent({
   const tiposPadrao = TIPOS_DESPESA['despesa-banco'] || ['OUTROS'];
   const tiposFromStore = getTipos('despesa-banco');
   const customTipos = tiposFromStore.filter((t) => !tiposPadrao.includes(t.label));
-  const tiposDisponiveis = [...tiposPadrao, ...customTipos.map((t) => t.label)];
+  const tiposDisponiveis = [...tiposPadrao, ...customTipos.map((t) => t.label)].sort((a, b) =>
+    a.localeCompare(b, 'pt-BR')
+  );
   const tiposParaListar = [
     ...tiposPadrao.map((label) => ({ label, id: undefined as string | undefined })),
     ...customTipos.map((t) => ({ label: t.label, id: t.id })),
-  ];
+  ].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 
   const dateParams = useMemo(() => ({
     dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
@@ -228,7 +231,7 @@ export function DespesaBancoPageComponent({
         data: formatDateForInput(item.data),
         tipo: item.tipo || '',
         descricao: item.descricao ?? '',
-        valor: item.valor,
+        valor: formatValorForInput(item.valor),
         bancoId: item.bancoId || '',
         comunicarAgenda: item.comunicarAgenda || false,
       });
@@ -238,7 +241,7 @@ export function DespesaBancoPageComponent({
         data: formatDateToLocalYYYYMMDD(new Date()),
         tipo: tiposDisponiveis[0] || '',
         descricao: '',
-        valor: 0,
+        valor: '',
         bancoId: bancoFilter || '',
         comunicarAgenda: false,
       });
@@ -249,7 +252,7 @@ export function DespesaBancoPageComponent({
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingItem(null);
-    setFormData({ data: '', tipo: '', descricao: '', valor: 0, bancoId: '', comunicarAgenda: false });
+    setFormData({ data: '', tipo: '', descricao: '', valor: '', bancoId: '', comunicarAgenda: false });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -265,17 +268,18 @@ export function DespesaBancoPageComponent({
       return;
     }
 
-    if (formData.valor <= 0) {
+    const valorNum = parseValorFromInput(String(formData.valor));
+    if (valorNum <= 0) {
       toast.error('Valor deve ser maior que zero');
       return;
     }
 
     try {
       if (editingItem) {
-        await updateItem(editingItem.id, formData);
+        await updateItem(editingItem.id, { ...formData, valor: valorNum });
         toast.success('Registro atualizado com sucesso!');
       } else {
-        await addItem(formData);
+        await addItem({ ...formData, valor: valorNum });
         toast.success('Registro adicionado com sucesso!');
       }
       handleCloseDialog();
@@ -978,12 +982,11 @@ export function DespesaBancoPageComponent({
                 </label>
                 <input
                   id="valor"
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="0,00"
-                  value={formData.valor || ''}
-                  onChange={(e) => setFormData({ ...formData, valor: parseFloat(e.target.value) || 0 })}
+                  value={formData.valor ?? ''}
+                  onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                   required
                 />

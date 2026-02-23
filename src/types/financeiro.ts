@@ -4,10 +4,14 @@ export interface CaixaRow {
   dia: string;
   dinheiroDeposito: number;
   pagamentoPdv: number;
+  pagamentoEscritorio?: number;
   pix: number;
   credito: number;
   debito: number;
   voucher: number;
+  troca?: number;
+  devolucaoDinheiro?: number;
+  desconto?: number;
   ifood: number;
   total: number;
 }
@@ -64,8 +68,11 @@ export interface ControleDepositoRow {
   data: string;
   dia: string;
   dinheiro: number;
-  sobra: number;
-  total: number;
+  responsavelDeposito?: string;
+  /** @deprecated removido do formulario; backend pode omitir ou manter por compatibilidade */
+  sobra?: number;
+  /** @deprecated removido do formulario; backend pode omitir ou manter por compatibilidade */
+  total?: number;
 }
 
 /** Linha Controle Deposito - Tabela 2 (valor depositado) */
@@ -88,6 +95,9 @@ export interface VendaCartoesRow {
   totalDia: number;
 }
 
+/** Forma de pagamento na Entrada de Ativo Imobilizado. Define se Saida e gerada no mesmo dia (Dinheiro/PIX) ou via Agenda (Boleto). */
+export type AtivoImobilizadoFormaPagto = 'Dinheiro' | 'PIX' | 'Boleto';
+
 /** Linha Ativo Imobilizado (Entrada ou Saida) */
 export interface AtivoImobilizadoRow {
   id: string;
@@ -95,6 +105,8 @@ export interface AtivoImobilizadoRow {
   nf: string;
   descricaoFornecedor: string;
   valor: number;
+  /** Apenas entrada. Dinheiro/PIX: saida no mesmo dia; Boleto: saida ao marcar como pago na Agenda. */
+  formaPagto?: AtivoImobilizadoFormaPagto;
   /** Periodicidade (ex.: Mensal, Anual). Backend pode usar para gerar parcelas. */
   recorrencia?: string;
   /** Quando true, item aparece na Agenda e so registra saida ao marcar como pago. */
@@ -115,8 +127,8 @@ export interface EntradaRow {
   data: string;
   /** Data de emissao da nota fiscal (opcional) */
   dataEmissao?: string;
-  /** Numero de sequencia do registro (opcional) */
-  sequencia?: number | string;
+  /** Numero da nota fiscal (opcional). Ex.: 156. */
+  numeroNota?: string;
   fornecedor: string;
   /** Modelo da nota: NF-e, NFC-e, etc. */
   modeloNota?: string;

@@ -14,14 +14,12 @@ import { ExportButtons, useExportColumns } from '@/components/ui/export-buttons'
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { ControleDinheiroRow } from '@/types/financeiro';
+import { formatDateStringToBR } from '@/lib/date';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
-}
 
 export function ControleDinheiroPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -43,7 +41,7 @@ export function ControleDinheiroPage() {
   }, [fetchList]);
 
   const exportColumns = useExportColumns<ControleDinheiroRow>([
-    { key: 'data', label: 'Data', format: (v) => formatDate(String(v)) },
+    { key: 'data', label: 'Data', format: (v) => formatDateStringToBR(String(v)) },
     { key: 'dia', label: 'Dia' },
     { key: 'deposito', label: 'Deposito', format: (v) => formatCurrency(Number(v)) },
     { key: 'sobra', label: 'Sobra', format: (v) => formatCurrency(Number(v)) },
@@ -63,7 +61,7 @@ export function ControleDinheiroPage() {
             Data <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => formatDate(row.getValue('data')),
+        cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
       },
       { accessorKey: 'dia', header: 'Dia' },
       {

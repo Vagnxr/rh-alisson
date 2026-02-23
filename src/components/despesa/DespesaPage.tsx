@@ -10,7 +10,7 @@ import {
 import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DespesaBase, DespesaInput, DespesaCategoriaConfig, DespesaCategoria } from '@/types/despesa';
-import { TIPOS_DESPESA } from '@/types/despesa';
+import { TIPOS_DESPESA, ABREVIACOES_TIPO_FUNCIONARIO } from '@/types/despesa';
 import type { TipoRecorrencia } from '@/types/recorrencia';
 import { SelectRecorrencia, RecorrenciaBadge } from '@/components/ui/select-recorrencia';
 import { useDespesaTiposStore } from '@/stores/despesaTiposStore';
@@ -20,6 +20,7 @@ import { buildTableColumns } from '@/lib/buildTableColumns';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { formatDateToLocalYYYYMMDD, formatDateStringToBR } from '@/lib/date';
+import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import {
   Dialog,
   DialogContent,
@@ -87,11 +88,11 @@ export function DespesaPage({
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
 
-  const [formData, setFormData] = useState<DespesaInput & { recorrente: boolean }>({
+  const [formData, setFormData] = useState<Omit<DespesaInput, 'valor'> & { valor: string } & { recorrente: boolean }>({
     data: '',
     tipo: '',
     descricao: '',
-    valor: 0,
+    valor: '',
     comunicarAgenda: false,
     recorrente: false,
   });
@@ -115,13 +116,15 @@ export function DespesaPage({
   const customTipos = tiposFromStore.filter(
     (t) => !defaultLabels.includes(t.label)
   );
-  const tiposDisponiveis = [...defaultLabels, ...customTipos.map((t) => t.label)];
+  const tiposDisponiveis = [...defaultLabels, ...customTipos.map((t) => t.label)].sort((a, b) =>
+    a.localeCompare(b, 'pt-BR')
+  );
 
-  // Lista para o dialog: padroes (sem id) + tipos da API que nao sao padrao (com id, podem excluir)
+  // Lista para o dialog: padroes (sem id) + tipos da API que nao sao padrao (com id, podem excluir), em ordem alfabetica
   const tiposParaListar = [
     ...defaultLabels.map((label) => ({ label, id: undefined as string | undefined })),
     ...customTipos.map((t) => ({ label: t.label, id: t.id })),
-  ];
+  ].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 
   const dateParams = useMemo(() => ({
     dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
@@ -147,7 +150,7 @@ export function DespesaPage({
         data: formatDateForInput(item.data),
         tipo: item.tipo || '',
         descricao: item.descricao,
-        valor: item.valor,
+        valor: formatValorForInput(item.valor),
         comunicarAgenda: item.comunicarAgenda || false,
         recorrencia: item.recorrencia,
         recorrenciaFim: item.recorrenciaFim,
@@ -159,7 +162,7 @@ export function DespesaPage({
         data: formatDateToLocalYYYYMMDD(new Date()),
         tipo: tiposDisponiveis[0] || '',
         descricao: '',
-        valor: 0,
+        valor: '',
         comunicarAgenda: false,
         recorrente: false,
       });
@@ -170,7 +173,7 @@ export function DespesaPage({
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingItem(null);
-    setFormData({ data: '', tipo: '', descricao: '', valor: 0, comunicarAgenda: false, recorrente: false });
+    setFormData({ data: '', tipo: '', descricao: '', valor: '', comunicarAgenda: false, recorrente: false });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -181,7 +184,8 @@ export function DespesaPage({
       return;
     }
 
-    if (formData.valor <= 0) {
+    const valorNum = parseValorFromInput(formData.valor);
+    if (valorNum <= 0) {
       toast.error('Valor deve ser maior que zero');
       return;
     }
@@ -191,7 +195,7 @@ export function DespesaPage({
         data: formData.data,
         tipo: formData.tipo,
         descricao: formData.descricao,
-        valor: formData.valor,
+        valor: valorNum,
         comunicarAgenda: formData.comunicarAgenda,
         recorrencia: formData.recorrente ? (formData.recorrencia || 'mensal') : 'unica',
         recorrenciaFim: formData.recorrente ? formData.recorrenciaFim : undefined,
@@ -248,11 +252,18 @@ export function DespesaPage({
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => (
-          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-            {row.getValue('tipo') || '-'}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const tipo = (row.getValue('tipo') as string) || '';
+          const label =
+            config.key === 'despesa-funcionario' && ABREVIACOES_TIPO_FUNCIONARIO[tipo]
+              ? ABREVIACOES_TIPO_FUNCIONARIO[tipo]
+              : tipo;
+          return (
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+              {label || '-'}
+            </span>
+          );
+        },
       },
       descricao: {
         accessorKey: 'descricao',
@@ -296,15 +307,22 @@ export function DespesaPage({
         ),
         cell: ({ row }) => {
           const value = (row.getValue('recorrencia') as string) || 'unica';
-          return value === 'unica' ? (
-            <span className="text-slate-400">-</span>
-          ) : (
-            <RecorrenciaBadge value={value as TipoRecorrencia} />
+          const indice = row.original.recorrenciaIndice;
+          if (value === 'unica') {
+            return <span className="text-slate-400">-</span>;
+          }
+          return (
+            <span className="inline-flex items-center gap-1.5">
+              <RecorrenciaBadge value={value as TipoRecorrencia} />
+              {indice ? (
+                <span className="text-xs text-slate-500">{indice}</span>
+              ) : null}
+            </span>
           );
         },
       },
     }),
-    []
+    [config.key]
   );
 
   const actionsColumn: ColumnDef<DespesaBase> = useMemo(
@@ -340,7 +358,8 @@ export function DespesaPage({
         columnsFromApi ?? null,
         DESPESA_TABLE_DEFAULT_ORDER,
         actionsColumn,
-        ['tipo', 'recorrencia']
+        ['tipo', 'recorrencia'],
+        DESPESA_TABLE_DEFAULT_ORDER
       ),
     [columnDefsByKey, columnsFromApi, actionsColumn]
   );
@@ -574,20 +593,22 @@ export function DespesaPage({
                   >
                     Tipo <span className="text-red-500">*</span>
                   </label>
-                  <div className="flex gap-1">
+                  <div className="flex min-w-0 gap-1">
                     <select
                       id="tipo"
                       value={formData.tipo}
                       onChange={(e) =>
                         setFormData({ ...formData, tipo: e.target.value })
                       }
-                      className="flex h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
+                      className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
                       required
                     >
                       <option value="">Selecione...</option>
                       {tiposDisponiveis.map((tipo) => (
                         <option key={tipo} value={tipo}>
-                          {tipo}
+                          {config.key === 'despesa-funcionario' && ABREVIACOES_TIPO_FUNCIONARIO[tipo]
+                            ? ABREVIACOES_TIPO_FUNCIONARIO[tipo]
+                            : tipo}
                         </option>
                       ))}
                     </select>
@@ -632,15 +653,14 @@ export function DespesaPage({
                 </label>
                 <input
                   id="valor"
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="0,00"
-                  value={formData.valor || ''}
+                  value={formData.valor}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      valor: parseFloat(e.target.value) || 0,
+                      valor: e.target.value,
                     })
                   }
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -692,6 +712,9 @@ export function DespesaPage({
                       }
                       className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                     />
+                    <p className="text-xs text-slate-500">
+                      Última data de vencimento da série. A data informada acima conta como a primeira ocorrência (ex.: 6 meses a partir de 13/02 = 13/02, 13/03, …, 13/07). Deixe em branco para gerar até 12 meses.
+                    </p>
                   </div>
                 </div>
               )}

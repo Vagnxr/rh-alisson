@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpDown, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import {
@@ -33,13 +33,10 @@ import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { SaidaRow, SaidaFormaPagamento } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
+import { formatDateStringToBR } from '@/lib/date';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
 }
 
 function parseNum(v: string): number {
@@ -50,14 +47,20 @@ function parseNum(v: string): number {
 const inputClass =
   'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
-const CAMPOS_NUMERICOS = [
-  'industrializacao',
+const CAMPOS_NUMERICOS_ORDEM = [
   'comercializacao',
+  'industrializacao',
   'embalagem',
   'materialUsoCons',
   'mercadoriaUsoCons',
   'gas',
 ] as const;
+
+const LABEL_CAMPO: Record<string, string> = {
+  materialUsoCons: 'Material uso/cons.',
+  mercadoriaUsoCons: 'Mercadoria uso/cons.',
+  gas: 'GLP',
+};
 
 const FORMAS_SAIDA: SaidaFormaPagamento[] = ['BOLETO', 'CARTAO'];
 
@@ -184,7 +187,7 @@ export function SaidaPage() {
             Data <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => formatDate(row.getValue('data')),
+        cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
       },
       {
         accessorKey: 'formaPagamento',
@@ -193,14 +196,14 @@ export function SaidaPage() {
       },
       { accessorKey: 'fornecedor', header: 'Fornecedor' },
       {
-        accessorKey: 'industrializacao',
-        header: 'Industrializacao',
-        cell: ({ row }) => formatCurrency(row.getValue('industrializacao')),
-      },
-      {
         accessorKey: 'comercializacao',
         header: 'Comercializacao',
         cell: ({ row }) => formatCurrency(row.getValue('comercializacao')),
+      },
+      {
+        accessorKey: 'industrializacao',
+        header: 'Industrializacao',
+        cell: ({ row }) => formatCurrency(row.getValue('industrializacao')),
       },
       {
         accessorKey: 'embalagem',
@@ -219,7 +222,7 @@ export function SaidaPage() {
       },
       {
         accessorKey: 'gas',
-        header: 'Gas',
+        header: 'GLP',
         cell: ({ row }) => formatCurrency(row.getValue('gas')),
       },
       {
@@ -255,45 +258,37 @@ export function SaidaPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Saida</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Data, fornecedor, industrializacao, comercializacao, embalagem, material uso/cons., mercadoria uso/cons., gas
+            Preenchido automaticamente conforme Entrada (Dinheiro/PIX no mesmo dia; Boleto ao marcar como pago na Agenda). Data, forma pagamento, fornecedor, comercializacao, industrializacao, embalagem, material uso/cons., mercadoria uso/cons., GLP.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
           <ExportButtons
             data={items.map((r) => ({
-              data: formatDate(r.data),
+              data: formatDateStringToBR(r.data),
               formaPagamento: r.formaPagamento ?? '',
               fornecedor: r.fornecedor,
-              industrializacao: formatCurrency(Number(r.industrializacao)),
               comercializacao: formatCurrency(Number(r.comercializacao)),
+              industrializacao: formatCurrency(Number(r.industrializacao)),
               embalagem: formatCurrency(Number(r.embalagem)),
               materialUsoCons: formatCurrency(Number(r.materialUsoCons)),
               mercadoriaUsoCons: formatCurrency(Number(r.mercadoriaUsoCons)),
-              gas: formatCurrency(Number(r.gas)),
+              glp: formatCurrency(Number(r.gas)),
             }))}
             columns={[
               { key: 'data', label: 'Data' },
               { key: 'formaPagamento', label: 'Forma pagamento' },
               { key: 'fornecedor', label: 'Fornecedor' },
-              { key: 'industrializacao', label: 'Industrializacao' },
               { key: 'comercializacao', label: 'Comercializacao' },
+              { key: 'industrializacao', label: 'Industrializacao' },
               { key: 'embalagem', label: 'Embalagem' },
               { key: 'materialUsoCons', label: 'Material uso/cons.' },
               { key: 'mercadoriaUsoCons', label: 'Mercadoria uso/cons.' },
-              { key: 'gas', label: 'Gas' },
+              { key: 'glp', label: 'GLP' },
             ]}
             filename="saida"
             title="Saida"
           />
-          <button
-            type="button"
-            onClick={() => handleOpenDialog()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-          >
-            <Plus className="h-4 w-4" />
-            Novo
-          </button>
         </div>
       </div>
 
@@ -323,7 +318,8 @@ export function SaidaPage() {
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-slate-500">
-                    Nenhum registro no periodo
+                    <p>Nenhum registro no periodo.</p>
+                    <p className="mt-1 text-xs text-slate-400">A Saida e preenchida automaticamente: Entrada com Dinheiro ou PIX gera saida no mesmo dia; Entrada com Boleto gera saida ao marcar como pago na Agenda.</p>
                   </td>
                 </tr>
               ) : (
@@ -369,10 +365,10 @@ export function SaidaPage() {
                 <label className="text-sm font-medium text-slate-700">Fornecedor</label>
                 <input type="text" value={formData.fornecedor} onChange={(e) => setFormData({ ...formData, fornecedor: e.target.value })} className={inputClass} />
               </div>
-              {CAMPOS_NUMERICOS.map((key) => (
+              {CAMPOS_NUMERICOS_ORDEM.map((key) => (
                 <div key={key} className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">
-                    {key === 'materialUsoCons' ? 'Material uso/cons. (R$)' : key === 'mercadoriaUsoCons' ? 'Mercadoria uso/cons. (R$)' : `${key.charAt(0).toUpperCase() + key.slice(1)} (R$)`}
+                    {LABEL_CAMPO[key] ?? `${key.charAt(0).toUpperCase() + key.slice(1)}`} (R$)
                   </label>
                   <input type="text" inputMode="decimal" placeholder="0,00" value={formData[key]} onChange={(e) => setFormData({ ...formData, [key]: e.target.value })} className={inputClass} />
                 </div>

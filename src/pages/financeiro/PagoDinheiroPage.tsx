@@ -33,13 +33,10 @@ import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { PagoDinheiroRow } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
+import { formatDateStringToBR } from '@/lib/date';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
 }
 
 function parseNum(v: string): number {
@@ -82,7 +79,7 @@ export function PagoDinheiroPage() {
       setEditingItem(item);
       setFormData({
         data: item.data.split('T')[0] || item.data.slice(0, 10),
-        descricaoFornecedor: item.descricaoFornecedor,
+        descricaoFornecedor: (item.descricaoFornecedor ?? '').toUpperCase(),
         valor: String(item.valor),
       });
     } else {
@@ -104,7 +101,12 @@ export function PagoDinheiroPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data = formData.data.slice(0, 10);
-    const body = { data, descricaoFornecedor: formData.descricaoFornecedor, valor: parseNum(formData.valor) };
+    const descricaoFornecedor = formData.descricaoFornecedor.trim().toUpperCase();
+    if (!descricaoFornecedor) {
+      toast.error('Preencha a descricao / fornecedor.');
+      return;
+    }
+    const body = { data, descricaoFornecedor, valor: parseNum(formData.valor) };
     if (editingItem) {
       api
         .patch<PagoDinheiroRow>(`financeiro/pago-dinheiro/${editingItem.id}`, body)
@@ -150,7 +152,7 @@ export function PagoDinheiroPage() {
             Data <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => formatDate(row.getValue('data')),
+        cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
       },
       { accessorKey: 'descricaoFornecedor', header: 'Descricao / Fornecedor' },
       {
@@ -214,7 +216,7 @@ export function PagoDinheiroPage() {
           <DateFilter value={dateFilter} onChange={setDateFilter} />
           <ExportButtons
             data={items.map((r) => ({
-              data: formatDate(r.data),
+              data: formatDateStringToBR(r.data),
               descricaoFornecedor: r.descricaoFornecedor,
               valor: formatCurrency(r.valor),
             }))}
@@ -306,7 +308,7 @@ export function PagoDinheiroPage() {
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Editar Pago em Dinheiro' : 'Novo Pago em Dinheiro'}</DialogTitle>
             <DialogDescription>
-              {editingItem ? 'Altere os dados.' : 'Preencha data, descricao/fornecedor e valor.'}
+              Todos os campos sao obrigatorios. A descricao e exibida em maiusculas.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
@@ -327,8 +329,10 @@ export function PagoDinheiroPage() {
                 <input
                   type="text"
                   value={formData.descricaoFornecedor}
-                  onChange={(e) => setFormData({ ...formData, descricaoFornecedor: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, descricaoFornecedor: e.target.value.toUpperCase() })}
                   className={inputClass}
+                  required
+                  placeholder="Ex: FORNECEDOR X"
                 />
               </div>
               <div className="space-y-2">

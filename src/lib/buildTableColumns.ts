@@ -11,17 +11,26 @@ import type { TableColumnConfigFromApi } from '@/types/configuracao';
  * @param defaultOrder Ordem padrao dos ids quando apiColumns nao existe
  * @param actionsColumn Coluna de acoes (ex.: editar, excluir). Sempre anexada ao final
  * @param ensureColumnIds Ids que devem aparecer na tabela; se a API nao enviar, sao inseridos apos "data"
+ * @param enforceOrder Quando informado, a ordem das colunas segue este array (ex.: Data, Tipo, Descricao, Valor, Recorrencia). Colunas da API que nao estao aqui vao ao final.
  */
 export function buildTableColumns<T>(
   columnDefsByKey: Record<string, ColumnDef<T>>,
   apiColumns: TableColumnConfigFromApi[] | null | undefined,
   defaultOrder: string[],
   actionsColumn?: ColumnDef<T>,
-  ensureColumnIds?: string[]
+  ensureColumnIds?: string[],
+  enforceOrder?: string[]
 ): ColumnDef<T>[] {
   let order = apiColumns?.length
     ? [...apiColumns].sort((a, b) => a.order - b.order).map((c) => c.id)
     : defaultOrder;
+
+  if (enforceOrder?.length) {
+    // Sequencia canonica primeiro (colunas que existem no front), depois o resto vindo da API
+    const enforced = enforceOrder.filter((id) => columnDefsByKey[id]);
+    const rest = order.filter((id) => !enforceOrder.includes(id));
+    order = [...enforced, ...rest];
+  }
 
   if (ensureColumnIds?.length) {
     for (const id of ensureColumnIds) {

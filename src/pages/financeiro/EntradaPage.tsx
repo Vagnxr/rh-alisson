@@ -36,14 +36,12 @@ import type { EntradaRow, EntradaValorItem } from '@/types/financeiro';
 import { useFornecedorStore } from '@/stores/fornecedorStore';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { cn } from '@/lib/cn';
+import { formatDateStringToBR } from '@/lib/date';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
-}
 
 function parseNum(v: string): number {
   const n = parseFloat(String(v).replace(',', '.'));
@@ -59,7 +57,7 @@ const CATEGORIAS_INICIAIS = [
   { id: 'embalagem', nome: 'EMBALAGEM' },
   { id: 'mat-uso-cons', nome: 'MAT USO/CONS' },
   { id: 'merc-uso-cons', nome: 'MERC USO/CONS' },
-  { id: 'gas', nome: 'GÁS' },
+  { id: 'gas', nome: 'GLP' },
   { id: 'bonif-preco', nome: 'BONIF PREÇO' },
   { id: 'bonif-troca', nome: 'BONIF TROCA' },
   { id: 'bonif-loja', nome: 'BONIF LOJA' },
@@ -70,7 +68,17 @@ const MODELOS_NOTA_INICIAIS = ['NF-e', 'NFC-e', 'NFS-e', 'ENT SN', 'BONIFICAÇÃ
 const TIPOS_ENTRADA = ['Compra', 'Devolucao', 'Outros'];
 
 /** Formas de pagamento padrao (sem Bradesco e Santander). */
-const FORMAS_PAGAMENTO_INICIAIS = ['DINHEIRO', 'PIX', 'BOLETO'];
+/** Forma de pagamento com flag comunica Agenda (Boleto sim; Dinheiro/PIX nao). */
+interface FormaPagamentoItem {
+  nome: string;
+  comunicaAgenda: boolean;
+}
+
+const FORMAS_PAGAMENTO_INICIAIS: FormaPagamentoItem[] = [
+  { nome: 'DINHEIRO', comunicaAgenda: false },
+  { nome: 'PIX', comunicaAgenda: false },
+  { nome: 'BOLETO', comunicaAgenda: true },
+];
 
 const FORMAS_PAGAMENTO_LANCAMENTO_DIRETO = ['DINHEIRO', 'PIX'];
 
@@ -94,24 +102,26 @@ export function EntradaPage() {
 
   const [modelosNota, setModelosNota] = useState<string[]>(() => [...MODELOS_NOTA_INICIAIS]);
   const [categorias, setCategorias] = useState<{ id: string; nome: string }[]>(() => [...CATEGORIAS_INICIAIS]);
-  const [formasPagamento, setFormasPagamento] = useState<string[]>(() => [...FORMAS_PAGAMENTO_INICIAIS]);
+  const [formasPagamento, setFormasPagamento] = useState<FormaPagamentoItem[]>(() => [...FORMAS_PAGAMENTO_INICIAIS]);
 
   const [configDialog, setConfigDialog] = useState<'modelo' | 'categoria' | 'forma' | null>(null);
   const [novoModelo, setNovoModelo] = useState('');
   const [novaCategoria, setNovaCategoria] = useState('');
   const [novaForma, setNovaForma] = useState('');
+  const [novaFormaComunicaAgenda, setNovaFormaComunicaAgenda] = useState(false);
 
   const defaultForm = useCallback(() => {
     return {
       data: new Date().toISOString().split('T')[0],
       dataEmissao: '',
-      sequencia: '',
+      numeroNota: '',
       tipoEntradaId: TIPOS_ENTRADA[0] ?? 'Compra',
       fornecedor: '',
       modeloNotaId: modelosNota[0] ?? '',
-      formaPagamentoId: formasPagamento[0] ?? '',
+      formaPagamentoId: formasPagamento[0]?.nome ?? '',
       valorPago: '' as string | number,
       valores: [] as { categoriaId: string; valor: string }[],
+      contasAPagar: [] as { vencimento: string; valor: string }[],
     };
   }, [modelosNota, formasPagamento]);
 
@@ -125,6 +135,7 @@ export function EntradaPage() {
   const formaLancamentoDireto = formData.formaPagamentoId
     ? FORMAS_PAGAMENTO_LANCAMENTO_DIRETO.some((f) => slugify(f) === slugify(formData.formaPagamentoId) || f === formData.formaPagamentoId)
     : false;
+  const formaBoleto = formData.formaPagamentoId && slugify(formData.formaPagamentoId) === 'boleto';
 
   const valorPagoNum = formData.valorPago !== '' ? parseNum(String(formData.valorPago)) : 0;
 
@@ -165,19 +176,21 @@ export function EntradaPage() {
       setFormData({
         data: item.data.split('T')[0] || item.data.slice(0, 10),
         dataEmissao: item.dataEmissao?.split('T')[0] ?? item.dataEmissao?.slice(0, 10) ?? '',
-        sequencia: item.sequencia != null ? String(item.sequencia) : '',
+        numeroNota: item.numeroNota ?? '',
         tipoEntradaId: item.tipoEntrada ?? TIPOS_ENTRADA[0] ?? 'Compra',
         fornecedor: cnpjDisplay,
         modeloNotaId: item.modeloNota ?? modelosNota[0] ?? '',
-        formaPagamentoId: item.formaPagamento ?? formasPagamento[0] ?? '',
+        formaPagamentoId: item.formaPagamento ?? formasPagamento[0]?.nome ?? '',
         valorPago: item.valorPago ?? '',
         valores: valoresFromRow,
+        contasAPagar: (item as unknown as { contasAPagar?: { vencimento: string; valor: number }[] })?.contasAPagar?.map((p) => ({ vencimento: p.vencimento?.slice(0, 10) ?? '', valor: String(p.valor ?? '') })) ?? [],
       });
     } else {
       setEditingItem(null);
       setFormData({
         ...defaultForm(),
         valores: categorias.length > 0 ? [{ categoriaId: categorias[0].id, valor: '0' }] : [],
+        contasAPagar: [],
       });
     }
     setIsDialogOpen(true);
@@ -209,6 +222,26 @@ export function EntradaPage() {
       ...prev,
       valores: prev.valores.map((v, i) => (i === index ? { ...v, [field]: value } : v)),
     }));
+  };
+
+  const addContaAPagar = () => {
+    setFormData((prev) => ({
+      ...prev,
+      contasAPagar: [...(prev.contasAPagar ?? []), { vencimento: '', valor: '' }],
+    }));
+  };
+  const removeContaAPagar = (index: number) => {
+    setFormData((prev) => {
+      const list = prev.contasAPagar?.length ? prev.contasAPagar : [];
+      return { ...prev, contasAPagar: list.filter((_, i) => i !== index) };
+    });
+  };
+  const updateContaAPagar = (index: number, field: 'vencimento' | 'valor', value: string) => {
+    setFormData((prev) => {
+      const list = prev.contasAPagar?.length ? prev.contasAPagar : [{ vencimento: '', valor: '' }];
+      const next = list.map((p, i) => (i === index ? { ...p, [field]: value } : p));
+      return { ...prev, contasAPagar: next };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -247,10 +280,10 @@ export function EntradaPage() {
       toast.error('Para Dinheiro ou PIX informe o valor a ser pago.');
       return;
     }
-    const body = {
+    const body: Record<string, unknown> = {
       data: formData.data.slice(0, 10),
       dataEmissao: formData.dataEmissao?.slice(0, 10) || undefined,
-      sequencia: formData.sequencia.trim() ? (Number(formData.sequencia) || formData.sequencia) : undefined,
+      numeroNota: formData.numeroNota?.trim() || undefined,
       tipoEntrada: formData.tipoEntradaId || undefined,
       fornecedor: fornecedorNumeros,
       modeloNota: formData.modeloNotaId,
@@ -259,6 +292,12 @@ export function EntradaPage() {
       valores: valoresBody,
       total,
     };
+    if (formaBoleto && formData.contasAPagar?.length) {
+      const parcelas = formData.contasAPagar
+        .filter((p) => p.vencimento.trim() && parseNum(p.valor) > 0)
+        .map((p) => ({ vencimento: p.vencimento.slice(0, 10), valor: parseNum(p.valor) }));
+      if (parcelas.length) body.contasAPagar = parcelas;
+    }
     if (editingItem) {
       api
         .patch<EntradaRow>(`financeiro/entrada/${editingItem.id}`, body)
@@ -314,17 +353,17 @@ export function EntradaPage() {
             Data entrada <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => formatDate(row.getValue('data')),
+        cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
       },
       {
         accessorKey: 'dataEmissao',
         header: 'Data emissao',
-        cell: ({ row }) => (row.original.dataEmissao ? formatDate(row.original.dataEmissao) : '-'),
+        cell: ({ row }) => (row.original.dataEmissao ? formatDateStringToBR(String(row.original.dataEmissao)) : '-'),
       },
       {
-        accessorKey: 'sequencia',
-        header: 'Seq.',
-        cell: ({ row }) => row.original.sequencia ?? '-',
+        accessorKey: 'numeroNota',
+        header: 'Nº nota',
+        cell: ({ row }) => row.original.numeroNota ?? '-',
       },
       { accessorKey: 'fornecedor', header: 'Fornecedor' },
       {
@@ -355,13 +394,14 @@ export function EntradaPage() {
       },
       {
         id: 'actions',
-        header: () => <span className="sr-only">Acoes</span>,
+        header: () => <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Acoes</span>,
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-1">
-            <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Editar" onClick={() => handleOpenDialog(row.original)}>
+            <button type="button" className="inline-flex items-center gap-1 rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Editar lancamento" onClick={() => handleOpenDialog(row.original)}>
               <Pencil className="h-4 w-4" />
+              <span className="text-xs font-medium text-slate-600">Editar</span>
             </button>
-            <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Excluir" onClick={() => setDeleteId(row.original.id)}>
+            <button type="button" className="inline-flex items-center gap-1 rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Excluir" onClick={() => setDeleteId(row.original.id)}>
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
@@ -417,7 +457,7 @@ export function EntradaPage() {
           </button>
           <ExportButtons
             data={items.map((r) => ({
-              data: formatDate(r.data),
+              data: formatDateStringToBR(r.data),
               fornecedor: r.fornecedor,
               modeloNota: r.modeloNota ?? '-',
               formaPagamento: r.formaPagamento ?? '-',
@@ -469,7 +509,8 @@ export function EntradaPage() {
                 {table.getRowModel().rows.length === 0 ? (
                   <tr>
                     <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-slate-500">
-                      Nenhum registro no periodo
+                      <p>Nenhum registro no periodo.</p>
+                      <p className="mt-1 text-xs text-slate-400">Use <strong>+ Novo</strong> para adicionar (o fornecedor deve estar cadastrado em Fornecedores). Quando houver registros, use o botao <strong>Editar</strong> na coluna Acoes para alterar o lancamento.</p>
                     </td>
                   </tr>
                 ) : (
@@ -490,15 +531,40 @@ export function EntradaPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col overflow-x-hidden">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Editar Entrada' : 'Nova Entrada'}</DialogTitle>
-            <DialogDescription>Preencha os dados da entrada.</DialogDescription>
+            <DialogDescription>
+              Preencha os dados da entrada na ordem: Modelo da nota, CNPJ do fornecedor, Data entrada, Data emissao, Nº da nota, Tipo, Valor/Categoria, Forma de pagamento. O CNPJ deve estar cadastrado em Fornecedores.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <DialogBody className="overflow-y-auto overflow-x-hidden min-w-0">
               <div className="space-y-4 mt-4 mb-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Modelo da nota</label>
+                    <select
+                      value={formData.modeloNotaId}
+                      onChange={(e) => setFormData({ ...formData, modeloNotaId: e.target.value })}
+                      className={inputClass}
+                    >
+                      {modelosNota.map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">CNPJ do fornecedor</label>
+                    <input
+                      type="text"
+                      placeholder="00.000.000/0000-00"
+                      maxLength={18}
+                      value={formData.fornecedor}
+                      onChange={(e) => setFormData({ ...formData, fornecedor: maskCNPJ(e.target.value) })}
+                      className={inputClass}
+                    />
+                  </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">Data entrada</label>
                     <input type="date" value={formData.data} onChange={(e) => setFormData({ ...formData, data: e.target.value })} className={inputClass} required />
@@ -507,11 +573,15 @@ export function EntradaPage() {
                     <label className="text-sm font-medium text-slate-700">Data emissao (nota)</label>
                     <input type="date" value={formData.dataEmissao} onChange={(e) => setFormData({ ...formData, dataEmissao: e.target.value })} className={inputClass} />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Sequencia</label>
-                    <input type="text" inputMode="numeric" placeholder="Opcional" value={formData.sequencia} onChange={(e) => setFormData({ ...formData, sequencia: e.target.value })} className={inputClass} />
+                    <label className="text-sm font-medium text-slate-700">Nº da nota</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: 156"
+                      value={formData.numeroNota}
+                      onChange={(e) => setFormData({ ...formData, numeroNota: e.target.value })}
+                      className={inputClass}
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">Tipo</label>
@@ -523,64 +593,13 @@ export function EntradaPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">CNPJ do fornecedor</label>
-                  <input
-                    type="text"
-                    placeholder="00.000.000/0000-00"
-                    maxLength={18}
-                    value={formData.fornecedor}
-                    onChange={(e) => setFormData({ ...formData, fornecedor: maskCNPJ(e.target.value) })}
-                    className={inputClass}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Modelo da nota</label>
-                  <select
-                    value={formData.modeloNotaId}
-                    onChange={(e) => setFormData({ ...formData, modeloNotaId: e.target.value })}
-                    className={inputClass}
-                  >
-                    {modelosNota.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Forma de pagamento</label>
-                  <select
-                    value={formData.formaPagamentoId}
-                    onChange={(e) => setFormData({ ...formData, formaPagamentoId: e.target.value })}
-                    className={inputClass}
-                  >
-                    {formasPagamento.map((f) => (
-                      <option key={f} value={f}>{f}</option>
-                    ))}
-                  </select>
-                </div>
-                {formaLancamentoDireto && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Valor a ser pago (conferencia)</label>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="0,00"
-                      value={formData.valorPago}
-                      onChange={(e) => setFormData({ ...formData, valorPago: e.target.value })}
-                      className={cn(inputClass, valorPagoNum !== totalValores && valorPagoNum > 0 && 'border-amber-500')}
-                    />
-                    {formData.valorPago !== '' && parseNum(String(formData.valorPago)) !== totalValores && (
-                      <p className="text-xs text-amber-600">Valor divergente do total da nota ({formatCurrency(totalValores)}).</p>
-                    )}
-                  </div>
-                )}
-                <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-slate-700">Valores por categoria</label>
+                    <label className="text-sm font-medium text-slate-700">Valor / Categoria</label>
                     <button type="button" onClick={addValorLine} className="text-sm text-emerald-600 hover:underline">
                       Adicionar valor
                     </button>
                   </div>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                  <div className="space-y-2 max-h-40 overflow-y-auto py-4">
                     {formData.valores.map((v, i) => (
                       <div key={i} className="flex gap-2 items-center min-w-0">
                         <select
@@ -601,7 +620,7 @@ export function EntradaPage() {
                           placeholder="0,00"
                           value={v.valor}
                           onChange={(e) => updateValorLine(i, 'valor', e.target.value)}
-                          className={cn(inputClass, 'w-14 shrink-0')}
+                          className={cn(inputClass, 'w-fit')}
                         />
                         <button type="button" onClick={() => removeValorLine(i)} className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600" title="Remover">
                           <Trash2 className="h-4 w-4" />
@@ -611,6 +630,68 @@ export function EntradaPage() {
                   </div>
                   <p className="text-xs text-slate-500">Total: {formatCurrency(totalValores)}</p>
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Forma de pagamento</label>
+                  <select
+                    value={formData.formaPagamentoId}
+                    onChange={(e) => setFormData({ ...formData, formaPagamentoId: e.target.value })}
+                    className={inputClass}
+                  >
+                    {formasPagamento.map((f) => (
+                      <option key={f.nome} value={f.nome}>{f.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                {formaLancamentoDireto && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Valor a ser pago (conferencia)</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0,00"
+                      value={formData.valorPago}
+                      onChange={(e) => setFormData({ ...formData, valorPago: e.target.value })}
+                      className={cn(inputClass, valorPagoNum !== totalValores && valorPagoNum > 0 && 'border-amber-500')}
+                    />
+                    {formData.valorPago !== '' && parseNum(String(formData.valorPago)) !== totalValores && (
+                      <p className="text-xs text-amber-600">Valor divergente do total da nota ({formatCurrency(totalValores)}).</p>
+                    )}
+                  </div>
+                )}
+                {formaBoleto && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-slate-700">Contas a pagar</label>
+                      <button type="button" onClick={addContaAPagar} className="text-sm text-emerald-600 hover:underline">
+                        Adicionar parcela
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500">Vencimento e valor de cada boleto (comunica Agenda).</p>
+                    <div className="space-y-2 max-h-36 overflow-y-auto">
+                      {(formData.contasAPagar?.length ? formData.contasAPagar : [{ vencimento: '', valor: '' }]).map((p, i) => (
+                        <div key={i} className="flex gap-2 items-center">
+                          <input
+                            type="date"
+                            value={p.vencimento}
+                            onChange={(e) => updateContaAPagar(i, 'vencimento', e.target.value)}
+                            className={cn(inputClass, 'flex-1 min-w-0')}
+                          />
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0,00"
+                            value={p.valor}
+                            onChange={(e) => updateContaAPagar(i, 'valor', e.target.value)}
+                            className={cn(inputClass, 'w-28')}
+                          />
+                          <button type="button" onClick={() => removeContaAPagar(i)} className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600" title="Remover">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </DialogBody>
             <DialogFooter>
@@ -655,14 +736,23 @@ export function EntradaPage() {
               </button>
             </div>
             <ul className="space-y-1 max-h-40 overflow-y-auto">
-              {modelosNota.map((m) => (
-                <li key={m} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  <span className="text-sm">{m}</span>
-                  <button type="button" onClick={() => setModelosNota((prev) => prev.filter((x) => x !== m))} className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
+              {modelosNota.map((m) => {
+                const isPadrao = MODELOS_NOTA_INICIAIS.includes(m);
+                return (
+                  <li key={m} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <span className="text-sm">{m}</span>
+                    <button
+                      type="button"
+                      disabled={isPadrao}
+                      onClick={() => !isPadrao && setModelosNota((prev) => prev.filter((x) => x !== m))}
+                      className={cn('rounded p-1.5', isPadrao ? 'cursor-not-allowed text-slate-300' : 'text-slate-400 hover:bg-red-50 hover:text-red-600')}
+                      title={isPadrao ? 'Padrao do sistema nao pode ser removido' : 'Remover'}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </DialogContent>
@@ -703,14 +793,23 @@ export function EntradaPage() {
               </button>
             </div>
             <ul className="space-y-1 max-h-40 overflow-y-auto">
-              {categorias.map((c) => (
-                <li key={c.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  <span className="text-sm">{c.nome}</span>
-                  <button type="button" onClick={() => setCategorias((prev) => prev.filter((x) => x.id !== c.id))} className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
+              {categorias.map((c) => {
+                const isPadrao = CATEGORIAS_INICIAIS.some((x) => x.id === c.id);
+                return (
+                  <li key={c.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <span className="text-sm">{c.nome}</span>
+                    <button
+                      type="button"
+                      disabled={isPadrao}
+                      onClick={() => !isPadrao && setCategorias((prev) => prev.filter((x) => x.id !== c.id))}
+                      className={cn('rounded p-1.5', isPadrao ? 'cursor-not-allowed text-slate-300' : 'text-slate-400 hover:bg-red-50 hover:text-red-600')}
+                      title={isPadrao ? 'Padrao do sistema nao pode ser removido' : 'Remover'}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </DialogContent>
@@ -718,31 +817,43 @@ export function EntradaPage() {
 
       {/* Dialog config Formas de pagamento */}
       <Dialog open={configDialog === 'forma'} onOpenChange={(o) => !o && setConfigDialog(null)}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Formas de pagamento</DialogTitle>
-            <DialogDescription>Adicione ou remova formas (Dinheiro, PIX, Cartao, etc.).</DialogDescription>
+            <DialogDescription>Adicione ou remova formas. Ao criar, informe se comunica Agenda (ex.: Boleto sim; Dinheiro/PIX nao).</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Ex: Boleto"
-                value={novaForma}
-                onChange={(e) => setNovaForma(e.target.value)}
-                className={inputClass}
-              />
+            <div className="flex flex-wrap gap-2 items-end">
+              <div className="space-y-1 flex-1 min-w-[140px]">
+                <input
+                  type="text"
+                  placeholder="Ex: BOLETO"
+                  value={novaForma}
+                  onChange={(e) => setNovaForma(e.target.value.toUpperCase())}
+                  className={inputClass}
+                />
+                <label className="flex items-center gap-2 text-sm text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={novaFormaComunicaAgenda}
+                    onChange={(e) => setNovaFormaComunicaAgenda(e.target.checked)}
+                    className="rounded border-slate-300 text-emerald-600"
+                  />
+                  Comunica Agenda
+                </label>
+              </div>
               <button
                 type="button"
                 onClick={() => {
                   const t = novaForma.trim();
                   if (!t) return;
-                  if (formasPagamento.includes(t)) {
+                  if (formasPagamento.some((x) => x.nome === t)) {
                     toast.error('Ja existe.');
                     return;
                   }
-                  setFormasPagamento((prev) => [...prev, t]);
+                  setFormasPagamento((prev) => [...prev, { nome: t, comunicaAgenda: novaFormaComunicaAgenda }]);
                   setNovaForma('');
+                  setNovaFormaComunicaAgenda(false);
                 }}
                 className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
               >
@@ -750,14 +861,23 @@ export function EntradaPage() {
               </button>
             </div>
             <ul className="space-y-1 max-h-40 overflow-y-auto">
-              {formasPagamento.map((f) => (
-                <li key={f} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  <span className="text-sm">{f}</span>
-                  <button type="button" onClick={() => setFormasPagamento((prev) => prev.filter((x) => x !== f))} className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
+              {formasPagamento.map((f) => {
+                const isPadrao = FORMAS_PAGAMENTO_INICIAIS.some((x) => x.nome === f.nome);
+                return (
+                  <li key={f.nome} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <span className="text-sm">{f.nome} {f.comunicaAgenda ? '(comunica Agenda)' : ''}</span>
+                    <button
+                      type="button"
+                      disabled={isPadrao}
+                      onClick={() => !isPadrao && setFormasPagamento((prev) => prev.filter((x) => x.nome !== f.nome))}
+                      className={cn('rounded p-1.5', isPadrao ? 'cursor-not-allowed text-slate-300' : 'text-slate-400 hover:bg-red-50 hover:text-red-600')}
+                      title={isPadrao ? 'Padrao do sistema nao pode ser removido' : 'Remover'}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </DialogContent>

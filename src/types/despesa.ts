@@ -7,6 +7,8 @@ export interface DespesaBase {
   comunicarAgenda?: boolean; // Se deve comunicar a agenda
   /** Recorrencia: unica, mensal, bimestral, etc. Se informado e comunicarAgenda, backend gera itens na agenda */
   recorrencia?: string;
+  /** Indice da ocorrencia na serie (ex.: "2/3" para a 2a de 3). Opcional; quando enviado, exibido ao lado do badge de recorrência. */
+  recorrenciaIndice?: string;
   /** Data limite da recorrencia (YYYY-MM-DD). Opcional */
   recorrenciaFim?: string;
   createdAt: string;
@@ -50,6 +52,14 @@ export const TIPOS_DESPESA: Record<DespesaCategoria, string[]> = {
   'investimento': ['CDB', 'TESOURO DIRETO', 'FUNDOS', 'ACOES', 'IMOVEIS', 'OUTROS'],
   'renda-extra': ['CONSULTORIA', 'VENDA', 'COMISSAO', 'ALUGUEL', 'RENDIMENTOS', 'OUTROS'],
   socios: ['ADIANTAMENTO', 'DISTRIBUICAO DE LUCROS', 'PRO-LABORE', 'RETIRADA'],
+};
+
+/** Abreviacoes para exibicao dos tipos em Despesa Funcionario (valor enviado ao backend continua o nome completo). */
+export const ABREVIACOES_TIPO_FUNCIONARIO: Record<string, string> = {
+  'ADIANTAMENTO DE SALARIO': 'ADIANT. SALARIO',
+  'EXAMES ADMISSIONAIS': 'EX. ADMISSIONAL',
+  'EXAMES PERIODICOS': 'EX. PERIODICO',
+  'PAGAMENTO DE SALARIO': 'PAGTO SALARIO',
 };
 
 // Tipos específicos (herdam de DespesaBase)
@@ -99,7 +109,7 @@ export const DESPESA_CATEGORIAS: Record<DespesaCategoria, DespesaCategoriaConfig
     key: 'despesa-extra',
     title: 'Despesas Extras',
     subtitle: 'Gerencie suas despesas extras e eventuais',
-    placeholder: 'Ex: Material de escritorio, Manutencao...',
+    placeholder: 'Ex: Manutencao, Conserto...',
   },
   'despesa-funcionario': {
     key: 'despesa-funcionario',

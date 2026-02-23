@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   AlertCircle,
   XCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -30,6 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/cn';
+import { formatDateStringToBR } from '@/lib/date';
 import { useLembretesStore, type Lembrete } from '@/stores/lembretesStore';
 
 type FiltroStatus = 'todos' | 'pendente' | 'concluido' | 'cancelado';
@@ -45,10 +47,6 @@ const STATUS_CONFIG = {
   concluido: { label: 'CONCLUIDO', icon: CheckCircle2, cor: 'text-emerald-500' },
   cancelado: { label: 'CANCELADO', icon: XCircle, cor: 'text-slate-400' },
 };
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('pt-BR');
-}
 
 function isOverdue(dateStr: string) {
   return new Date(dateStr) < new Date();
@@ -100,10 +98,11 @@ export function LembretesPage() {
   const handleOpenDialog = (lembrete?: Lembrete) => {
     if (lembrete) {
       setEditingLembrete(lembrete);
+      const dataParaInput = (lembrete.data || '').trim().slice(0, 10);
       setFormData({
         titulo: lembrete.titulo,
         descricao: lembrete.descricao || '',
-        data: lembrete.data,
+        data: dataParaInput || lembrete.data,
         hora: lembrete.hora || '',
         prioridade: lembrete.prioridade,
       });
@@ -138,12 +137,16 @@ export function LembretesPage() {
       return;
     }
 
+    // Envia data como ISO ao meio-dia UTC para o backend nao interpretar 00:00 como dia anterior no fuso
+    const dataPayload =
+      formData.data.length === 10 ? `${formData.data}T12:00:00.000Z` : formData.data;
+
     try {
       if (editingLembrete) {
         await updateLembrete(editingLembrete.id, {
           titulo: formData.titulo.toUpperCase(),
           descricao: formData.descricao?.trim() ? formData.descricao.toUpperCase() : undefined,
-          data: formData.data,
+          data: dataPayload,
           hora: formData.hora?.trim() || undefined,
           prioridade: formData.prioridade,
         });
@@ -152,7 +155,7 @@ export function LembretesPage() {
         await createLembrete({
           titulo: formData.titulo.toUpperCase(),
           descricao: formData.descricao?.trim() ? formData.descricao.toUpperCase() : undefined,
-          data: formData.data,
+          data: dataPayload,
           hora: formData.hora?.trim() || undefined,
           prioridade: formData.prioridade,
         });
@@ -166,6 +169,18 @@ export function LembretesPage() {
 
   const handleToggleStatus = (id: string) => {
     toggleStatus(id).catch(() => toast.error('Erro ao alterar status'));
+  };
+
+  const handleCancelar = (id: string) => {
+    updateLembrete(id, { status: 'cancelado' })
+      .then(() => toast.success('Lembrete cancelado'))
+      .catch(() => toast.error('Erro ao cancelar lembrete'));
+  };
+
+  const handleReabrir = (id: string) => {
+    updateLembrete(id, { status: 'pendente' })
+      .then(() => toast.success('Lembrete reaberto'))
+      .catch(() => toast.error('Erro ao reabrir lembrete'));
   };
 
   const handleDelete = async () => {
@@ -326,7 +341,7 @@ export function LembretesPage() {
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
                         <span className={atrasado ? 'text-red-600 font-medium' : ''}>
-                          {formatDate(lembrete.data)}
+                          {formatDateStringToBR(lembrete.data)}
                           {atrasado && ' (ATRASADO)'}
                         </span>
                       </div>
@@ -341,6 +356,23 @@ export function LembretesPage() {
 
                   {/* Acoes */}
                   <div className="flex items-center gap-1">
+                    {lembrete.status === 'cancelado' ? (
+                      <button
+                        onClick={() => handleReabrir(lembrete.id)}
+                        className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        title="Reabrir lembrete"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleCancelar(lembrete.id)}
+                        className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        title="Marcar como cancelado"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleOpenDialog(lembrete)}
                       className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"

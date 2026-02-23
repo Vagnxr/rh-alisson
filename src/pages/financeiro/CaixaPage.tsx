@@ -37,13 +37,10 @@ import type { TableColumnConfigFromApi, ColunaConfig } from '@/types/configuraca
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { useConfiguracaoStore } from '@/stores/configuracaoStore';
 import { buildTableColumns } from '@/lib/buildTableColumns';
+import { formatDateStringToBR } from '@/lib/date';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR');
 }
 
 function parseNum(v: string): number {
@@ -58,10 +55,14 @@ const CAIXA_TABLE_DEFAULT_ORDER = [
   'dia',
   'dinheiroDeposito',
   'pagamentoPdv',
+  'pagamentoEscritorio',
   'pix',
   'credito',
   'debito',
   'voucher',
+  'troca',
+  'devolucaoDinheiro',
+  'desconto',
   'ifood',
   'total',
 ];
@@ -79,17 +80,22 @@ const CAIXA_STATIC_COLUMN_DEFS: Record<string, ColumnDef<CaixaRowWithExtras>> = 
         Dia <ArrowUpDown className="h-4 w-4" />
       </button>
     ),
-    cell: ({ row }) => formatDate(row.getValue('dia')),
+    cell: ({ row }) => formatDateStringToBR(String(row.getValue('dia') ?? '')),
   },
   dinheiroDeposito: {
     accessorKey: 'dinheiroDeposito',
-    header: 'Dinheiro (dep.)',
+    header: 'Dinheiro',
     cell: ({ row }) => formatCurrency(Number(row.getValue('dinheiroDeposito'))),
   },
   pagamentoPdv: {
     accessorKey: 'pagamentoPdv',
     header: 'Pag. (PDV)',
     cell: ({ row }) => formatCurrency(Number(row.getValue('pagamentoPdv'))),
+  },
+  pagamentoEscritorio: {
+    accessorKey: 'pagamentoEscritorio',
+    header: 'Pag. (Escrit.)',
+    cell: ({ row }) => formatCurrency(Number(row.getValue('pagamentoEscritorio') ?? 0)),
   },
   pix: {
     accessorKey: 'pix',
@@ -110,6 +116,21 @@ const CAIXA_STATIC_COLUMN_DEFS: Record<string, ColumnDef<CaixaRowWithExtras>> = 
     accessorKey: 'voucher',
     header: 'Voucher',
     cell: ({ row }) => formatCurrency(Number(row.getValue('voucher'))),
+  },
+  troca: {
+    accessorKey: 'troca',
+    header: 'Troca',
+    cell: ({ row }) => formatCurrency(Number(row.getValue('troca') ?? 0)),
+  },
+  devolucaoDinheiro: {
+    accessorKey: 'devolucaoDinheiro',
+    header: 'Devol. Dinheiro',
+    cell: ({ row }) => formatCurrency(Number(row.getValue('devolucaoDinheiro') ?? 0)),
+  },
+  desconto: {
+    accessorKey: 'desconto',
+    header: 'Desconto',
+    cell: ({ row }) => formatCurrency(Number(row.getValue('desconto') ?? 0)),
   },
   ifood: {
     accessorKey: 'ifood',
@@ -175,10 +196,14 @@ export function CaixaPage() {
     dia: new Date().toISOString().split('T')[0],
     dinheiroDeposito: '',
     pagamentoPdv: '',
+    pagamentoEscritorio: '',
     pix: '',
     credito: '',
     debito: '',
     voucher: '',
+    troca: '',
+    devolucaoDinheiro: '',
+    desconto: '',
     ifood: '',
   });
 
@@ -353,7 +378,7 @@ export function CaixaPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Caixa</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Dinheiro (deposito), pagamento PDV, PIX, credito, debito, voucher, iFood e total por dia
+            Data, Dinheiro, Pag. (PDV), Pag. (Escrit.), PIX, Credito, Debito, Voucher, Troca, Devol. Dinheiro, Desconto, Total por dia
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -362,7 +387,7 @@ export function CaixaPage() {
             data={items.map((r) => {
               const row = r as CaixaRowWithExtras;
               const out: Record<string, string> = {
-                dia: formatDate(row.dia),
+                dia: formatDateStringToBR(row.dia),
                 total: formatCurrency(row.total),
               };
               colunasVisiveis.forEach((c) => {

@@ -14,8 +14,10 @@ interface AgendaActions {
   fetchDias: (params?: { dataInicio?: string; dataFim?: string; lojaId?: string }) => Promise<DiaAgenda[]>;
   fetchDia: (data: string) => Promise<DiaAgenda | null>;
   addItemDirect: (data: AgendaItemDirectInput) => Promise<void>;
+  updateItemDirect: (itemId: string, data: { data: string; descricao: string; valor: number }) => Promise<void>;
   marcarPago: (itemId: string) => Promise<void>;
   marcarPagoLote: (ids: string[]) => Promise<void>;
+  desmarcarPago: (itemId: string) => Promise<void>;
   setDiaSelecionado: (dia: DiaAgenda | null) => void;
   clearError: () => void;
   reset: () => void;
@@ -30,6 +32,7 @@ function normalizeItem(raw: unknown): AgendaItem {
     tipo: (o.tipo === 'entrada' || o.tipo === 'saida' ? o.tipo : 'saida') as 'entrada' | 'saida',
     origem: o.origem != null ? String(o.origem) : undefined,
     tipoDespesa: o.tipoDespesa != null ? String(o.tipoDespesa) : undefined,
+    parcela: o.parcela != null ? String(o.parcela) : undefined,
     pago: Boolean(o.pago),
   };
 }
@@ -97,11 +100,34 @@ export const useAgendaStore = create<AgendaState & AgendaActions>((set, get) => 
       valor: payload.valor,
       ...(payload.descricao != null && payload.descricao !== '' && { descricao: payload.descricao }),
       ...(payload.lojaId != null && payload.lojaId !== '' && { lojaId: payload.lojaId }),
-      ...(payload.tipo != null && { tipo: payload.tipo }),
       ...(payload.recorrencia != null && payload.recorrencia !== 'unica' && { recorrencia: payload.recorrencia }),
       ...(payload.recorrenciaFim != null && payload.recorrenciaFim !== '' && { recorrenciaFim: payload.recorrenciaFim }),
     };
     await api.post('agenda/itens', body);
+  },
+
+  updateItemDirect: async (itemId: string, data: { data: string; descricao: string; valor: number }) => {
+    set({ error: null });
+    await api.patch(`agenda/itens/${itemId}`, data);
+    const { diaSelecionado } = get();
+    if (diaSelecionado?.itens) {
+      const updated = diaSelecionado.itens.map((i) =>
+        i.id === itemId ? { ...i, data: data.data, descricao: data.descricao, valor: data.valor } : i
+      );
+      set({ diaSelecionado: { ...diaSelecionado, itens: updated } });
+    }
+    const { dias } = get();
+    set({
+      dias: dias.map((d) => {
+        if (!d.itens?.some((i) => i.id === itemId)) return d;
+        return {
+          ...d,
+          itens: d.itens.map((i) =>
+            i.id === itemId ? { ...i, data: data.data, descricao: data.descricao, valor: data.valor } : i
+          ),
+        };
+      }),
+    });
   },
 
   marcarPago: async (itemId: string) => {
@@ -157,6 +183,34 @@ export const useAgendaStore = create<AgendaState & AgendaActions>((set, get) => 
           ...d,
           itens: d.itens.map((i) =>
             idSet.has(i.id) ? { ...i, pago: true } : i
+          ),
+        };
+      }),
+    });
+  },
+
+  desmarcarPago: async (itemId: string) => {
+    set({ error: null });
+    await api.post(`agenda/itens/${itemId}/desmarcar-pago`);
+    const { diaSelecionado } = get();
+    if (diaSelecionado?.itens) {
+      set({
+        diaSelecionado: {
+          ...diaSelecionado,
+          itens: diaSelecionado.itens.map((i) =>
+            i.id === itemId ? { ...i, pago: false } : i
+          ),
+        },
+      });
+    }
+    const { dias } = get();
+    set({
+      dias: dias.map((d) => {
+        if (!d.itens?.some((i) => i.id === itemId)) return d;
+        return {
+          ...d,
+          itens: d.itens.map((i) =>
+            i.id === itemId ? { ...i, pago: false } : i
           ),
         };
       }),

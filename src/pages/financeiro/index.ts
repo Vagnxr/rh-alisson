@@ -2,7 +2,6 @@ export { CaixaPage } from './CaixaPage';
 export { ControleCartoesPage } from './ControleCartoesPage';
 export { TaxasPrazosPage } from './TaxasPrazosPage';
 export { VendasPage } from './VendasPage';
-export { ControleDinheiroPage } from './ControleDinheiroPage';
 export { ControleDepositoPage } from './ControleDepositoPage';
 export { VendaCartoesPage } from './VendaCartoesPage';
 export { AtivoImobilizadoPage } from './AtivoImobilizadoPage';
