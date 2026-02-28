@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -76,15 +76,20 @@ function formatCpf(cpf: string | undefined): string {
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
 }
 
+/** Formata CPF para uso no input (apenas digitos, max 11, exibicao formatada). */
+function formatCpfInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  return formatCpf(digits) || digits;
+}
+
 // Componente de Card de Socio para a pre-pagina
 interface SocioCardProps {
   resumo: ResumoSocio;
   onClick: () => void;
   onEdit: (e: React.MouseEvent) => void;
-  onDelete: (e: React.MouseEvent) => void;
 }
 
-function SocioCard({ resumo, onClick, onEdit, onDelete }: SocioCardProps) {
+function SocioCard({ resumo, onClick, onEdit }: SocioCardProps) {
   const { socio, saldoTotal } = resumo;
 
   return (
@@ -116,21 +121,13 @@ function SocioCard({ resumo, onClick, onEdit, onDelete }: SocioCardProps) {
             >
               <Pencil className="h-4 w-4" />
             </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-              title="Excluir socio"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
           </div>
         </div>
       </div>
 
       <div className="mt-4 rounded-lg bg-slate-100 p-3">
-        <p className="text-xs text-slate-600">Total lancado</p>
-        <p className={cn('text-lg font-semibold', formatCurrencySocios(saldoTotal).isNegative ? 'text-red-600' : 'text-slate-900')}>
+        <p className="text-xs text-slate-600">Total lançado</p>
+        <p className={cn('text-lg font-semibold', formatCurrencySocios(saldoTotal).isNegative ? 'text-red-600' : 'text-black')}>
           {formatCurrencySocios(saldoTotal).text}
         </p>
       </div>
@@ -183,7 +180,7 @@ function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }:
         accessorKey: 'valor',
         header: () => <span className="text-right block">Valor</span>,
         cell: ({ row }) => (
-          <span className="text-right font-medium text-slate-900 block">
+          <span className="text-right font-medium text-black block">
             {formatCurrency(row.original.valor)}
           </span>
         ),
@@ -249,7 +246,10 @@ function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }:
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500"
+                    className={cn(
+                      'px-4 py-3 text-xs font-medium uppercase text-slate-500',
+                      header.column.id === 'valor' ? 'text-right' : 'text-left'
+                    )}
                   >
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
@@ -261,7 +261,13 @@ function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }:
             {table.getRowModel().rows.map((row) => (
               <tr key={row.id} className="hover:bg-slate-50">
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3 text-sm">
+                  <td
+                    key={cell.id}
+                    className={cn(
+                      'px-4 py-3 text-sm',
+                      cell.column.id === 'valor' ? 'text-right' : 'text-left'
+                    )}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -285,7 +291,6 @@ export function SociosPage() {
     fetchMovimentacoes,
     addSocio,
     updateSocio,
-    deleteSocio,
     addMovimentacao,
     updateMovimentacao,
     deleteMovimentacao,
@@ -301,7 +306,6 @@ export function SociosPage() {
 
   const [isSocioDialogOpen, setIsSocioDialogOpen] = useState(false);
   const [editingSocio, setEditingSocio] = useState<Socio | null>(null);
-  const [deletingSocioId, setDeletingSocioId] = useState<string | null>(null);
   const [showInativos, setShowInativos] = useState(false);
   const [socioFormData, setSocioFormData] = useState({
     nome: '',
@@ -334,13 +338,31 @@ export function SociosPage() {
     dataFim: formatDateToLocalYYYYMMDD(dateFilter.endDate),
   }), [dateFilter.startDate, dateFilter.endDate]);
 
-  useEffect(() => {
-    fetchSocios();
-    fetchResumo();
-    fetchMovimentacoes(selectedSocio?.id, movimentacoesFiltros);
-  }, [fetchSocios, fetchResumo, fetchMovimentacoes, selectedSocio?.id, movimentacoesFiltros.dataInicio, movimentacoesFiltros.dataFim]);
+  const initialFetchDoneRef = useRef(false);
+  const lastMovimentacoesParamsRef = useRef<{ socioId?: string; dataInicio: string; dataFim: string } | null>(null);
 
   useEffect(() => {
+    if (initialFetchDoneRef.current) return;
+    initialFetchDoneRef.current = true;
+    fetchSocios();
+    fetchResumo();
+  }, [fetchSocios, fetchResumo]);
+
+  useEffect(() => {
+    const socioId = selectedSocio?.id;
+    const { dataInicio, dataFim } = movimentacoesFiltros;
+    const last = lastMovimentacoesParamsRef.current;
+    if (last && last.socioId === socioId && last.dataInicio === dataInicio && last.dataFim === dataFim) {
+      return;
+    }
+    lastMovimentacoesParamsRef.current = { socioId, dataInicio, dataFim };
+    fetchMovimentacoes(socioId, movimentacoesFiltros);
+  }, [fetchMovimentacoes, selectedSocio?.id, movimentacoesFiltros.dataInicio, movimentacoesFiltros.dataFim]);
+
+  const tiposFetchedRef = useRef(false);
+  useEffect(() => {
+    if (tiposFetchedRef.current) return;
+    tiposFetchedRef.current = true;
     fetchTipos('socios').catch(() => {});
   }, [fetchTipos]);
 
@@ -452,7 +474,7 @@ export function SociosPage() {
       setEditingSocio(socio);
       setSocioFormData({
         nome: socio.nome,
-        cpf: socio.cpf,
+        cpf: formatCpf(socio.cpf),
         percentualSociedade: String(socio.percentualSociedade),
         isAtivo: socio.isAtivo,
       });
@@ -471,28 +493,7 @@ export function SociosPage() {
   const handleSubmitSocio = async () => {
     const nome = socioFormData.nome.trim();
     const cpf = socioFormData.cpf.trim().replace(/\D/g, '');
-    const percentual = parseFloat(socioFormData.percentualSociedade.replace(',', '.'));
-
-    if (!nome) {
-      toast.error('Informe o nome do socio');
-      return;
-    }
-    if (cpf.length < 11) {
-      toast.error('CPF deve ter 11 digitos');
-      return;
-    }
-    if (isNaN(percentual) || percentual < 0 || percentual > 100) {
-      toast.error('Percentual deve ser entre 0 e 100');
-      return;
-    }
-
-    const outrosSocios = editingSocio ? socios.filter((s) => s.id !== editingSocio.id) : socios;
-    const somaOutros = outrosSocios.reduce((acc, s) => acc + s.percentualSociedade, 0);
-    const somaTotal = somaOutros + percentual;
-    if (Math.abs(somaTotal - 100) > 0.01) {
-      toast.error('A soma dos percentuais de participacao deve ser 100%.');
-      return;
-    }
+    const percentual = parseFloat(socioFormData.percentualSociedade.replace(',', '.')) || 0;
 
     try {
       if (editingSocio) {
@@ -521,14 +522,9 @@ export function SociosPage() {
         setSelectedSocio(updated);
       }
     } catch (err: unknown) {
-      const ax = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
-      const msg = String(ax?.response?.data?.message ?? ax?.message ?? '').toLowerCase();
-      const isCpfDuplicado = ax?.response?.status === 409 || msg.includes('cpf') || msg.includes('cadastrado');
-      if (isCpfDuplicado) {
-        toast.error('CPF já cadastrado.');
-      } else {
-        toast.error(ax?.message ?? 'Erro ao salvar socio.');
-      }
+      const ax = err as { response?: { data?: { message?: string } }; message?: string };
+      const msg = ax?.response?.data?.message ?? ax?.message ?? 'Erro ao salvar socio.';
+      toast.error(typeof msg === 'string' ? msg : 'Erro ao salvar socio.');
     }
   };
 
@@ -540,23 +536,6 @@ export function SociosPage() {
       await fetchResumo();
     } catch {
       toast.error('Erro ao ativar socio.');
-    }
-  };
-
-  const handleDeleteSocio = async () => {
-    if (!deletingSocioId) return;
-    try {
-      await deleteSocio(deletingSocioId);
-      toast.success('Socio excluido com sucesso!');
-      if (selectedSocio?.id === deletingSocioId) {
-        setSelectedSocio(null);
-      }
-      setDeletingSocioId(null);
-      await fetchSocios();
-      await fetchResumo();
-      await fetchMovimentacoes();
-    } catch {
-      setDeletingSocioId(null);
     }
   };
 
@@ -593,14 +572,14 @@ export function SociosPage() {
 
         {/* Card de total geral (apenas na lista de ativos) */}
         {!showInativos && (
-          <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-emerald-500 to-emerald-600 p-5 text-white">
+          <div className="rounded-xl border border-slate-200 bg-white p-5">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20">
-                <Users className="h-6 w-6" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100">
+                <Users className="h-6 w-6 text-slate-600" />
               </div>
               <div>
-                <p className="text-sm text-emerald-100">Total Geral - Todos os Socios</p>
-                <p className={cn('text-2xl font-bold', formatCurrencySocios(totalGeral).isNegative ? 'text-red-200' : '')}>
+                <p className="text-sm font-medium text-slate-900">Total Geral - Todos os Socios</p>
+                <p className={cn('text-2xl font-bold', formatCurrencySocios(totalGeral).isNegative ? 'text-red-600' : 'text-slate-900')}>
                   {formatCurrencySocios(totalGeral).text}
                 </p>
               </div>
@@ -660,10 +639,6 @@ export function SociosPage() {
                 e.stopPropagation();
                 handleOpenSocioDialog(resumo.socio);
               }}
-              onDelete={(e) => {
-                e.stopPropagation();
-                setDeletingSocioId(resumo.socio.id);
-              }}
             />
           ))}
         </div>
@@ -680,29 +655,45 @@ export function SociosPage() {
                   : 'Preencha os dados para cadastrar um novo socio'}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSubmitSocio();
+              }}
+              className="space-y-4"
+            >
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Nome</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Nome <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={socioFormData.nome}
                   onChange={(e) => setSocioFormData({ ...socioFormData, nome: e.target.value })}
                   placeholder="Nome completo"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  required
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">CPF</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  CPF <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
+                  inputMode="numeric"
+                  maxLength={14}
                   value={socioFormData.cpf}
-                  onChange={(e) => setSocioFormData({ ...socioFormData, cpf: e.target.value })}
-                  placeholder="Apenas numeros ou formatado"
+                  onChange={(e) => setSocioFormData({ ...socioFormData, cpf: formatCpfInput(e.target.value) })}
+                  placeholder="000.000.000-00"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  required
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Percentual de participacao (%)</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Percentual de participacao (%) <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -710,6 +701,7 @@ export function SociosPage() {
                   onChange={(e) => setSocioFormData({ ...socioFormData, percentualSociedade: e.target.value })}
                   placeholder="Ex: 50"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  required
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -724,36 +716,15 @@ export function SociosPage() {
                   Socio ativo
                 </label>
               </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsSocioDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSubmitSocio}>{editingSocio ? 'Salvar' : 'Cadastrar'}</Button>
-            </DialogFooter>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsSocioDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">{editingSocio ? 'Salvar' : 'Cadastrar'}</Button>
+              </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
-
-        {/* Dialog confirmar exclusao de socio */}
-        <AlertDialog open={!!deletingSocioId} onOpenChange={(open) => !open && setDeletingSocioId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Excluir socio</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja excluir este socio? Todas as movimentacoes vinculadas serao perdidas. Esta acao nao pode ser desfeita.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteSocio}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Excluir
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     );
   }
@@ -777,11 +748,11 @@ export function SociosPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
-          <Button onClick={() => handleOpenDialog()}>
+          <Button onClick={() => handleOpenDialog()} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
-            Nova Movimentacao
+            Nova Movimentação
           </Button>
         </div>
       </div>
@@ -891,7 +862,7 @@ export function SociosPage() {
 
       {/* Dialog Gerenciar Tipos */}
       <Dialog open={isTiposDialogOpen} onOpenChange={setIsTiposDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Gerenciar tipos</DialogTitle>
             <DialogDescription>

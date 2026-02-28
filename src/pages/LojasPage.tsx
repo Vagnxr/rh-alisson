@@ -31,7 +31,7 @@ import { buildTableColumns } from '@/lib/buildTableColumns';
 const LOJA_TABLE_DEFAULT_ORDER = ['apelido', 'razaoSocial', 'cnpj', 'endereco', 'contato', 'isAtiva'];
 
 export function LojasPage() {
-  const { lojas, columns: columnsFromApi, isLoading, error, fetchLojas, addLoja, updateLoja, deleteLoja } = useLojaStore();
+  const { lojas, columns: columnsFromApi, isLoading, error, addLoja, updateLoja, deleteLoja } = useLojaStore();
   const { currentTenant } = useTenantStore();
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -40,9 +40,7 @@ export function LojasPage() {
   const [deleteLojaId, setDeleteLojaId] = useState<string | null>(null);
   const [globalFilter, setGlobalFilter] = useState('');
 
-  useEffect(() => {
-    fetchLojas();
-  }, [fetchLojas]);
+  // Lojas sao carregadas pelo Header ao montar a area protegida; aqui apenas usamos o store
 
   // Filtra lojas pelo tenant atual (API pode nao retornar tenantId; nesse caso considera do tenant atual)
   const lojasDoTenant = useMemo(() => {

@@ -34,6 +34,7 @@ import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { ControleDepositoRow, ValorDepositadoRow } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR } from '@/lib/date';
+import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -42,6 +43,16 @@ function formatCurrency(value: number) {
 function parseNum(v: string): number {
   const n = parseFloat(String(v).replace(',', '.'));
   return Number.isFinite(n) ? n : 0;
+}
+
+/** Permite apenas digitos e no maximo um separador decimal (virgula ou ponto). */
+function sanitizeDecimal(value: string): string {
+  const cleaned = value.replace(/[^\d,.]/g, '');
+  const sepIndex = Math.max(cleaned.lastIndexOf(','), cleaned.lastIndexOf('.'));
+  if (sepIndex < 0) return cleaned;
+  const intPart = cleaned.slice(0, sepIndex).replace(/[,.]/g, '');
+  const decPart = cleaned.slice(sepIndex + 1).replace(/\D/g, '');
+  return intPart + cleaned[sepIndex] + decPart;
 }
 
 /** Retorna o dia da semana por extenso (ex: Quarta-feira). Usa data local para evitar erro de fuso. */
@@ -87,16 +98,16 @@ export function ControleDepositoPage() {
       const dataStr = item.data.split('T')[0] || item.data.slice(0, 10);
       setFormDeposito({
         data: dataStr,
-        dia: item.dia || diaSemanaFromDate(dataStr),
-        dinheiro: String(item.dinheiro),
-        responsavelDeposito: item.responsavelDeposito ?? '',
+        dia: (item.dia || diaSemanaFromDate(dataStr)).toUpperCase(),
+        dinheiro: formatValorForInput(Number(item.dinheiro) || 0),
+        responsavelDeposito: (item.responsavelDeposito ?? '').toUpperCase(),
       });
     } else {
       setEditingDeposito(null);
       const hoje = new Date().toISOString().split('T')[0];
       setFormDeposito({
         data: hoje,
-        dia: diaSemanaFromDate(hoje),
+        dia: diaSemanaFromDate(hoje).toUpperCase(),
         dinheiro: '',
         responsavelDeposito: '',
       });
@@ -109,15 +120,15 @@ export function ControleDepositoPage() {
       setEditingValor(item);
       setFormValor({
         data: item.data.split('T')[0] || item.data.slice(0, 10),
-        dia: item.dia,
-        dinheiro: String(item.dinheiro),
+        dia: item.dia.toUpperCase(),
+        dinheiro: formatValorForInput(Number(item.dinheiro) || 0),
       });
     } else {
       setEditingValor(null);
       const hoje = new Date().toISOString().split('T')[0];
       setFormValor({
         data: hoje,
-        dia: diaSemanaFromDate(hoje),
+        dia: diaSemanaFromDate(hoje).toUpperCase(),
         dinheiro: '',
       });
     }
@@ -158,9 +169,9 @@ export function ControleDepositoPage() {
     const dia = formDeposito.dia.trim() || diaSemanaFromDate(formDeposito.data);
     const body = {
       data,
-      dia,
-      dinheiro: parseNum(formDeposito.dinheiro),
-      responsavelDeposito: formDeposito.responsavelDeposito.trim(),
+      dia: dia.toUpperCase(),
+      dinheiro: parseValorFromInput(formDeposito.dinheiro),
+      responsavelDeposito: formDeposito.responsavelDeposito.trim().toUpperCase(),
     };
     if (editingDeposito) {
       api
@@ -188,8 +199,8 @@ export function ControleDepositoPage() {
   const handleSubmitValor = (e: React.FormEvent) => {
     e.preventDefault();
     const data = formValor.data.slice(0, 10);
-    const dia = formValor.dia || diaSemanaFromDate(formValor.data);
-    const body = { data, dia, dinheiro: parseNum(formValor.dinheiro) };
+    const dia = (formValor.dia || diaSemanaFromDate(formValor.data)).toUpperCase();
+    const body = { data, dia, dinheiro: parseValorFromInput(formValor.dinheiro) };
     if (editingValor) {
       api
         .patch<ValorDepositadoRow>(`financeiro/valor-depositado/${editingValor.id}`, body)
@@ -349,44 +360,31 @@ export function ControleDepositoPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
-          <ExportButtons
-            data={depositos.map((r) => ({
-              data: formatDateStringToBR(r.data),
-              dia: r.dia,
-              dinheiro: formatCurrency(r.dinheiro),
-              responsavel: r.responsavelDeposito ?? '',
-            }))}
-            columns={[
-              { key: 'data', label: 'Data' },
-              { key: 'dia', label: 'Dia' },
-              { key: 'dinheiro', label: 'Dinheiro' },
-              { key: 'responsavel', label: 'Responsavel' },
-            ]}
-            filename="controle-deposito"
-            title="Controle Deposito"
-          />
-          <ExportButtons
-            data={valoresDepositados.map((r) => ({
-              data: formatDateStringToBR(r.data),
-              dia: r.dia,
-              dinheiro: formatCurrency(r.dinheiro),
-            }))}
-            columns={[
-              { key: 'data', label: 'Data' },
-              { key: 'dia', label: 'Dia' },
-              { key: 'dinheiro', label: 'Valor depositado' },
-            ]}
-            filename="valor-depositado"
-            title="Valor Depositado"
-          />
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="border-b border-slate-200 bg-slate-100 px-4 py-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-800">Deposito</h2>
-            <button
+          <div className="border-b border-slate-200 bg-slate-100 px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-sm font-semibold text-slate-800">Depósito</h2>
+            <div className="flex items-center gap-2">
+              <ExportButtons
+                data={depositos.map((r) => ({
+                  data: formatDateStringToBR(r.data),
+                  dia: r.dia,
+                  dinheiro: formatCurrency(r.dinheiro),
+                  responsavel: r.responsavelDeposito ?? '',
+                }))}
+                columns={[
+                  { key: 'data', label: 'Data' },
+                  { key: 'dia', label: 'Dia' },
+                  { key: 'dinheiro', label: 'Dinheiro' },
+                  { key: 'responsavel', label: 'Responsável' },
+                ]}
+                filename="controle-deposito"
+                title="Controle Depósito"
+              />
+              <button
               type="button"
               onClick={() => handleOpenDialogDeposito()}
               className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
@@ -394,6 +392,7 @@ export function ControleDepositoPage() {
               <Plus className="h-3 w-3" />
               Novo
             </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             {loading1 ? (
@@ -450,16 +449,32 @@ export function ControleDepositoPage() {
           </div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="border-b border-slate-200 bg-slate-100 px-4 py-2 flex items-center justify-between">
+          <div className="border-b border-slate-200 bg-slate-100 px-4 py-2 flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-sm font-semibold text-slate-800">Valor depositado</h2>
-            <button
-              type="button"
-              onClick={() => handleOpenDialogValor()}
-              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
-            >
-              <Plus className="h-3 w-3" />
-              Novo
-            </button>
+            <div className="flex items-center gap-2">
+              <ExportButtons
+                data={valoresDepositados.map((r) => ({
+                  data: formatDateStringToBR(r.data),
+                  dia: r.dia,
+                  dinheiro: formatCurrency(r.dinheiro),
+                }))}
+                columns={[
+                  { key: 'data', label: 'Data' },
+                  { key: 'dia', label: 'Dia' },
+                  { key: 'dinheiro', label: 'Valor depositado' },
+                ]}
+                filename="valor-depositado"
+                title="Valor Depositado"
+              />
+              <button
+                type="button"
+                onClick={() => handleOpenDialogValor()}
+                className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+              >
+                <Plus className="h-3 w-3" />
+                Novo
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             {loading2 ? (
@@ -518,29 +533,29 @@ export function ControleDepositoPage() {
       </div>
 
       <Dialog open={dialogDeposito} onOpenChange={setDialogDeposito}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingDeposito ? 'Editar Deposito' : 'Novo Deposito'}</DialogTitle>
             <DialogDescription>Lancamento manual do valor depositado. Todos os campos sao obrigatorios.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitDeposito} className="flex min-h-0 flex-1 flex-col">
             <DialogBody>
-            <div className="space-y-4 mt-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Data</label>
-                <input type="date" value={formDeposito.data} onChange={(e) => setFormDeposito((prev) => ({ ...prev, data: e.target.value, dia: diaSemanaFromDate(e.target.value) }))} className={inputClass} required />
+                <input type="date" value={formDeposito.data} onChange={(e) => setFormDeposito((prev) => ({ ...prev, data: e.target.value, dia: diaSemanaFromDate(e.target.value).toUpperCase() }))} className={inputClass} required />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Dia</label>
-                <input type="text" readOnly value={formDeposito.dia} className={inputClass + ' bg-slate-50'} aria-label="Dia da semana (preenchido pela data)" />
+                <input type="text" readOnly value={formDeposito.dia} className={inputClass + ' bg-slate-50 uppercase'} aria-label="Dia da semana (preenchido pela data)" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Dinheiro (R$)</label>
-                <input type="text" inputMode="decimal" placeholder="0,00" value={formDeposito.dinheiro} onChange={(e) => setFormDeposito({ ...formDeposito, dinheiro: e.target.value })} className={inputClass} required />
+                <input type="text" inputMode="decimal" placeholder="0,00" value={formDeposito.dinheiro} onChange={(e) => setFormDeposito({ ...formDeposito, dinheiro: sanitizeDecimal(e.target.value) })} className={inputClass} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Responsavel pelo Deposito</label>
-                <input type="text" placeholder="Nome de quem foi depositar" value={formDeposito.responsavelDeposito} onChange={(e) => setFormDeposito({ ...formDeposito, responsavelDeposito: e.target.value })} className={inputClass} required />
+                <label className="text-sm font-medium text-slate-700">Responsável pelo Depósito</label>
+                <input type="text" placeholder="Nome de quem foi depositar" value={formDeposito.responsavelDeposito} onChange={(e) => setFormDeposito({ ...formDeposito, responsavelDeposito: e.target.value.toUpperCase() })} className={inputClass + ' uppercase'} required />
               </div>
             </div>
             </DialogBody>
@@ -553,25 +568,25 @@ export function ControleDepositoPage() {
       </Dialog>
 
       <Dialog open={dialogValor} onOpenChange={setDialogValor}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingValor ? 'Editar Valor Depositado' : 'Novo Valor Depositado'}</DialogTitle>
             <DialogDescription>Preencha data, dia e dinheiro.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitValor} className="flex min-h-0 flex-1 flex-col">
             <DialogBody>
-            <div className="space-y-4 mt-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Data</label>
-                <input type="date" value={formValor.data} onChange={(e) => setFormValor((prev) => ({ ...prev, data: e.target.value, dia: diaSemanaFromDate(e.target.value) }))} className={inputClass} required />
+                <input type="date" value={formValor.data} onChange={(e) => setFormValor((prev) => ({ ...prev, data: e.target.value, dia: diaSemanaFromDate(e.target.value).toUpperCase() }))} className={inputClass} required />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Dia</label>
-                <input type="text" readOnly value={formValor.dia} className={inputClass + ' bg-slate-50'} aria-label="Dia da semana (preenchido pela data)" />
+                <input type="text" readOnly value={formValor.dia} className={inputClass + ' bg-slate-50 uppercase'} aria-label="Dia da semana (preenchido pela data)" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Dinheiro (R$)</label>
-                <input type="text" inputMode="decimal" placeholder="0,00" value={formValor.dinheiro} onChange={(e) => setFormValor({ ...formValor, dinheiro: e.target.value })} className={inputClass} />
+                <input type="text" inputMode="decimal" placeholder="0,00" value={formValor.dinheiro} onChange={(e) => setFormValor({ ...formValor, dinheiro: sanitizeDecimal(e.target.value) })} className={inputClass} />
               </div>
             </div>
             </DialogBody>

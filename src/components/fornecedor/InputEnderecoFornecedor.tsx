@@ -6,7 +6,6 @@ import { useCEP } from '@/hooks/useCEP';
 import { onlyNumbers } from '@/lib/masks';
 import { InputUppercase } from '@/components/ui/input-uppercase';
 import type { EnderecoFornecedor, TipoLogradouro } from '@/types/fornecedor';
-import { TIPOS_LOGRADOURO } from '@/types/fornecedor';
 
 export interface EnderecoErrors {
   cep?: string;
@@ -119,41 +118,17 @@ export function InputEnderecoFornecedor({
         )}
       </div>
 
-      {/* Tipo de Logradouro e Logradouro */}
-      <div className="grid gap-4 sm:grid-cols-4">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            Tipo
-            {required && <span className="ml-0.5 text-red-500">*</span>}
-          </label>
-          <select
-            value={endereco.tipoLogradouro}
-            onChange={(e) => handleChange('tipoLogradouro', e.target.value as TipoLogradouro)}
-            disabled={disabled}
-            className={cn(
-              'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900',
-              'focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500',
-              'disabled:bg-slate-50 disabled:text-slate-500'
-            )}
-          >
-            {TIPOS_LOGRADOURO.map((tipo) => (
-              <option key={tipo} value={tipo}>
-                {tipo}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="sm:col-span-3">
-          <InputUppercase
-            label="Logradouro"
-            value={endereco.logradouro}
-            onChange={(e) => handleChange('logradouro', e.target.value.toUpperCase())}
-            disabled={disabled}
-            required={required}
-            error={errors?.logradouro}
-            placeholder="Nome da rua, avenida, etc."
-          />
-        </div>
+      {/* Logradouro */}
+      <div>
+        <InputUppercase
+          label="Logradouro"
+          value={endereco.logradouro}
+          onChange={(e) => handleChange('logradouro', e.target.value.toUpperCase())}
+          disabled={disabled}
+          required={required}
+          error={errors?.logradouro}
+          placeholder="Nome da rua, avenida, etc."
+        />
       </div>
 
       {/* Número e Complemento */}

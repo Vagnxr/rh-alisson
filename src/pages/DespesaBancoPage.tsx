@@ -3,6 +3,7 @@ import { useDespesaBancoStore } from '@/stores/despesaStore';
 
 export function DespesaBancoPage() {
   const items = useDespesaBancoStore((s) => s.items);
+  const columns = useDespesaBancoStore((s) => s.columns);
   const isLoading = useDespesaBancoStore((s) => s.isLoading);
   const fetchItems = useDespesaBancoStore((s) => s.fetchItems);
   const addItem = useDespesaBancoStore((s) => s.addItem);
@@ -12,6 +13,7 @@ export function DespesaBancoPage() {
   return (
     <DespesaBancoPageComponent
       items={items}
+      columns={columns}
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}

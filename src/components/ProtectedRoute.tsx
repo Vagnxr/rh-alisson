@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useTenantStore } from '@/stores/tenantStore';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
@@ -8,11 +10,29 @@ export function ProtectedRoute() {
   const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
+  const acessosFetchedAtMount = useAuthStore((s) => s.acessosFetchedAtMount);
+  const fetchAcessos = useAuthStore((s) => s.fetchAcessos);
+  const pathToPermissionId = useAuthStore((s) => s.pathToPermissionId);
   const currentTenant = useTenantStore((s) => s.currentTenant);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchAcessos();
+    }
+  }, [isAuthenticated, user?.id, fetchAcessos]);
 
   // Nao autenticado -> login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Apos refresh, espera o primeiro GET /auth/acessos para ter permissoes e menu sincronizados
+  if (!acessosFetchedAtMount) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" aria-hidden />
+      </div>
+    );
   }
 
   // Super admin sem tenant selecionado -> pagina de selecao
@@ -27,7 +47,7 @@ export function ProtectedRoute() {
 
   // Sem permissao para esta rota -> redireciona para primeira rota permitida
   const permissoes = user?.permissoes ?? [];
-  if (!hasRoutePermission(permissoes, location.pathname)) {
+  if (!hasRoutePermission(permissoes, location.pathname, pathToPermissionId)) {
     return <Navigate to={getFirstAllowedPath(permissoes)} replace />;
   }
 

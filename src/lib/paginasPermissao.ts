@@ -57,19 +57,21 @@ export const PAGINAS_PERMISSAO: PaginaPermissaoItem[] = [
   { id: 'renda-extra', label: 'Renda Extra' },
   { id: 'investimento', label: 'Investimento' },
   { id: 'financeiro-caixa', label: 'Financeiro - Caixa' },
-  { id: 'financeiro-controle-cartoes', label: 'Financeiro - Controle Cartoes' },
   { id: 'financeiro-vendas', label: 'Financeiro - Vendas' },
-  { id: 'financeiro-controle-deposito', label: 'Financeiro - Controle Deposito' },
-  { id: 'financeiro-venda-cartoes', label: 'Financeiro - Venda Cartoes' },
-  { id: 'financeiro-ativo-imobilizado', label: 'Financeiro - Ativo Imobilizado' },
-  { id: 'financeiro-entrada', label: 'Financeiro - Entrada' },
-  { id: 'financeiro-saida', label: 'Financeiro - Saida' },
+  { id: 'financeiro-controle-deposito', label: 'Financeiro - Controle Depósito' },
+  { id: 'financeiro-venda-cartoes', label: 'Financeiro - Venda Cartões' },
   { id: 'financeiro-pago-dinheiro', label: 'Financeiro - Pago em Dinheiro' },
-  { id: 'financeiro-calculadora-margem', label: 'Financeiro - Calculadora de Margem' },
-  { id: 'financeiro-pedido-venda', label: 'Financeiro - Pedido de Venda' },
-  { id: 'financeiro-a-receber', label: 'Financeiro - A receber' },
-  { id: 'financeiro-venda-perda', label: 'Financeiro - Venda e perda' },
-  { id: 'financeiro-agenda', label: 'Financeiro - Agenda' },
+  { id: 'controle-cartoes', label: 'Controle Cartões' },
+  { id: 'controle-cartoes-home', label: 'Controle Cartões (home)' },
+  { id: 'controle-cartoes-taxas-prazos', label: 'Controle Cartões - Taxas e prazos' },
+  { id: 'a-receber', label: 'A receber' },
+  { id: 'venda-perda', label: 'Venda e perda' },
+  { id: 'entrada', label: 'Entrada' },
+  { id: 'saida', label: 'Saída' },
+  { id: 'agenda', label: 'Agenda' },
+  { id: 'ativo-imobilizado', label: 'Ativo Imobilizado' },
+  { id: 'calculadora-margem', label: 'Calculadora de Margem' },
+  { id: 'pedido-venda', label: 'Pedido de Venda' },
   { id: 'fornecedores', label: 'Fornecedores' },
   { id: 'lojas', label: 'Lojas' },
   { id: 'recursos-humanos', label: 'Recursos Humanos' },
@@ -93,19 +95,21 @@ export const PERMISSION_ID_TO_PATH: Record<string, string> = {
   'renda-extra': '/renda-extra',
   investimento: '/investimento',
   'financeiro-caixa': '/financeiro/caixa',
-  'financeiro-controle-cartoes': '/financeiro/controle-cartoes',
   'financeiro-vendas': '/financeiro/vendas',
   'financeiro-controle-deposito': '/financeiro/controle-deposito',
   'financeiro-venda-cartoes': '/financeiro/venda-cartoes',
-  'financeiro-ativo-imobilizado': '/financeiro/ativo-imobilizado',
-  'financeiro-entrada': '/financeiro/entrada',
-  'financeiro-saida': '/financeiro/saida',
   'financeiro-pago-dinheiro': '/financeiro/pago-dinheiro',
-  'financeiro-calculadora-margem': '/financeiro/calculadora-margem',
-  'financeiro-pedido-venda': '/financeiro/pedido-venda',
-  'financeiro-a-receber': '/financeiro/outras-funcoes/a-receber',
-  'financeiro-venda-perda': '/financeiro/outras-funcoes/venda-perda',
-  'financeiro-agenda': '/financeiro/agenda',
+  'controle-cartoes': '/controle-cartoes',
+  'controle-cartoes-home': '/controle-cartoes-home',
+  'controle-cartoes-taxas-prazos': '/controle-cartoes/taxas-prazos',
+  'a-receber': '/outras-funcoes/a-receber',
+  'venda-perda': '/outras-funcoes/venda-perda',
+  'entrada': '/entrada',
+  'saida': '/saida',
+  'agenda': '/agenda',
+  'ativo-imobilizado': '/ativo-imobilizado',
+  'calculadora-margem': '/calculadora-margem',
+  'pedido-venda': '/pedido-venda',
   fornecedores: '/fornecedores',
   lojas: '/lojas',
   'recursos-humanos': '/recursos-humanos',
@@ -135,18 +139,26 @@ export function getFirstAllowedPath(permissoes: string[]): string {
   return '/dashboard';
 }
 
-/** Obtem permissionId a partir do pathname (inclui rotas dinamicas /despesa/:slug). */
-export function getPermissionIdFromPath(pathname: string): string | undefined {
+/** Obtem permissionId a partir do pathname. Usa pathMap quando fornecido (ex.: menu da API), senao fallback estatico. */
+export function getPermissionIdFromPath(
+  pathname: string,
+  pathMap?: Record<string, string> | null
+): string | undefined {
   if (pathname.startsWith('/despesa/')) {
     const slug = pathname.slice(9).replace(/\/$/, '');
     return slug || undefined;
   }
+  if (pathMap && pathname in pathMap) return pathMap[pathname];
   return PATH_TO_PERMISSION_ID[pathname];
 }
 
-/** Verifica se o usuario tem permissao para acessar o pathname. Mesma regra do Sidebar. */
-export function hasRoutePermission(permissoes: string[] | undefined, pathname: string): boolean {
-  const permissionId = getPermissionIdFromPath(pathname);
+/** Verifica se o usuario tem permissao para acessar o pathname. pathToPermissionId opcional (vindo do menu da API). */
+export function hasRoutePermission(
+  permissoes: string[] | undefined,
+  pathname: string,
+  pathToPermissionId?: Record<string, string> | null
+): boolean {
+  const permissionId = getPermissionIdFromPath(pathname, pathToPermissionId);
   if (!permissionId) return true; // rota sem mapeamento (ex.: redirect) deixa passar
   if (!permissoes || permissoes.length === 0) return true;
   if (permissoes.includes('*')) return true;

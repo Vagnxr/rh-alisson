@@ -8,21 +8,11 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Plus, Pencil, Trash2, Loader2, Building2, User } from 'lucide-react';
+import { ArrowUpDown, Plus, Pencil, Loader2, Building2, User, UserX, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Fornecedor } from '@/types/fornecedor';
 import { useFornecedorStore } from '@/stores/fornecedorStore';
 import { FornecedorForm } from '@/components/fornecedor/FornecedorForm';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { cn } from '@/lib/cn';
 import { buildTableColumns } from '@/lib/buildTableColumns';
@@ -38,13 +28,12 @@ export function FornecedoresPage() {
     fetchFornecedores,
     addFornecedor,
     updateFornecedor,
-    deleteFornecedor,
+    toggleFornecedorStatus,
   } = useFornecedorStore();
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
-  const [deleteFornecedorId, setDeleteFornecedorId] = useState<string | null>(null);
   const [globalFilter, setGlobalFilter] = useState('');
   const [viewStatus, setViewStatus] = useState<'ativos' | 'inativos'>('ativos');
 
@@ -81,15 +70,13 @@ export function FornecedoresPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteFornecedorId) return;
-
+  const handleToggleStatus = async (id: string, isAtivo: boolean) => {
     try {
-      await deleteFornecedor(deleteFornecedorId);
-      toast.success('Fornecedor excluído com sucesso!');
-      setDeleteFornecedorId(null);
-    } catch (error) {
-      toast.error('Erro ao excluir fornecedor');
+      await toggleFornecedorStatus(id);
+      toast.success(isAtivo ? 'Fornecedor inativado.' : 'Fornecedor reativado.');
+      fetchFornecedores();
+    } catch {
+      toast.error('Erro ao alterar status do fornecedor.');
     }
   };
 
@@ -273,25 +260,29 @@ export function FornecedoresPage() {
         FORNECEDOR_TABLE_DEFAULT_ORDER,
         {
           id: 'actions',
-          header: () => <span className="sr-only">Acoes</span>,
-          cell: ({ row }) => (
-            <div className="flex items-center justify-end gap-1">
-              <button
-                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                title="Editar"
-                onClick={() => handleOpenDialog(row.original)}
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-              <button
-                className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                title="Excluir"
-                onClick={() => setDeleteFornecedorId(row.original.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ),
+          header: () => <span className="sr-only">Ações</span>,
+          cell: ({ row }) => {
+            const f = row.original;
+            const isAtivo = f.isAtivo !== false;
+            return (
+              <div className="flex items-center justify-end gap-1">
+                <button
+                  className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  title="Editar"
+                  onClick={() => handleOpenDialog(f)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  className="rounded p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-700"
+                  title={isAtivo ? 'Inativar' : 'Reativar'}
+                  onClick={() => handleToggleStatus(f.id, isAtivo)}
+                >
+                  {isAtivo ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                </button>
+              </div>
+            );
+          },
         }
       ),
     [columnDefsByKey, columnsFromApi]
@@ -500,11 +491,11 @@ export function FornecedoresPage() {
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
-                        className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                        title="Excluir"
-                        onClick={() => setDeleteFornecedorId(fornecedor.id)}
+                        className="rounded p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-700"
+                        title={fornecedor.isAtivo !== false ? 'Inativar' : 'Reativar'}
+                        onClick={() => handleToggleStatus(fornecedor.id, fornecedor.isAtivo !== false)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {fornecedor.isAtivo !== false ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                       </button>
                     </div>
                   </div>
@@ -523,25 +514,6 @@ export function FornecedoresPage() {
         onSubmit={handleSubmit}
         isLoading={isLoading}
       />
-
-      {/* Alert Dialog Confirmar Exclusão */}
-      <AlertDialog
-        open={!!deleteFornecedorId}
-        onOpenChange={(open) => !open && setDeleteFornecedorId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

@@ -33,3 +33,39 @@ export interface LoginResponse {
   token: string;
   tenantId: string | null; // null se for super admin
 }
+
+/** Item de submenu retornado pelo GET /auth/acessos (menu). */
+export interface MenuSubItemFromApi {
+  label: string;
+  href: string;
+  permissionId: string;
+}
+
+/** Item de menu retornado pelo GET /auth/acessos. Icon = nome do icone Lucide (ex.: LayoutDashboard). */
+export interface MenuItemFromApi {
+  label: string;
+  icon: string;
+  href?: string;
+  permissionId: string;
+  subItems?: MenuSubItemFromApi[];
+}
+
+/** Resposta do GET /auth/acessos - permissoes, tenant e menu para a sidebar. */
+export interface AcessosResponse {
+  permissoes: string[];
+  tenant: TenantAuth | null;
+  menu?: MenuItemFromApi[];
+}
+
+/** Tenant retornado pelo endpoint de acessos (mesma logica do login). */
+export interface TenantAuth {
+  id: string;
+  name: string;
+  nomeFantasia?: string | null;
+  cnpj?: string | null;
+  isActive?: boolean;
+  isMultiloja?: boolean;
+  urlLogo?: string | null;
+  paginasPermitidas?: string[] | null;
+  createdAt?: string;
+}

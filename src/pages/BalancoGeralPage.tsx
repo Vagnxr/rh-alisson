@@ -257,7 +257,7 @@ function getMesAnoFromFilter(dateFilter: DateFilterValue | undefined): { mes: nu
 }
 
 export function BalancoGeralPage() {
-  const { lojas, isMultiLoja, fetchLojas } = useLojaStore();
+  const { lojas, isMultiLoja } = useLojaStore();
   const { balanco, isLoading, error, fetchBalanco } = useBalancoStore();
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   const [lojaFiltro, setLojaFiltro] = useState<string | null>(null);
@@ -265,9 +265,7 @@ export function BalancoGeralPage() {
 
   const { mes, ano } = useMemo(() => getMesAnoFromFilter(dateFilter), [dateFilter]);
 
-  useEffect(() => {
-    fetchLojas();
-  }, [fetchLojas]);
+  // Lojas sao carregadas pelo Header; aqui apenas usamos o store
 
   useEffect(() => {
     fetchBalanco({ mes, ano, lojaId: lojaFiltro ?? undefined });

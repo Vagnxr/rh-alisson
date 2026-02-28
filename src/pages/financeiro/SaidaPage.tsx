@@ -90,11 +90,16 @@ export function SaidaPage() {
     setLoading(true);
     api
       .get<SaidaRow[]>('financeiro/saida', { params: dateFilterToParams(dateFilter) })
-      .then((res) => {
+      .then(res => {
         const list = Array.isArray(res.data) ? res.data : [];
-        setItems(list.filter((r) => !r.formaPagamento || r.formaPagamento === 'BOLETO' || r.formaPagamento === 'CARTAO'));
+        setItems(
+          list.filter(
+            r =>
+              !r.formaPagamento || r.formaPagamento === 'BOLETO' || r.formaPagamento === 'CARTAO',
+          ),
+        );
       })
-      .catch((err) => toast.error(err?.message ?? 'Erro ao carregar'))
+      .catch(err => toast.error(err?.message ?? 'Erro ao carregar'))
       .finally(() => setLoading(false));
   }, [dateFilter]);
 
@@ -107,7 +112,11 @@ export function SaidaPage() {
       setEditingItem(item);
       setFormData({
         data: item.data.split('T')[0] || item.data.slice(0, 10),
-        formaPagamento: item.formaPagamento && (item.formaPagamento === 'BOLETO' || item.formaPagamento === 'CARTAO') ? item.formaPagamento : 'BOLETO',
+        formaPagamento:
+          item.formaPagamento &&
+          (item.formaPagamento === 'BOLETO' || item.formaPagamento === 'CARTAO')
+            ? item.formaPagamento
+            : 'BOLETO',
         fornecedor: item.fornecedor,
         industrializacao: String(item.industrializacao),
         comercializacao: String(item.comercializacao),
@@ -150,16 +159,16 @@ export function SaidaPage() {
           fetchList();
           handleCloseDialog();
         })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao atualizar'));
+        .catch(err => toast.error(err?.message ?? 'Erro ao atualizar'));
     } else {
       api
         .post<SaidaRow>('financeiro/saida', body)
-        .then((res) => {
+        .then(res => {
           toast.success('Registro adicionado.');
-          setItems((prev) => [...prev, res.data]);
+          setItems(prev => [...prev, res.data]);
           handleCloseDialog();
         })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao criar'));
+        .catch(err => toast.error(err?.message ?? 'Erro ao criar'));
     }
   };
 
@@ -168,11 +177,11 @@ export function SaidaPage() {
     api
       .delete(`financeiro/saida/${deleteId}`)
       .then(() => {
-        setItems((prev) => prev.filter((r) => r.id !== deleteId));
+        setItems(prev => prev.filter(r => r.id !== deleteId));
         setDeleteId(null);
         toast.success('Registro excluido.');
       })
-      .catch((err) => toast.error(err?.message ?? 'Erro ao excluir'));
+      .catch(err => toast.error(err?.message ?? 'Erro ao excluir'));
   };
 
   const columns = useMemo<ColumnDef<SaidaRow>[]>(
@@ -230,17 +239,27 @@ export function SaidaPage() {
         header: () => <span className="sr-only">Acoes</span>,
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-1">
-            <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Editar" onClick={() => handleOpenDialog(row.original)}>
+            <button
+              type="button"
+              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              title="Editar"
+              onClick={() => handleOpenDialog(row.original)}
+            >
               <Pencil className="h-4 w-4" />
             </button>
-            <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Excluir" onClick={() => setDeleteId(row.original.id)}>
+            <button
+              type="button"
+              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+              title="Excluir"
+              onClick={() => setDeleteId(row.original.id)}
+            >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         ),
       },
     ],
-    []
+    [],
   );
 
   const table = useReactTable({
@@ -258,13 +277,13 @@ export function SaidaPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Saida</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Preenchido automaticamente conforme Entrada (Dinheiro/PIX no mesmo dia; Boleto ao marcar como pago na Agenda). Data, forma pagamento, fornecedor, comercializacao, industrializacao, embalagem, material uso/cons., mercadoria uso/cons., GLP.
+            Preenchido automaticamente conforme entrada.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
           <ExportButtons
-            data={items.map((r) => ({
+            data={items.map(r => ({
               data: formatDateStringToBR(r.data),
               formaPagamento: r.formaPagamento ?? '',
               fornecedor: r.fornecedor,
@@ -292,102 +311,154 @@ export function SaidaPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
             </div>
           ) : (
-          <table className="w-full min-w-[800px]">
-            <thead className="border-b border-slate-200 bg-slate-50">
-              {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id}>
-                  {hg.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
-                    >
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {table.getRowModel().rows.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-slate-500">
-                    <p>Nenhum registro no periodo.</p>
-                    <p className="mt-1 text-xs text-slate-400">A Saida e preenchida automaticamente: Entrada com Dinheiro ou PIX gera saida no mesmo dia; Entrada com Boleto gera saida ao marcar como pago na Agenda.</p>
-                  </td>
-                </tr>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50">
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="whitespace-nowrap px-4 py-3 text-sm text-slate-600">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
+            <table className="w-full min-w-[800px]">
+              <thead className="border-b border-slate-200 bg-slate-50">
+                {table.getHeaderGroups().map(hg => (
+                  <tr key={hg.id}>
+                    {hg.headers.map(header => (
+                      <th
+                        key={header.id}
+                        className="px-4 py-3 text-left text-xs font-medium tracking-wider text-slate-500 uppercase"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </th>
                     ))}
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {table.getRowModel().rows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="px-6 py-12 text-center text-sm text-slate-500"
+                    >
+                      <p>Nenhum registro no periodo.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  table.getRowModel().rows.map(row => (
+                    <tr key={row.id} className="hover:bg-slate-50">
+                      {row.getVisibleCells().map(cell => (
+                        <td
+                          key={cell.id}
+                          className="px-4 py-3 text-sm whitespace-nowrap text-slate-600"
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Editar Saida' : 'Nova Saida'}</DialogTitle>
             <DialogDescription>Preencha os dados da saida.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <DialogBody>
-            <div className="space-y-4 mt-4 mb-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Data</label>
-                <input type="date" value={formData.data} onChange={(e) => setFormData({ ...formData, data: e.target.value })} className={inputClass} required />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Forma de pagamento</label>
-                <select value={formData.formaPagamento} onChange={(e) => setFormData({ ...formData, formaPagamento: e.target.value as SaidaFormaPagamento })} className={inputClass} required>
-                  {FORMAS_SAIDA.map((fp) => (
-                    <option key={fp} value={fp}>{fp}</option>
-                  ))}
-                </select>
-                <p className="text-xs text-slate-500">Apenas boleto ou cartao sobem para saida.</p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Fornecedor</label>
-                <input type="text" value={formData.fornecedor} onChange={(e) => setFormData({ ...formData, fornecedor: e.target.value })} className={inputClass} />
-              </div>
-              {CAMPOS_NUMERICOS_ORDEM.map((key) => (
-                <div key={key} className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
-                    {LABEL_CAMPO[key] ?? `${key.charAt(0).toUpperCase() + key.slice(1)}`} (R$)
-                  </label>
-                  <input type="text" inputMode="decimal" placeholder="0,00" value={formData[key]} onChange={(e) => setFormData({ ...formData, [key]: e.target.value })} className={inputClass} />
+              <div className="mt-4 mb-4 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Data</label>
+                  <input
+                    type="date"
+                    value={formData.data}
+                    onChange={e => setFormData({ ...formData, data: e.target.value })}
+                    className={inputClass}
+                    required
+                  />
                 </div>
-              ))}
-            </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Forma de pagamento</label>
+                  <select
+                    value={formData.formaPagamento}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        formaPagamento: e.target.value as SaidaFormaPagamento,
+                      })
+                    }
+                    className={inputClass}
+                    required
+                  >
+                    {FORMAS_SAIDA.map(fp => (
+                      <option key={fp} value={fp}>
+                        {fp}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-slate-500">
+                    Apenas boleto ou cartao sobem para saida.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Fornecedor</label>
+                  <input
+                    type="text"
+                    value={formData.fornecedor}
+                    onChange={e => setFormData({ ...formData, fornecedor: e.target.value })}
+                    className={inputClass}
+                  />
+                </div>
+                {CAMPOS_NUMERICOS_ORDEM.map(key => (
+                  <div key={key} className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">
+                      {LABEL_CAMPO[key] ?? `${key.charAt(0).toUpperCase() + key.slice(1)}`} (R$)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0,00"
+                      value={formData[key]}
+                      onChange={e => setFormData({ ...formData, [key]: e.target.value })}
+                      className={inputClass}
+                    />
+                  </div>
+                ))}
+              </div>
             </DialogBody>
             <DialogFooter>
-              <button type="button" onClick={handleCloseDialog} className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100">Cancelar</button>
-              <button type="submit" className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">{editingItem ? 'Salvar' : 'Adicionar'}</button>
+              <button
+                type="button"
+                onClick={handleCloseDialog}
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              >
+                {editingItem ? 'Salvar' : 'Adicionar'}
+              </button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+      <AlertDialog open={!!deleteId} onOpenChange={open => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusao</AlertDialogTitle>
-            <AlertDialogDescription>Tem certeza que deseja excluir este registro?</AlertDialogDescription>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este registro?
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>

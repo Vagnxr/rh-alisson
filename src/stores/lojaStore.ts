@@ -14,6 +14,7 @@ export const useLojaStore = create<LojaState>()(
       error: null,
 
       fetchLojas: async () => {
+        if (get().isLoading) return;
         set({ isLoading: true, error: null });
         try {
           const res = await api.get<Loja[]>('lojas');

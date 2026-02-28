@@ -390,7 +390,7 @@ export function AdminUsersPage() {
 
       {/* Dialog de Adicionar/Editar */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="flex max-h-[90vh] max-w-md flex-col">
+        <DialogContent className="flex max-h-[90vh] flex-col">
           <DialogHeader>
             <DialogTitle>
               {editingUser ? 'Editar Usuario' : 'Novo Usuario'}

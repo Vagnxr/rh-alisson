@@ -8,6 +8,7 @@ export function DespesaImpostoPage() {
   const isLoading = useDespesaImpostoStore((s) => s.isLoading);
   const fetchItems = useDespesaImpostoStore((s) => s.fetchItems);
   const addItem = useDespesaImpostoStore((s) => s.addItem);
+  const addItemComParcelas = useDespesaImpostoStore((s) => s.addItemComParcelas);
   const updateItem = useDespesaImpostoStore((s) => s.updateItem);
   const deleteItem = useDespesaImpostoStore((s) => s.deleteItem);
 
@@ -19,8 +20,10 @@ export function DespesaImpostoPage() {
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}
+      addItemComParcelas={addItemComParcelas}
       updateItem={updateItem}
       deleteItem={deleteItem}
+      useRecorrenciaDataValorList
     />
   );
 }

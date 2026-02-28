@@ -46,6 +46,21 @@ function parseNum(v: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** Permite apenas digitos (inteiro). */
+function sanitizeInteger(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+/** Permite apenas digitos e no maximo um separador decimal (virgula ou ponto). */
+function sanitizeDecimal(value: string): string {
+  const cleaned = value.replace(/[^\d,.]/g, '');
+  const sepIndex = Math.max(cleaned.lastIndexOf(','), cleaned.lastIndexOf('.'));
+  if (sepIndex < 0) return cleaned;
+  const intPart = cleaned.slice(0, sepIndex).replace(/[,.]/g, '');
+  const decPart = cleaned.slice(sepIndex + 1).replace(/\D/g, '');
+  return intPart + cleaned[sepIndex] + decPart;
+}
+
 function diaSemanaFromDate(dateStr: string): string {
   const d = new Date(dateStr);
   const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
@@ -68,7 +83,7 @@ const BANDEIRAS_DEBITO: { id: BandeiraCartao; label: string }[] = [
   { id: 'maestro', label: 'Maestro' },
 ];
 
-type TabCartao = 'credito' | 'debito' | 'pix' | 'voucher' | 'ifood' | 'outras';
+type TabCartao = 'credito' | 'debito' | 'pix' | 'voucher' | 'outras';
 type TipoCredito = 'a-vista' | 'parcelado-vista' | 'parcelado-prazo';
 const TIPOS_CREDITO: { id: TipoCredito; label: string }[] = [
   { id: 'a-vista', label: 'A vista' },
@@ -112,6 +127,7 @@ export function ControleCartoesPage() {
             ...r,
             data: r.data ?? '',
             dataAReceber: r.dataAReceber ?? '',
+            taxaPercent: r.taxaPercent ?? r.taxa,
             diaSemana: diaSemanaFromDate(r.data ?? ''),
             diaSemanaAReceber: diaSemanaFromDate(r.dataAReceber ?? ''),
           }))
@@ -143,11 +159,12 @@ export function ControleCartoesPage() {
     if (item) {
       setEditingItem(item);
       if (item.tipoCredito && tab === 'credito') setTipoCredito(item.tipoCredito);
+      const taxaVal = item.taxa ?? item.taxaPercent;
       setFormData({
         data: (item.data ?? '').toString().split('T')[0]?.slice(0, 10) ?? '',
         valor: String(item.valor),
         prazo: item.prazo != null ? String(item.prazo) : '',
-        taxaPercent: item.taxaPercent != null ? String(item.taxaPercent) : '',
+        taxaPercent: taxaVal != null ? String(taxaVal) : '',
         dataAReceber: (item.dataAReceber ?? '').toString().split('T')[0]?.slice(0, 10) ?? '',
       });
     } else {
@@ -189,14 +206,18 @@ export function ControleCartoesPage() {
       api
         .patch<ControleCartoesRow & { data: string; dataAReceber: string }>(`financeiro/controle-cartoes/${editingItem.id}`, body)
         .then((res) => {
+          const data = res.data as ControleCartoesRow & { data?: string; dataAReceber?: string };
           toast.success('Registro atualizado.');
           setItems((prev) =>
             prev.map((r) =>
               r.id === editingItem.id
                 ? {
-                    ...res.data,
-                    diaSemana: diaSemanaFromDate(res.data.data ?? ''),
-                    diaSemanaAReceber: diaSemanaFromDate(res.data.dataAReceber ?? ''),
+                    ...data,
+                    data: data.data ?? '',
+                    dataAReceber: data.dataAReceber ?? '',
+                    taxaPercent: data.taxaPercent ?? data.taxa,
+                    diaSemana: diaSemanaFromDate(data.data ?? ''),
+                    diaSemanaAReceber: diaSemanaFromDate(data.dataAReceber ?? ''),
                   }
                 : r
             )
@@ -208,13 +229,17 @@ export function ControleCartoesPage() {
       api
         .post<ControleCartoesRow & { data: string; dataAReceber: string }>('financeiro/controle-cartoes', body)
         .then((res) => {
+          const data = res.data as ControleCartoesRow & { data?: string; dataAReceber?: string };
           toast.success('Registro adicionado.');
           setItems((prev) => [
             ...prev,
             {
-              ...res.data,
-              diaSemana: diaSemanaFromDate(res.data.data ?? ''),
-              diaSemanaAReceber: diaSemanaFromDate(res.data.dataAReceber ?? ''),
+              ...data,
+              data: data.data ?? '',
+              dataAReceber: data.dataAReceber ?? '',
+              taxaPercent: data.taxaPercent ?? data.taxa,
+              diaSemana: diaSemanaFromDate(data.data ?? ''),
+              diaSemanaAReceber: diaSemanaFromDate(data.dataAReceber ?? ''),
             },
           ]);
           handleCloseDialog();
@@ -338,7 +363,7 @@ export function ControleCartoesPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Controle Cartoes</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Credito/Debito, PIX, Voucher, iFood e outras funcoes. Prazo, taxa, bruto e liquido (a receber calculado pelo sistema).
+            Credito/Debito, PIX, Voucher e outras funcoes. Prazo, taxa, bruto e liquido (a receber calculado pelo sistema).
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -380,7 +405,6 @@ export function ControleCartoesPage() {
           { id: 'debito' as TabCartao, label: 'Debito' },
           { id: 'pix' as TabCartao, label: 'PIX' },
           { id: 'voucher' as TabCartao, label: 'Voucher' },
-          { id: 'ifood' as TabCartao, label: 'iFood' },
           { id: 'outras' as TabCartao, label: 'Outras funcoes' },
         ]).map((t) => (
           <button
@@ -518,7 +542,7 @@ export function ControleCartoesPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Editar Registro' : 'Novo Registro'}</DialogTitle>
             <DialogDescription>
@@ -527,7 +551,7 @@ export function ControleCartoesPage() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <DialogBody>
-            <div className="space-y-4 mt-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Data</label>
                 <input
@@ -561,7 +585,7 @@ export function ControleCartoesPage() {
                   inputMode="decimal"
                   placeholder="0,00"
                   value={formData.valor}
-                  onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, valor: sanitizeDecimal(e.target.value) })}
                   className={inputClass}
                   required
                 />
@@ -575,7 +599,7 @@ export function ControleCartoesPage() {
                       inputMode="numeric"
                       placeholder="Ex.: 30"
                       value={formData.prazo}
-                      onChange={(e) => setFormData({ ...formData, prazo: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, prazo: sanitizeInteger(e.target.value) })}
                       className={inputClass}
                     />
                   </div>
@@ -586,7 +610,7 @@ export function ControleCartoesPage() {
                       inputMode="decimal"
                       placeholder="Ex.: 2,5"
                       value={formData.taxaPercent}
-                      onChange={(e) => setFormData({ ...formData, taxaPercent: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, taxaPercent: sanitizeDecimal(e.target.value) })}
                       className={inputClass}
                     />
                   </div>

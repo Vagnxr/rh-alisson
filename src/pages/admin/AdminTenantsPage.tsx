@@ -408,7 +408,7 @@ export function AdminTenantsPage() {
 
       {/* Dialog de Adicionar/Editar */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="flex max-h-[90vh] flex-col max-w-lg">
+        <DialogContent className="flex max-h-[90vh] flex-col">
           <DialogHeader>
             <DialogTitle>
               {editingTenant ? 'Editar Empresa' : 'Nova Empresa'}

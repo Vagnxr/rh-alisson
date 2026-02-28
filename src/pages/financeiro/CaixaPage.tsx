@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -218,7 +218,10 @@ export function CaixaPage() {
       }, 0);
   }, [colunasVisiveis, formData]);
 
+  const fetchingRef = useRef(false);
   const fetchList = useCallback(() => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
     setLoading(true);
     api
       .get<CaixaRow[]>('financeiro/caixa', { params: dateFilterToParams(dateFilter) })
@@ -227,7 +230,10 @@ export function CaixaPage() {
         if (res.columns && res.columns.length > 0) setColunasFromApi(res.columns);
       })
       .catch((err) => toast.error(err?.message ?? 'Erro ao carregar caixa'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        fetchingRef.current = false;
+      });
   }, [dateFilter]);
 
   useEffect(() => {
@@ -378,7 +384,7 @@ export function CaixaPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Caixa</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Data, Dinheiro, Pag. (PDV), Pag. (Escrit.), PIX, Credito, Debito, Voucher, Troca, Devol. Dinheiro, Desconto, Total por dia
+          
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -413,21 +419,21 @@ export function CaixaPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden min-w-0">
+        <div className="min-w-0 overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
             </div>
           ) : (
-          <table className="w-full min-w-[800px]">
+          <table className="w-full">
             <thead className="border-b border-slate-200 bg-slate-50">
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                      className="min-w-0 px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 whitespace-normal break-words"
                     >
                       {header.isPlaceholder
                         ? null
@@ -450,7 +456,7 @@ export function CaixaPage() {
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="whitespace-nowrap px-4 py-3 text-sm text-slate-600"
+                        className="min-w-0 px-3 py-3 text-sm text-slate-600"
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
@@ -478,7 +484,7 @@ export function CaixaPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Editar Caixa' : 'Novo Caixa'}</DialogTitle>
             <DialogDescription>
@@ -488,16 +494,17 @@ export function CaixaPage() {
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <DialogBody>
             <div className="space-y-4 mt-4 mb-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Dia</label>
-                <input
-                  type="date"
-                  value={formData.dia}
-                  onChange={(e) => setFormData({ ...formData, dia: e.target.value })}
-                  className={inputClass}
-                />
-              </div>
-              {colunasValor.map((col) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Dia</label>
+                  <input
+                    type="date"
+                    value={formData.dia}
+                    onChange={(e) => setFormData({ ...formData, dia: e.target.value })}
+                    className={inputClass}
+                  />
+                </div>
+                {colunasValor.map((col) => (
                   <div key={col.id} className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">{col.label}</label>
                     <input
@@ -512,6 +519,7 @@ export function CaixaPage() {
                     />
                   </div>
                 ))}
+              </div>
               <p className="text-sm text-slate-500">
                 Total: {formatCurrency(totalFromForm)}
               </p>

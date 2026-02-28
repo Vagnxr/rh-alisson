@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -20,11 +21,14 @@ import type {
   ContatoEmpresa,
   ContatoVendedor,
 } from '@/types/fornecedor';
+import { fetchCNPJReceitaWS, onlyDigitsCnpj } from '@/lib/receitaws';
 
 interface FornecedorFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fornecedor?: Fornecedor;
+  /** Quando aberto para novo fornecedor (sem fornecedor), preenche o campo CNPJ com este valor (ex.: vindo da tela Entrada). */
+  initialCnpj?: string;
   onSubmit: (data: CreateFornecedorDto | UpdateFornecedorDto) => Promise<void>;
   isLoading?: boolean;
 }
@@ -102,11 +106,13 @@ export function FornecedorForm({
   open,
   onOpenChange,
   fornecedor,
+  initialCnpj,
   onSubmit,
   isLoading = false,
 }: FornecedorFormProps) {
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loadingCnpj, setLoadingCnpj] = useState(false);
 
   useEffect(() => {
     if (fornecedor) {
@@ -151,10 +157,62 @@ export function FornecedorForm({
         });
       }
     } else {
-      setFormData(initialFormData);
+      setFormData({
+        ...initialFormData,
+        cnpj: (initialCnpj ?? '').trim() || initialFormData.cnpj,
+      });
     }
     setErrors({});
-  }, [fornecedor, open]);
+  }, [fornecedor, open, initialCnpj]);
+
+  const handleBuscarCNPJ = async () => {
+    const digits = onlyDigitsCnpj(formData.cnpj);
+    if (digits.length !== 14) {
+      toast.error('Informe um CNPJ válido com 14 dígitos para buscar.');
+      return;
+    }
+    setLoadingCnpj(true);
+    setErrors((e) => ({ ...e, cnpj: '' }));
+    try {
+      const data = await fetchCNPJReceitaWS(formData.cnpj);
+      if (!data) {
+        toast.error('Não foi possível obter os dados do CNPJ. Tente novamente.');
+        return;
+      }
+      const endereco: EnderecoFornecedor = {
+        ...formData.endereco,
+        cep: (() => {
+          const raw = (data.cep ?? '').replace(/\D/g, '');
+          if (raw.length === 8) return raw.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+          return formData.endereco.cep;
+        })(),
+        tipoLogradouro: 'Rua',
+        logradouro: (data.logradouro ?? '').toUpperCase(),
+        numero: (data.numero ?? '').toUpperCase(),
+        complemento: (data.complemento ?? '').toUpperCase() || formData.endereco.complemento,
+        bairro: (data.bairro ?? '').toUpperCase(),
+        cidade: (data.municipio ?? '').toUpperCase(),
+        uf: (data.uf ?? '').toUpperCase(),
+      };
+      const contatoEmpresa: ContatoEmpresa = {
+        ...formData.contatoEmpresa,
+        emailPrincipal: data.email ?? formData.contatoEmpresa.emailPrincipal,
+        telefonePrincipal: data.telefone ?? formData.contatoEmpresa.telefonePrincipal,
+      };
+      setFormData((prev) => ({
+        ...prev,
+        razaoSocial: (data.nome ?? '').toUpperCase(),
+        nomeFantasia: (data.fantasia ?? data.nome ?? '').toUpperCase(),
+        endereco,
+        contatoEmpresa,
+      }));
+      toast.success('Dados preenchidos pela Receita Federal. Revise e salve.');
+    } catch {
+      toast.error('Erro ao consultar CNPJ.');
+    } finally {
+      setLoadingCnpj(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,7 +280,7 @@ export function FornecedorForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{fornecedor ? 'Editar Fornecedor' : 'Novo Fornecedor'}</DialogTitle>
           <DialogDescription>
@@ -267,13 +325,29 @@ export function FornecedorForm({
           {/* Campos CNPJ */}
           {formData.tipo === 'cnpj' && (
             <div className="space-y-4">
-              <InputCNPJ
-                label="CNPJ"
-                value={formData.cnpj}
-                onValueChange={(value) => setFormData({ ...formData, cnpj: value })}
-                error={errors.cnpj}
-                required
-              />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
+                <div className="min-w-0 flex-1">
+                  <InputCNPJ
+                    label="CNPJ"
+                    value={formData.cnpj}
+                    onValueChange={(value) => setFormData({ ...formData, cnpj: value })}
+                    error={errors.cnpj}
+                    required
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleBuscarCNPJ}
+                  disabled={loadingCnpj}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-emerald-600 bg-white px-4 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50"
+                >
+                  {loadingCnpj ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Buscar dados (ReceitaWS)
+                </button>
+              </div>
+              <p className="text-xs text-slate-500">
+                Preencha o CNPJ e clique em &quot;Buscar dados&quot; para preencher automaticamente razão social, endereço e contato.
+              </p>
               <InputUppercase
                 label="Razão Social"
                 value={formData.razaoSocial}

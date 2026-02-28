@@ -1,7 +1,15 @@
 import { create } from 'zustand';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
-import type { DespesaBase, DespesaInput, DespesaCategoria } from '@/types/despesa';
+import type { DespesaBase, DespesaInput, DespesaComParcelasInput, DespesaCategoria } from '@/types/despesa';
 import { api } from '@/lib/api';
+
+/** Resposta da API GET /despesas: lista em data, columns e meta opcionais. */
+interface DespesasListResponse {
+  success?: boolean;
+  data: DespesaBase[] | Record<string, unknown>[];
+  columns?: TableColumnConfigFromApi[] | null;
+  meta?: { total?: number; page?: number; perPage?: number; totalPages?: number };
+}
 
 interface DespesaState {
   items: DespesaBase[];
@@ -13,6 +21,8 @@ interface DespesaState {
 interface DespesaActions {
   fetchItems: (params?: { dataInicio?: string; dataFim?: string }) => Promise<void>;
   addItem: (data: DespesaInput) => Promise<void>;
+  /** Modo B: criar série em um único POST com array parcelas. */
+  addItemComParcelas: (data: DespesaComParcelasInput) => Promise<void>;
   updateItem: (id: string, data: Partial<DespesaInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
   reset: () => void;
@@ -21,7 +31,7 @@ interface DespesaActions {
 type DespesaStore = DespesaState & DespesaActions;
 
 function normalizeDespesa(item: Record<string, unknown>): DespesaBase {
-  const base = {
+  const base: DespesaBase = {
     id: String(item.id),
     data: typeof item.data === 'string' ? item.data : (item.data as Date)?.toString?.()?.slice(0, 10) ?? '',
     tipo: String(item.tipo ?? ''),
@@ -33,9 +43,12 @@ function normalizeDespesa(item: Record<string, unknown>): DespesaBase {
     createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
     updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
   };
-  const bancoId = item.bancoId != null ? String(item.bancoId) : undefined;
-  const bancoNome = item.bancoNome != null ? String(item.bancoNome) : undefined;
-  return { ...base, ...(bancoId !== undefined && { bancoId }), ...(bancoNome !== undefined && { bancoNome }) };
+  if (item.bancoId != null) base.bancoId = String(item.bancoId);
+  if (item.bancoNome != null) base.bancoNome = String(item.bancoNome);
+  if (item.recorrenciaIndice != null) base.recorrenciaIndice = String(item.recorrenciaIndice);
+  if (item.categoria != null) base.categoria = String(item.categoria);
+  if (item.observacao != null) base.observacao = String(item.observacao);
+  return base;
 }
 
 function createDespesaStore(categoria: DespesaCategoria) {
@@ -46,17 +59,19 @@ function createDespesaStore(categoria: DespesaCategoria) {
     error: null,
 
     fetchItems: async (params?: { dataInicio?: string; dataFim?: string }) => {
+      if (get().isLoading) return;
       set({ isLoading: true, error: null });
       try {
         const requestParams: Record<string, string> = { categoria };
         if (params?.dataInicio) requestParams.dataInicio = params.dataInicio;
         if (params?.dataFim) requestParams.dataFim = params.dataFim;
-        const res = await api.get<DespesaBase[]>('despesas', {
+        const res = await api.get<DespesasListResponse>('despesas', {
           params: requestParams,
         });
-        const list = Array.isArray(res.data) ? res.data : [];
+        const body = res as unknown as DespesasListResponse;
+        const list = Array.isArray(body?.data) ? body.data : (Array.isArray(res) ? res : []);
         const items = list.map((x) => normalizeDespesa(x as unknown as Record<string, unknown>));
-        const columns = res.columns ?? null;
+        const columns = body?.columns ?? null;
         set({ items, columns, isLoading: false });
       } catch (err) {
         set({
@@ -72,6 +87,26 @@ function createDespesaStore(categoria: DespesaCategoria) {
         const res = await api.post<DespesaBase>('despesas', { ...data, categoria });
         const newItem = normalizeDespesa(res.data as unknown as Record<string, unknown>);
         set((state) => ({ items: [...state.items, newItem], isLoading: false }));
+      } catch (err) {
+        set({
+          error: err instanceof Error ? err.message : 'Erro ao salvar',
+          isLoading: false,
+        });
+        throw err;
+      }
+    },
+
+    addItemComParcelas: async (data: DespesaComParcelasInput) => {
+      set({ isLoading: true, error: null });
+      try {
+        await api.post<DespesaBase[]>('despesas', {
+          categoria,
+          tipo: data.tipo,
+          descricao: data.descricao,
+          comunicarAgenda: data.comunicarAgenda,
+          parcelas: data.parcelas,
+        });
+        set({ isLoading: false });
       } catch (err) {
         set({
           error: err instanceof Error ? err.message : 'Erro ao salvar',
@@ -156,10 +191,11 @@ export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) =
       const requestParams: Record<string, string> = { categoria };
       if (params?.dataInicio) requestParams.dataInicio = params.dataInicio;
       if (params?.dataFim) requestParams.dataFim = params.dataFim;
-      const res = await api.get<DespesaBase[]>('despesas', { params: requestParams });
-      const list = Array.isArray(res.data) ? res.data : [];
+      const res = await api.get<DespesasListResponse>('despesas', { params: requestParams });
+      const body = res as unknown as DespesasListResponse;
+      const list = Array.isArray(body?.data) ? body.data : (Array.isArray(res) ? res : []);
       const items = list.map((x) => normalizeDespesa(x as unknown as Record<string, unknown>));
-      const columns = res.columns ?? null;
+      const columns = body?.columns ?? null;
       set({ items, columns, isLoading: false });
     } catch (err) {
       set({
@@ -177,6 +213,28 @@ export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) =
       const res = await api.post<DespesaBase>('despesas', { ...data, categoria });
       const newItem = normalizeDespesa(res.data as unknown as Record<string, unknown>);
       set((state) => ({ items: [...state.items, newItem], isLoading: false }));
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Erro ao salvar',
+        isLoading: false,
+      });
+      throw err;
+    }
+  },
+
+  addItemComParcelas: async (data: DespesaComParcelasInput) => {
+    const categoria = get().categoria;
+    if (!categoria) return;
+    set({ isLoading: true, error: null });
+    try {
+      await api.post<DespesaBase[]>('despesas', {
+        categoria,
+        tipo: data.tipo,
+        descricao: data.descricao,
+        comunicarAgenda: data.comunicarAgenda,
+        parcelas: data.parcelas,
+      });
+      set({ isLoading: false });
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Erro ao salvar',

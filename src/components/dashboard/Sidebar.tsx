@@ -29,6 +29,7 @@ import { cn } from '@/lib/cn';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useTenantStore } from '@/stores/tenantStore';
+import type { MenuItemFromApi } from '@/types/auth';
 
 interface SubMenuItem {
   label: string;
@@ -36,6 +37,7 @@ interface SubMenuItem {
   permissionId: string;
 }
 
+/** Item de menu com icon ja resolvido para componente (uso interno da Sidebar). */
 interface MenuItem {
   label: string;
   icon: React.ElementType;
@@ -44,176 +46,69 @@ interface MenuItem {
   subItems?: SubMenuItem[];
 }
 
-const MENU_ITEMS: MenuItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', permissionId: 'dashboard' },
-  {
-    label: 'Despesas',
-    icon: Receipt,
-    permissionId: 'despesas',
-    subItems: [
-      { label: 'Despesa Fixa', href: '/despesa-fixa', permissionId: 'despesa-fixa' },
-      { label: 'Despesa Extra', href: '/despesa-extra', permissionId: 'despesa-extra' },
-      {
-        label: 'Despesa Funcionario',
-        href: '/despesa-funcionario',
-        permissionId: 'despesa-funcionario',
-      },
-      { label: 'Despesa Imposto', href: '/despesa-imposto', permissionId: 'despesa-imposto' },
-      { label: 'Despesa Veiculo', href: '/despesa-veiculo', permissionId: 'despesa-veiculo' },
-      { label: 'Despesa Banco', href: '/despesa-banco', permissionId: 'despesa-banco' },
-    ],
-  },
-  { label: 'Socios', icon: UsersRound, href: '/socios', permissionId: 'socios' },
-  {
-    label: 'Financeiro',
-    icon: DollarSign,
-    permissionId: 'financeiro',
-    subItems: [
-      { label: 'Caixa', href: '/financeiro/caixa', permissionId: 'financeiro-caixa' },
+/** Mapa nome do icone (string da API) -> componente Lucide. */
+const ICON_BY_NAME: Record<string, React.ElementType> = {
+  LayoutDashboard,
+  Receipt,
+  Calendar,
+  TrendingUp,
+  PiggyBank,
+  DollarSign,
+  UserCog,
+  UsersRound,
+  BarChart3,
+  Settings,
+  Truck,
+  Store,
+  FileText,
+  Bell,
+  CreditCard,
+  ArrowUp,
+  ArrowDown,
+  Building,
+  Plus,
+};
 
-      { label: 'Vendas', href: '/financeiro/vendas', permissionId: 'financeiro-vendas' },
-      {
-        label: 'Controle Deposito',
-        href: '/financeiro/controle-deposito',
-        permissionId: 'financeiro-controle-deposito',
-      },
-      {
-        label: 'Venda Cartoes',
-        href: '/financeiro/venda-cartoes',
-        permissionId: 'financeiro-venda-cartoes',
-      },
+function resolveIcon(iconName: string): React.ElementType {
+  return ICON_BY_NAME[iconName] ?? FileText;
+}
 
-      {
-        label: 'Pago em Dinheiro',
-        href: '/financeiro/pago-dinheiro',
-        permissionId: 'financeiro-pago-dinheiro',
-      },
-    ],
-  },
-  {
-    label: 'Controle Cartoes',
-    href: '/financeiro/controle-cartoes',
-    permissionId: 'financeiro-controle-cartoes',
-    icon: CreditCard,
-    subItems: [
-      {
-        label: 'Taxas e prazos',
-        href: '/financeiro/controle-cartoes/taxas-prazos',
-        permissionId: 'financeiro-controle-cartoes',
-      },
-      {
-        label: 'A receber',
-        href: '/financeiro/outras-funcoes/a-receber',
-        permissionId: 'financeiro-a-receber',
-      },
-      {
-        label: 'Venda e perda',
-        href: '/financeiro/outras-funcoes/venda-perda',
-        permissionId: 'financeiro-venda-perda',
-      },
-    ],
-  },
-  {
-    label: 'Entrada',
-    href: '/financeiro/entrada',
-    permissionId: 'financeiro-entrada',
-    icon: ArrowUp,
-  },
-  { label: 'Saida', href: '/financeiro/saida', permissionId: 'financeiro-saida', icon: ArrowDown },
-  {
-    label: 'Agenda',
-    href: '/financeiro/agenda',
-    permissionId: 'financeiro-agenda',
-    icon: Calendar,
-  },
-  {
-    label: 'Recursos Humanos',
-    icon: UserCog,
-    href: '/recursos-humanos',
-    permissionId: 'recursos-humanos',
-  },
-  {
-    label: 'Ativo Imobilizado',
-    href: '/financeiro/ativo-imobilizado',
-    permissionId: 'financeiro-ativo-imobilizado',
-    icon: Building,
-  },
+/** Palavras de ligacao (2+ letras) que ficam em minusculo no titulo. */
+const TITLE_CASE_SKIP = new Set([
+  'de', 'da', 'do', 'das', 'dos', 'e', 'a', 'o', 'em', 'no', 'na', 'nos', 'nas',
+  'ao', 'aos', 'à', 'às', 'um', 'uma', 'para', 'por', 'com', 'que', 'se', 'ou', 'mas',
+]);
 
-  { label: 'Parcelamento', icon: Calendar, href: '/parcelamento', permissionId: 'parcelamento' },
-  { label: 'Renda Extra', icon: TrendingUp, href: '/renda-extra', permissionId: 'renda-extra' },
-  { label: 'Investimento', icon: PiggyBank, href: '/investimento', permissionId: 'investimento' },
-
-  { label: 'Fornecedores', icon: Truck, href: '/fornecedores', permissionId: 'fornecedores' },
-  { label: 'Lojas', icon: Store, href: '/lojas', permissionId: 'lojas' },
-
-  {
-    label: 'Balanco Geral',
-    icon: BarChart3,
-    href: '/balanco-geral',
-    permissionId: 'balanco-geral',
-  },
-  {
-    label: 'Outras Funções',
-    icon: Plus,
-    href: '/outras-funcoes',
-    permissionId: 'outras-funcoes',
-    subItems: [
-      {
-        label: 'Calculadora de Margem',
-        href: '/financeiro/calculadora-margem',
-        permissionId: 'financeiro-calculadora-margem',
-      },
-      {
-        label: 'Pedido de Venda',
-        href: '/financeiro/pedido-venda',
-        permissionId: 'financeiro-pedido-venda',
-      },
-    ],
-  },
-  { label: 'Relatorios', icon: FileText, href: '/relatorios', permissionId: 'relatorios' },
-  { label: 'Lembretes', icon: Bell, href: '/lembretes', permissionId: 'lembretes' },
-  { label: 'Configuracoes', icon: Settings, href: '/configuracoes', permissionId: 'configuracoes' },
-];
-
-const DESPESA_FIXED_IDS = [
-  'despesa-fixa',
-  'despesa-extra',
-  'despesa-funcionario',
-  'despesa-imposto',
-  'despesa-veiculo',
-  'despesa-banco',
-] as const;
-
-function slugToTitle(slug: string): string {
-  return slug
-    .split('-')
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase())
+/**
+ * Formata label para exibicao: acentos preservados, titulo com iniciais maiusculas.
+ * Palavras de 1 letra e de ligacao (de, da, e, etc.) ficam em minusculo.
+ */
+function formatSidebarLabel(text: string): string {
+  if (!text || !text.trim()) return text;
+  return text
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      const lower = word.toLowerCase();
+      if (word.length === 1) return lower;
+      if (TITLE_CASE_SKIP.has(lower)) return lower;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
     .join(' ');
 }
 
-function buildDespesasSubItems(permissoes: string[]): SubMenuItem[] {
-  const fixed: SubMenuItem[] = [
-    { label: 'Despesa Fixa', href: '/despesa-fixa', permissionId: 'despesa-fixa' },
-    { label: 'Despesa Extra', href: '/despesa-extra', permissionId: 'despesa-extra' },
-    { label: 'Despesa Funcionario', href: '/despesa-funcionario', permissionId: 'despesa-funcionario' },
-    { label: 'Despesa Imposto', href: '/despesa-imposto', permissionId: 'despesa-imposto' },
-    { label: 'Despesa Veiculo', href: '/despesa-veiculo', permissionId: 'despesa-veiculo' },
-    { label: 'Despesa Banco', href: '/despesa-banco', permissionId: 'despesa-banco' },
-  ];
-  const custom = permissoes
-    .filter((p) => p.startsWith('despesa-') && !DESPESA_FIXED_IDS.includes(p as (typeof DESPESA_FIXED_IDS)[number]))
-    .map((permissionId) => ({
-      label: slugToTitle(permissionId),
-      href: `/despesa/${permissionId}`,
-      permissionId,
-    }));
-  return [...fixed, ...custom];
-}
-
-function hasPermission(permissoes: string[], permissionId: string): boolean {
-  if (!permissoes || permissoes.length === 0) return true;
-  if (permissoes.includes('*')) return true;
-  return permissoes.includes(permissionId);
+/** Converte menu da API (icon como string) em itens com icon como componente. */
+function mapMenuFromApi(menu: MenuItemFromApi[]): MenuItem[] {
+  return menu.map((item) => ({
+    label: formatSidebarLabel(item.label ?? ''),
+    icon: resolveIcon(item.icon),
+    href: item.href,
+    permissionId: item.permissionId,
+    subItems: item.subItems?.map((sub) => ({
+      ...sub,
+      label: formatSidebarLabel(sub.label ?? ''),
+    })),
+  }));
 }
 
 function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: boolean }) {
@@ -225,7 +120,9 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
 
   const isOpen = openSubmenus.includes(item.label);
 
-  const isSubItemActive = item.subItems?.some(sub => location.pathname === sub.href);
+  const isSubItemActive =
+    item.subItems?.some(sub => location.pathname === sub.href) ||
+    (!!item.href && location.pathname === item.href);
 
   const prevPathnameRef = useRef(location.pathname);
 
@@ -239,36 +136,75 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
   }, [location.pathname, isSubItemActive, isOpen, item.label, setSubmenuOpen]);
 
   if (item.subItems && item.subItems.length > 0) {
+    const parentHref = item.href;
+    const rowClassName = cn(
+      'flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+      isSubItemActive
+        ? 'bg-emerald-100 text-emerald-800'
+        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+    );
     return (
       <li className="group relative">
-        <button
-          type="button"
-          onClick={() => isExpanded && toggleSubmenu(item.label)}
-          title={!isExpanded ? item.label : undefined}
-          className={cn(
-            'flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
-            isSubItemActive
-              ? 'bg-emerald-50 text-emerald-700'
-              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+        <div className="flex w-full items-center gap-0">
+          {parentHref ? (
+            <>
+              <NavLink
+                to={parentHref}
+                onClick={() => close()}
+                className={({ isActive }) =>
+                  cn(
+                    'flex flex-1 min-w-0 items-center rounded-lg px-3 py-2.5 text-left transition-opacity duration-150',
+                    isActive || isSubItemActive
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                    isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
+                  )
+                }
+                title={!isExpanded ? item.label : undefined}
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                <span className="ml-3 truncate">{item.label}</span>
+              </NavLink>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); isExpanded && toggleSubmenu(item.label); }}
+                aria-label={isOpen ? 'Fechar submenu' : 'Abrir submenu'}
+                className={cn(
+                  'flex shrink-0 items-center justify-center rounded-lg p-2 transition-all duration-150',
+                  isSubItemActive ? 'text-emerald-800' : 'text-slate-600 hover:bg-slate-100',
+                  isOpen && 'rotate-180',
+                  isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
+                )}
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => isExpanded && toggleSubmenu(item.label)}
+              title={!isExpanded ? item.label : undefined}
+              className={rowClassName}
+            >
+              <item.icon className="h-5 w-5 shrink-0" />
+              <span
+                className={cn(
+                  'ml-3 flex-1 truncate text-left transition-opacity duration-150',
+                  isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
+                )}
+              >
+                {item.label}
+              </span>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 shrink-0 transition-all duration-150',
+                  isOpen && 'rotate-180',
+                  isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
+                )}
+              />
+            </button>
           )}
-        >
-          <item.icon className="h-5 w-5 shrink-0" />
-          <span
-            className={cn(
-              'ml-3 flex-1 truncate text-left transition-opacity duration-150',
-              isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
-            )}
-          >
-            {item.label}
-          </span>
-          <ChevronDown
-            className={cn(
-              'h-4 w-4 shrink-0 transition-all duration-150',
-              isOpen && 'rotate-180',
-              isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
-            )}
-          />
-        </button>
+        </div>
 
         <div
           className={cn(
@@ -286,7 +222,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
                     cn(
                       'block rounded-lg px-3 py-1.5 text-sm transition-colors',
                       isActive
-                        ? 'bg-emerald-50 font-medium text-emerald-700'
+                        ? 'bg-emerald-100 font-medium text-emerald-800'
                         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
                     )
                   }
@@ -313,7 +249,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
                     cn(
                       'block px-3 py-1.5 text-sm transition-colors',
                       isActive
-                        ? 'bg-emerald-50 font-medium text-emerald-700'
+                        ? 'bg-emerald-100 font-medium text-emerald-800'
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
                     )
                   }
@@ -338,7 +274,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
           cn(
             'flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
             isActive
-              ? 'bg-emerald-50 text-emerald-700'
+              ? 'bg-emerald-100 text-emerald-800'
               : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
           )
         }
@@ -371,30 +307,17 @@ export function Sidebar() {
   const togglePin = useSidebarStore(s => s.togglePin);
   const [isHovered, setIsHovered] = useState(false);
   const location = useLocation();
-  const permissoes = useAuthStore(s => s.user?.permissoes ?? []);
+  const menuFromApi = useAuthStore(s => s.menu);
   const currentTenant = useTenantStore(s => s.currentTenant);
 
   const menuItems = useMemo(() => {
-    const withPermissions = MENU_ITEMS.map(item => {
-      if (item.permissionId === 'despesas') {
-        const subItems = buildDespesasSubItems(permissoes);
-        const allowedSub = subItems.filter(sub => hasPermission(permissoes, sub.permissionId));
-        if (allowedSub.length === 0) return null;
-        return { ...item, subItems: allowedSub };
-      }
-      if (item.subItems) {
-        const allowedSub = item.subItems.filter(sub => hasPermission(permissoes, sub.permissionId));
-        if (allowedSub.length === 0) return null;
-        return { ...item, subItems: allowedSub };
-      }
-      return hasPermission(permissoes, item.permissionId) ? item : null;
-    }).filter((item): item is MenuItem => item !== null);
-
+    if (!menuFromApi || menuFromApi.length === 0) return [];
+    const items = mapMenuFromApi(menuFromApi);
     if (!currentTenant?.isMultiloja) {
-      return withPermissions.filter(item => item.permissionId !== 'lojas');
+      return items.filter(item => item.permissionId !== 'lojas');
     }
-    return withPermissions;
-  }, [permissoes, currentTenant?.isMultiloja]);
+    return items;
+  }, [menuFromApi, currentTenant?.isMultiloja]);
 
   // Fechar sidebar no mobile ao trocar de rota (evita ficar fixa/aberta)
   useEffect(() => {
@@ -480,7 +403,7 @@ export function Sidebar() {
         <nav className="flex-1 overflow-x-hidden overflow-y-auto p-2">
           <ul className="space-y-1">
             {menuItems.map(item => (
-              <MenuItemComponent key={item.label} item={item} isExpanded={isExpanded} />
+              <MenuItemComponent key={item.permissionId} item={item} isExpanded={isExpanded} />
             ))}
           </ul>
         </nav>
@@ -493,7 +416,7 @@ export function Sidebar() {
               isExpanded ? 'opacity-100' : 'w-0 overflow-hidden opacity-0',
             )}
           >
-            Versao 1.0.0 (MVP)
+            Versão 1.0.0 (MVP)
           </p>
         </div>
       </aside>

@@ -4,12 +4,15 @@ import type { TabelaConfig, ColunaConfig, ConfiguracaoState } from '@/types/conf
 import { TABELAS_CONFIGURACOES } from '@/types/configuracao';
 import { api } from '@/lib/api';
 
-export const useConfiguracaoStore = create<ConfiguracaoState>()(
+export const useConfiguracaoStore = create<ConfiguracaoState & { _isFetchingTabelas?: boolean }>()(
   persist(
     (set, get) => ({
       tabelas: TABELAS_CONFIGURACOES,
+      _isFetchingTabelas: false,
 
       fetchConfiguracoes: async () => {
+        if (get()._isFetchingTabelas) return;
+        set({ _isFetchingTabelas: true });
         try {
           const res = await api.get<TabelaConfig[]>('configuracoes/tabelas');
           const list = Array.isArray(res.data) ? res.data : [];
@@ -25,6 +28,8 @@ export const useConfiguracaoStore = create<ConfiguracaoState>()(
           set({ tabelas: merged });
         } catch {
           set({ tabelas: TABELAS_CONFIGURACOES });
+        } finally {
+          set({ _isFetchingTabelas: false });
         }
       },
 
@@ -154,6 +159,7 @@ export const useConfiguracaoStore = create<ConfiguracaoState>()(
     }),
     {
       name: 'configuracao-storage',
+      partialize: (state) => ({ tabelas: state.tabelas }),
     }
   )
 );

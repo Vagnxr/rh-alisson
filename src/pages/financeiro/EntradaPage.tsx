@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Loader2, Plus, Pencil, Trash2, Settings2 } from 'lucide-react';
+import { ArrowUpDown, Loader2, Plus, Settings2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import {
@@ -19,21 +19,13 @@ import {
   DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import { onlyNumbers, isValidCNPJ, maskCNPJ } from '@/lib/masks';
 import type { EntradaRow, EntradaValorItem } from '@/types/financeiro';
+import type { CreateFornecedorDto } from '@/types/fornecedor';
 import { useFornecedorStore } from '@/stores/fornecedorStore';
+import { FornecedorForm } from '@/components/fornecedor/FornecedorForm';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { cn } from '@/lib/cn';
 import { formatDateStringToBR } from '@/lib/date';
@@ -65,7 +57,7 @@ const CATEGORIAS_INICIAIS = [
 
 const MODELOS_NOTA_INICIAIS = ['NF-e', 'NFC-e', 'NFS-e', 'ENT SN', 'BONIFICAÇÃO'];
 
-const TIPOS_ENTRADA = ['Compra', 'Devolucao', 'Outros'];
+const TIPOS_ENTRADA = ['Compra', 'Outros'];
 
 /** Formas de pagamento padrao (sem Bradesco e Santander). */
 /** Forma de pagamento com flag comunica Agenda (Boleto sim; Dinheiro/PIX nao). */
@@ -98,7 +90,9 @@ export function EntradaPage() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<EntradaRow | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [fornecedorNome, setFornecedorNome] = useState<string | null>(null);
+  const [fornecedorError, setFornecedorError] = useState<string | null>(null);
+  const [cadastroFornecedorOpen, setCadastroFornecedorOpen] = useState(false);
 
   const [modelosNota, setModelosNota] = useState<string[]>(() => [...MODELOS_NOTA_INICIAIS]);
   const [categorias, setCategorias] = useState<{ id: string; nome: string }[]>(() => [...CATEGORIAS_INICIAIS]);
@@ -126,7 +120,22 @@ export function EntradaPage() {
   }, [modelosNota, formasPagamento]);
 
   const [formData, setFormData] = useState(defaultForm());
-  const { fornecedores, fetchFornecedores } = useFornecedorStore();
+  const { fornecedores, fetchFornecedores, addFornecedor } = useFornecedorStore();
+
+  const resolveFornecedorByCnpj = useCallback(() => {
+    const raw = formData.fornecedor.trim();
+    const digits = onlyNumbers(raw);
+    setFornecedorNome(null);
+    setFornecedorError(null);
+    if (digits.length !== 14) return;
+    const found = fornecedores.find((f) => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
+    if (found && found.tipo === 'cnpj') {
+      setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');
+    } else if (!found) {
+      setFornecedorError('Fornecedor não cadastrado. Cadastre em Fornecedores ou use o botão abaixo.');
+    }
+  }, [formData.fornecedor, fornecedores]);
+
 
   const totalValores = useMemo(() => {
     return formData.valores.reduce((acc, v) => acc + parseNum(v.valor), 0);
@@ -155,6 +164,27 @@ export function EntradaPage() {
   useEffect(() => {
     if (isDialogOpen) fetchFornecedores().catch(() => {});
   }, [isDialogOpen, fetchFornecedores]);
+
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setFornecedorNome(null);
+      setFornecedorError(null);
+    }
+  }, [isDialogOpen]);
+
+  useEffect(() => {
+    if (!isDialogOpen || !editingItem) return;
+    const digits = onlyNumbers(editingItem.fornecedor || '');
+    if (digits.length !== 14) return;
+    const found = fornecedores.find((f) => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
+    if (found && found.tipo === 'cnpj') {
+      setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');
+      setFornecedorError(null);
+    } else if (!found) {
+      setFornecedorNome(null);
+      setFornecedorError('Fornecedor não cadastrado. Cadastre em Fornecedores ou use o botão abaixo.');
+    }
+  }, [isDialogOpen, editingItem, fornecedores]);
 
 
   const handleOpenDialog = (item?: EntradaRow) => {
@@ -319,18 +349,6 @@ export function EntradaPage() {
     }
   };
 
-  const handleDelete = () => {
-    if (!deleteId) return;
-    api
-      .delete(`financeiro/entrada/${deleteId}`)
-      .then(() => {
-        setItems((prev) => prev.filter((r) => r.id !== deleteId));
-        setDeleteId(null);
-        toast.success('Registro excluido.');
-      })
-      .catch((err) => toast.error(err?.message ?? 'Erro ao excluir'));
-  };
-
   const getRowTotal = (row: EntradaRow): number => {
     if (row.total != null) return row.total;
     if (row.valores?.length) return row.valores.reduce((a, v) => a + v.valor, 0);
@@ -392,21 +410,6 @@ export function EntradaPage() {
         cell: ({ row }) =>
           row.original.valorPago != null ? formatCurrency(row.original.valorPago) : '-',
       },
-      {
-        id: 'actions',
-        header: () => <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Acoes</span>,
-        cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1">
-            <button type="button" className="inline-flex items-center gap-1 rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Editar lancamento" onClick={() => handleOpenDialog(row.original)}>
-              <Pencil className="h-4 w-4" />
-              <span className="text-xs font-medium text-slate-600">Editar</span>
-            </button>
-            <button type="button" className="inline-flex items-center gap-1 rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Excluir" onClick={() => setDeleteId(row.original.id)}>
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ),
-      },
     ],
     []
   );
@@ -422,67 +425,73 @@ export function EntradaPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Entrada</h1>
           <p className="mt-1 text-sm text-slate-500">
             Data, fornecedor, modelo da nota, categoria, valores e forma de pagamento.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
-          <button
-            type="button"
-            onClick={() => setConfigDialog('modelo')}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            <Settings2 className="h-4 w-4" />
-            Modelos nota
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfigDialog('categoria')}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            <Settings2 className="h-4 w-4" />
-            Categorias
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfigDialog('forma')}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            <Settings2 className="h-4 w-4" />
-            Formas pag.
-          </button>
-          <ExportButtons
-            data={items.map((r) => ({
-              data: formatDateStringToBR(r.data),
-              fornecedor: r.fornecedor,
-              modeloNota: r.modeloNota ?? '-',
-              formaPagamento: r.formaPagamento ?? '-',
-              total: formatCurrency(getRowTotal(r)),
-              valorPago: r.valorPago != null ? formatCurrency(r.valorPago) : '-',
-            }))}
-            columns={[
-              { key: 'data', label: 'Data' },
-              { key: 'fornecedor', label: 'Fornecedor' },
-              { key: 'modeloNota', label: 'Modelo nota' },
-              { key: 'formaPagamento', label: 'Forma pag.' },
-              { key: 'total', label: 'Total' },
-              { key: 'valorPago', label: 'Valor pago' },
-            ]}
-            filename="entrada"
-            title="Entrada"
-          />
-          <button
-            type="button"
-            onClick={() => handleOpenDialog()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-700"
-          >
-            <Plus className="h-4 w-4" />
-            Novo
-          </button>
+          <span className="hidden h-6 w-px bg-slate-200 sm:block" aria-hidden />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setConfigDialog('modelo')}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:px-4 sm:py-2.5"
+            >
+              <Settings2 className="h-4 w-4 shrink-0" />
+              <span className="whitespace-nowrap">Modelos nota</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfigDialog('categoria')}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:px-4 sm:py-2.5"
+            >
+              <Settings2 className="h-4 w-4 shrink-0" />
+              <span className="whitespace-nowrap">Categorias</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfigDialog('forma')}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:px-4 sm:py-2.5"
+            >
+              <Settings2 className="h-4 w-4 shrink-0" />
+              <span className="whitespace-nowrap">Formas pag.</span>
+            </button>
+          </div>
+          <span className="hidden h-6 w-px bg-slate-200 sm:block" aria-hidden />
+          <div className="flex items-center gap-2">
+            <ExportButtons
+              data={items.map((r) => ({
+                data: formatDateStringToBR(r.data),
+                fornecedor: r.fornecedor,
+                modeloNota: r.modeloNota ?? '-',
+                formaPagamento: r.formaPagamento ?? '-',
+                total: formatCurrency(getRowTotal(r)),
+                valorPago: r.valorPago != null ? formatCurrency(r.valorPago) : '-',
+              }))}
+              columns={[
+                { key: 'data', label: 'Data' },
+                { key: 'fornecedor', label: 'Fornecedor' },
+                { key: 'modeloNota', label: 'Modelo nota' },
+                { key: 'formaPagamento', label: 'Forma pag.' },
+                { key: 'total', label: 'Total' },
+                { key: 'valorPago', label: 'Valor pago' },
+              ]}
+              filename="entrada"
+              title="Entrada"
+            />
+            <button
+              type="button"
+              onClick={() => handleOpenDialog()}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 sm:px-4 sm:py-2.5"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="whitespace-nowrap">Novo</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -510,7 +519,7 @@ export function EntradaPage() {
                   <tr>
                     <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-slate-500">
                       <p>Nenhum registro no periodo.</p>
-                      <p className="mt-1 text-xs text-slate-400">Use <strong>+ Novo</strong> para adicionar (o fornecedor deve estar cadastrado em Fornecedores). Quando houver registros, use o botao <strong>Editar</strong> na coluna Acoes para alterar o lancamento.</p>
+                      <p className="mt-1 text-xs text-slate-400">Use <strong>+ Novo</strong> para adicionar (o fornecedor deve estar cadastrado em Fornecedores).</p>
                     </td>
                   </tr>
                 ) : (
@@ -531,7 +540,7 @@ export function EntradaPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-x-hidden">
+        <DialogContent className="max-h-[90vh] flex flex-col overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Editar Entrada' : 'Nova Entrada'}</DialogTitle>
             <DialogDescription>
@@ -555,15 +564,43 @@ export function EntradaPage() {
                     </select>
                   </div>
                   <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Tipo</label>
+                    <select value={formData.tipoEntradaId} onChange={(e) => setFormData({ ...formData, tipoEntradaId: e.target.value })} className={inputClass}>
+                      {TIPOS_ENTRADA.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">CNPJ do fornecedor</label>
                     <input
                       type="text"
                       placeholder="00.000.000/0000-00"
                       maxLength={18}
                       value={formData.fornecedor}
-                      onChange={(e) => setFormData({ ...formData, fornecedor: maskCNPJ(e.target.value) })}
-                      className={inputClass}
+                      onChange={(e) => {
+                        setFormData({ ...formData, fornecedor: maskCNPJ(e.target.value) });
+                        setFornecedorNome(null);
+                        setFornecedorError(null);
+                      }}
+                      onBlur={() => resolveFornecedorByCnpj()}
+                      className={cn(inputClass, fornecedorError && 'border-red-500')}
                     />
+                    {fornecedorNome && (
+                      <p className="text-sm text-emerald-700 font-medium">{fornecedorNome}</p>
+                    )}
+                    {fornecedorError && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm text-red-600">{fornecedorError}</p>
+                        <button
+                          type="button"
+                          onClick={() => setCadastroFornecedorOpen(true)}
+                          className="text-sm font-medium text-emerald-600 hover:underline"
+                        >
+                          Cadastrar fornecedor
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">Data entrada</label>
@@ -582,14 +619,6 @@ export function EntradaPage() {
                       onChange={(e) => setFormData({ ...formData, numeroNota: e.target.value })}
                       className={inputClass}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Tipo</label>
-                    <select value={formData.tipoEntradaId} onChange={(e) => setFormData({ ...formData, tipoEntradaId: e.target.value })} className={inputClass}>
-                      {TIPOS_ENTRADA.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -704,7 +733,7 @@ export function EntradaPage() {
 
       {/* Dialog config Modelos de nota */}
       <Dialog open={configDialog === 'modelo'} onOpenChange={(o) => !o && setConfigDialog(null)}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Modelos de nota</DialogTitle>
             <DialogDescription>Adicione ou remova modelos (NF-e, NFC-e, etc.).</DialogDescription>
@@ -760,7 +789,7 @@ export function EntradaPage() {
 
       {/* Dialog config Categorias */}
       <Dialog open={configDialog === 'categoria'} onOpenChange={(o) => !o && setConfigDialog(null)}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Categorias</DialogTitle>
             <DialogDescription>Adicione ou remova categorias (Industrializacao, Embalagem, etc.).</DialogDescription>
@@ -817,7 +846,7 @@ export function EntradaPage() {
 
       {/* Dialog config Formas de pagamento */}
       <Dialog open={configDialog === 'forma'} onOpenChange={(o) => !o && setConfigDialog(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Formas de pagamento</DialogTitle>
             <DialogDescription>Adicione ou remova formas. Ao criar, informe se comunica Agenda (ex.: Boleto sim; Dinheiro/PIX nao).</DialogDescription>
@@ -883,18 +912,26 @@ export function EntradaPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusao</AlertDialogTitle>
-            <AlertDialogDescription>Tem certeza que deseja excluir este registro?</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Modal cadastrar fornecedor (mantém o formulário de Entrada aberto atrás) */}
+      <FornecedorForm
+        open={cadastroFornecedorOpen}
+        onOpenChange={setCadastroFornecedorOpen}
+        initialCnpj={formData.fornecedor}
+        onSubmit={async (data) => {
+          await addFornecedor(data as CreateFornecedorDto);
+          toast.success('Fornecedor cadastrado.');
+          setCadastroFornecedorOpen(false);
+          await fetchFornecedores();
+          const digits = onlyNumbers(formData.fornecedor);
+          const list = useFornecedorStore.getState().fornecedores;
+          const found = list.find((f) => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
+          if (found && found.tipo === 'cnpj') {
+            setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');
+            setFornecedorError(null);
+          }
+        }}
+        isLoading={false}
+      />
     </div>
   );
 }

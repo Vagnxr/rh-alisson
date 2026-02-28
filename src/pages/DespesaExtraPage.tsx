@@ -8,6 +8,7 @@ export function DespesaExtraPage() {
   const isLoading = useDespesaExtraStore((s) => s.isLoading);
   const fetchItems = useDespesaExtraStore((s) => s.fetchItems);
   const addItem = useDespesaExtraStore((s) => s.addItem);
+  const addItemComParcelas = useDespesaExtraStore((s) => s.addItemComParcelas);
   const updateItem = useDespesaExtraStore((s) => s.updateItem);
   const deleteItem = useDespesaExtraStore((s) => s.deleteItem);
 
@@ -19,8 +20,10 @@ export function DespesaExtraPage() {
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}
+      addItemComParcelas={addItemComParcelas}
       updateItem={updateItem}
       deleteItem={deleteItem}
+      useRecorrenciaDataValorList
     />
   );
 }

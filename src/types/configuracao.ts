@@ -26,6 +26,8 @@ export interface TabelaConfig {
   nome: string;
   descricao: string;
   colunas: ColunaConfig[];
+  /** UUID da categoria de despesa (retornado por GET /configuracoes/tabelas). Usado no DELETE de pagina customizada. */
+  categoriaId?: string;
 }
 
 /** Id da tabela Caixa (permite adicionar/remover colunas). */

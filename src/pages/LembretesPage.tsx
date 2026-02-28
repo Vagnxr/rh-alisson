@@ -397,7 +397,7 @@ export function LembretesPage() {
 
       {/* Dialog Adicionar/Editar */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingLembrete ? 'Editar Lembrete' : 'Novo Lembrete'}</DialogTitle>
             <DialogDescription>

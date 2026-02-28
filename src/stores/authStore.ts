@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, LoginCredentials, RegisterData } from '@/types/auth';
+import type {
+  User,
+  LoginCredentials,
+  RegisterData,
+  AcessosResponse,
+  TenantAuth,
+  MenuItemFromApi,
+} from '@/types/auth';
+import type { Tenant } from '@/types/tenant';
 import { useTenantStore } from './tenantStore';
 import { api } from '@/lib/api';
 
@@ -10,12 +18,48 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  /** False ate o primeiro fetchAcessos concluir (nao persistido; no refresh mostra loading ate bater no endpoint). */
+  acessosFetchedAtMount: boolean;
+  /** Evita chamadas duplicadas (ex.: Strict Mode). */
+  _isFetchingAcessos: boolean;
+  /** Menu retornado por GET /auth/acessos (sidebar). Nao persistido. */
+  menu: MenuItemFromApi[] | null;
+  /** Mapa path -> permissionId derivado do menu (para protecao de rotas). Nao persistido. */
+  pathToPermissionId: Record<string, string> | null;
   error: string | null;
 
   login: (credentials: LoginCredentials) => Promise<boolean>;
   register: (data: RegisterData) => Promise<boolean>;
+  /** Busca permissoes e tenant (sidebar). Usar apos login e apos criar despesa customizada. */
+  fetchAcessos: () => Promise<void>;
   logout: () => void;
   clearError: () => void;
+}
+
+function buildPathToPermissionIdFromMenu(menu: MenuItemFromApi[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const item of menu) {
+    if (item.href) map[item.href] = item.permissionId;
+    for (const sub of item.subItems ?? []) {
+      map[sub.href] = sub.permissionId;
+    }
+  }
+  return map;
+}
+
+function mapTenantAuthToTenant(t: TenantAuth | null): Tenant | null {
+  if (!t) return null;
+  return {
+    id: t.id,
+    name: t.name,
+    nomeFantasia: t.nomeFantasia ?? '',
+    cnpj: t.cnpj ?? '',
+    logo: t.urlLogo ?? undefined,
+    isActive: t.isActive ?? true,
+    isMultiloja: t.isMultiloja ?? false,
+    paginasPermitidas: t.paginasPermitidas ?? undefined,
+    createdAt: t.createdAt ?? new Date().toISOString(),
+  };
 }
 
 function mapUser(u: {
@@ -46,6 +90,10 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
+      acessosFetchedAtMount: false,
+      _isFetchingAcessos: false,
+      menu: null,
+      pathToPermissionId: null,
       error: null,
 
       login: async (credentials: LoginCredentials) => {
@@ -76,21 +124,9 @@ export const useAuthStore = create<AuthState>()(
             email: string;
             tenantId?: string | null;
             lojas?: string[];
-            permissoes?: string[];
             isSuperAdmin?: boolean;
-            tenant?: {
-              id: string;
-              name: string;
-              nomeFantasia?: string | null;
-              cnpj?: string | null;
-              isActive?: boolean;
-              isMultiloja?: boolean;
-              urlLogo?: string | null;
-              paginasPermitidas?: string[] | null;
-              createdAt?: string;
-            };
           };
-          const user = mapUser(userPayload);
+          const user = mapUser({ ...userPayload, permissoes: [] });
 
           set({
             user,
@@ -101,28 +137,7 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
 
-          const tenantStore = useTenantStore.getState();
-          if (user.tenantId) {
-            const tenantFromApi = userPayload.tenant;
-            if (tenantFromApi && tenantFromApi.id === user.tenantId) {
-              tenantStore.setCurrentTenant({
-                id: tenantFromApi.id,
-                name: tenantFromApi.name,
-                nomeFantasia: tenantFromApi.nomeFantasia ?? '',
-                cnpj: tenantFromApi.cnpj ?? '',
-                logo: tenantFromApi.urlLogo ?? undefined,
-                isActive: tenantFromApi.isActive ?? true,
-                isMultiloja: tenantFromApi.isMultiloja ?? false,
-                paginasPermitidas: tenantFromApi.paginasPermitidas ?? undefined,
-                createdAt: tenantFromApi.createdAt ?? new Date().toISOString(),
-              });
-            } else {
-              await tenantStore.fetchAvailableTenants();
-              const tenants = useTenantStore.getState().availableTenants;
-              const tenant = tenants.find((t) => t.id === user.tenantId!);
-              tenantStore.setCurrentTenant(tenant ?? null);
-            }
-          }
+          await get().fetchAcessos();
 
           return true;
         } catch (err) {
@@ -162,21 +177,9 @@ export const useAuthStore = create<AuthState>()(
             email: string;
             tenantId?: string | null;
             lojas?: string[];
-            permissoes?: string[];
             isSuperAdmin?: boolean;
-            tenant?: {
-              id: string;
-              name: string;
-              nomeFantasia?: string | null;
-              cnpj?: string | null;
-              isActive?: boolean;
-              isMultiloja?: boolean;
-              urlLogo?: string | null;
-              paginasPermitidas?: string[] | null;
-              createdAt?: string;
-            };
           };
-          const user = mapUser(userPayload);
+          const user = mapUser({ ...userPayload, permissoes: [] });
 
           set({
             user,
@@ -187,34 +190,38 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
 
-          if (user.tenantId) {
-            const tenantStore = useTenantStore.getState();
-            const tenantFromApi = userPayload.tenant;
-            if (tenantFromApi && tenantFromApi.id === user.tenantId) {
-              tenantStore.setCurrentTenant({
-                id: tenantFromApi.id,
-                name: tenantFromApi.name,
-                nomeFantasia: tenantFromApi.nomeFantasia ?? '',
-                cnpj: tenantFromApi.cnpj ?? '',
-                logo: tenantFromApi.urlLogo ?? undefined,
-                isActive: tenantFromApi.isActive ?? true,
-                isMultiloja: tenantFromApi.isMultiloja ?? false,
-                paginasPermitidas: tenantFromApi.paginasPermitidas ?? undefined,
-                createdAt: tenantFromApi.createdAt ?? new Date().toISOString(),
-              });
-            } else {
-              await tenantStore.fetchAvailableTenants();
-              const tenants = useTenantStore.getState().availableTenants;
-              const tenant = tenants.find((t) => t.id === user.tenantId!);
-              tenantStore.setCurrentTenant(tenant ?? null);
-            }
-          }
+          await get().fetchAcessos();
 
           return true;
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Erro ao criar conta';
           set({ error: message, isLoading: false });
           return false;
+        }
+      },
+
+      fetchAcessos: async () => {
+        const { user, isAuthenticated, _isFetchingAcessos } = get();
+        if (!isAuthenticated || !user || _isFetchingAcessos) return;
+        set({ _isFetchingAcessos: true });
+        try {
+          const res = await api.get<AcessosResponse>('auth/acessos');
+          const data = res.data ?? {};
+          const permissoes = Array.isArray(data.permissoes) ? data.permissoes : [];
+          const tenant = data.tenant ?? null;
+          const menu = Array.isArray(data.menu) ? data.menu : null;
+          const pathToPermissionId = menu ? buildPathToPermissionIdFromMenu(menu) : null;
+          set((state) => ({
+            user: state.user ? { ...state.user, permissoes } : null,
+            menu,
+            pathToPermissionId,
+          }));
+          const tenantStore = useTenantStore.getState();
+          tenantStore.setCurrentTenant(mapTenantAuthToTenant(tenant));
+        } catch {
+          // Silencioso: mantém estado atual (ex.: token inválido será tratado em outra requisição)
+        } finally {
+          set({ acessosFetchedAtMount: true, _isFetchingAcessos: false });
         }
       },
 
@@ -230,6 +237,9 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
+          acessosFetchedAtMount: false,
+          menu: null,
+          pathToPermissionId: null,
           error: null,
         });
       },

@@ -24,8 +24,10 @@ export interface ControleCartoesRow {
   valor: number;
   /** Prazo em dias (ex.: 30) */
   prazo?: number;
-  /** Taxa em percentual (ex.: 2.5) */
+  /** Taxa em percentual (ex.: 2.5). Backend pode retornar como "taxa". */
   taxaPercent?: number;
+  /** Taxa em percentual (retorno do backend; normalizar para taxaPercent no front). */
+  taxa?: number;
   /** Apenas credito: a-vista | parcelado-vista | parcelado-prazo */
   tipoCredito?: 'a-vista' | 'parcelado-vista' | 'parcelado-prazo';
   aReceber: number;
@@ -109,6 +111,12 @@ export interface AtivoImobilizadoRow {
   formaPagto?: AtivoImobilizadoFormaPagto;
   /** Periodicidade (ex.: Mensal, Anual). Backend pode usar para gerar parcelas. */
   recorrencia?: string;
+  /** Data limite da recorrencia (YYYY-MM-DD). */
+  recorrenciaFim?: string;
+  /** Indice na serie (ex.: "2/3" = segundo de tres). */
+  recorrenciaIndice?: string;
+  /** Id do grupo de recorrência (parcelas do mesmo boleto). Backend pode retornar como recorrencia_grupo_id. */
+  recorrenciaGrupoId?: string;
   /** Quando true, item aparece na Agenda e so registra saida ao marcar como pago. */
   comunicarAgenda?: boolean;
 }

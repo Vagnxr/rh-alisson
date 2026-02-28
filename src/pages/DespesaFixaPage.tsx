@@ -8,6 +8,7 @@ export function DespesaFixaPage() {
   const isLoading = useDespesaFixaStore((s) => s.isLoading);
   const fetchItems = useDespesaFixaStore((s) => s.fetchItems);
   const addItem = useDespesaFixaStore((s) => s.addItem);
+  const addItemComParcelas = useDespesaFixaStore((s) => s.addItemComParcelas);
   const updateItem = useDespesaFixaStore((s) => s.updateItem);
   const deleteItem = useDespesaFixaStore((s) => s.deleteItem);
 
@@ -19,8 +20,10 @@ export function DespesaFixaPage() {
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}
+      addItemComParcelas={addItemComParcelas}
       updateItem={updateItem}
       deleteItem={deleteItem}
+      useRecorrenciaDataValorList
     />
   );
 }

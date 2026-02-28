@@ -8,6 +8,7 @@ export function DespesaVeiculoPage() {
   const isLoading = useDespesaVeiculoStore((s) => s.isLoading);
   const fetchItems = useDespesaVeiculoStore((s) => s.fetchItems);
   const addItem = useDespesaVeiculoStore((s) => s.addItem);
+  const addItemComParcelas = useDespesaVeiculoStore((s) => s.addItemComParcelas);
   const updateItem = useDespesaVeiculoStore((s) => s.updateItem);
   const deleteItem = useDespesaVeiculoStore((s) => s.deleteItem);
 
@@ -19,8 +20,10 @@ export function DespesaVeiculoPage() {
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}
+      addItemComParcelas={addItemComParcelas}
       updateItem={updateItem}
       deleteItem={deleteItem}
+      useRecorrenciaDataValorList
     />
   );
 }

@@ -21,12 +21,12 @@ export function buildTableColumns<T>(
   ensureColumnIds?: string[],
   enforceOrder?: string[]
 ): ColumnDef<T>[] {
-  let order = apiColumns?.length
+  const hasApiColumns = Array.isArray(apiColumns) && apiColumns.length > 0;
+  let order = hasApiColumns
     ? [...apiColumns].sort((a, b) => a.order - b.order).map((c) => c.id)
     : defaultOrder;
 
-  if (enforceOrder?.length) {
-    // Sequencia canonica primeiro (colunas que existem no front), depois o resto vindo da API
+  if (!hasApiColumns && enforceOrder?.length) {
     const enforced = enforceOrder.filter((id) => columnDefsByKey[id]);
     const rest = order.filter((id) => !enforceOrder.includes(id));
     order = [...enforced, ...rest];
@@ -42,10 +42,20 @@ export function buildTableColumns<T>(
     }
   }
 
+  const apiColumnsById = hasApiColumns
+    ? new Map(apiColumns!.map((c) => [c.id, c]))
+    : null;
+
   const result: ColumnDef<T>[] = [];
   for (const id of order) {
     const def = columnDefsByKey[id];
-    if (def) result.push(def);
+    if (!def) continue;
+    const apiCol = apiColumnsById?.get(id);
+    if (apiCol?.label != null) {
+      result.push({ ...def, header: apiCol.label });
+    } else {
+      result.push(def);
+    }
   }
   if (actionsColumn) result.push(actionsColumn);
   return result;

@@ -461,7 +461,7 @@ export function ParcelamentoPage() {
 
       {/* Dialog Adicionar/Editar */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {editingItem ? 'Editar Registro' : 'Novo Registro'}
@@ -597,7 +597,7 @@ export function ParcelamentoPage() {
 
       {/* Dialog Ajustar parcelas */}
       <Dialog open={!!ajustarItem} onOpenChange={(open) => !open && setAjustarItem(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Ajustar parcelas</DialogTitle>
             <DialogDescription>

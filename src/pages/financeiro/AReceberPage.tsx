@@ -181,7 +181,7 @@ export function AReceberPage() {
       )}
 
       <Dialog open={dialogBandeiras} onOpenChange={setDialogBandeiras}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Bandeiras Voucher</DialogTitle>
             <p className="text-sm text-slate-500">Adicione ou remova linhas (bandeiras) da tabela Voucher.</p>

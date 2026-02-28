@@ -29,8 +29,14 @@ function configFromSlug(categoriaSlug: string): DespesaCategoriaConfig {
   };
 }
 
-export function DespesaCategoriaPage() {
-  const { categoria: categoriaSlug } = useParams<{ categoria: string }>();
+/** Categoria vinda do pathname (rota catch-all nao preenche useParams). */
+export interface DespesaCategoriaPageProps {
+  categoriaFromPath?: string;
+}
+
+export function DespesaCategoriaPage({ categoriaFromPath }: DespesaCategoriaPageProps = {}) {
+  const { categoria: categoriaFromParams } = useParams<{ categoria: string }>();
+  const categoriaSlug = categoriaFromPath ?? categoriaFromParams;
   const navigate = useNavigate();
   const {
     categoria,
@@ -40,9 +46,12 @@ export function DespesaCategoriaPage() {
     isLoading,
     fetchItems,
     addItem,
+    addItemComParcelas,
     updateItem,
     deleteItem,
   } = useDespesaDinamicaStore();
+
+  const usaRecorrenciaLista = categoria != null && categoria !== 'despesa-banco';
 
   const isFixed = categoriaSlug && DESPESA_FIXED_IDS.includes(categoriaSlug as (typeof DESPESA_FIXED_IDS)[number]);
 
@@ -72,8 +81,10 @@ export function DespesaCategoriaPage() {
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}
+      addItemComParcelas={usaRecorrenciaLista ? addItemComParcelas : undefined}
       updateItem={updateItem}
       deleteItem={deleteItem}
+      useRecorrenciaDataValorList={usaRecorrenciaLista}
     />
   );
 }

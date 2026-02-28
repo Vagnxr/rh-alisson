@@ -11,6 +11,8 @@ export interface DespesaTipo {
 interface DespesaTiposState {
   tiposByCategoria: Record<string, DespesaTipo[]>;
   isLoading: boolean;
+  /** Categoria em que o fetch esta em andamento (evita duplicar para a mesma categoria). */
+  _loadingCategoria: string | null;
   error: string | null;
 }
 
@@ -34,10 +36,12 @@ function normalizeTipo(item: unknown): DespesaTipo {
 export const useDespesaTiposStore = create<DespesaTiposState & DespesaTiposActions>((set, get) => ({
   tiposByCategoria: {},
   isLoading: false,
+  _loadingCategoria: null,
   error: null,
 
   fetchTipos: async (categoria: DespesaCategoria | string) => {
-    set({ isLoading: true, error: null });
+    if (get()._loadingCategoria === categoria) return get().tiposByCategoria[categoria] ?? [];
+    set({ isLoading: true, _loadingCategoria: categoria, error: null });
     try {
       const res = await api.get<DespesaTipo[] | string[]>('despesas/tipos', {
         params: { categoria },
@@ -51,12 +55,14 @@ export const useDespesaTiposStore = create<DespesaTiposState & DespesaTiposActio
       set((state) => ({
         tiposByCategoria: { ...state.tiposByCategoria, [categoria]: list },
         isLoading: false,
+        _loadingCategoria: null,
       }));
       return list;
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Erro ao carregar tipos',
         isLoading: false,
+        _loadingCategoria: null,
       });
       return [];
     }
@@ -109,5 +115,5 @@ export const useDespesaTiposStore = create<DespesaTiposState & DespesaTiposActio
   },
 
   reset: () =>
-    set({ tiposByCategoria: {}, isLoading: false, error: null }),
+    set({ tiposByCategoria: {}, isLoading: false, _loadingCategoria: null, error: null }),
 }));

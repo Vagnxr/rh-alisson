@@ -27,7 +27,7 @@ import {
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 
 const MONTH_NAMES = [
-  'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 
@@ -356,10 +356,10 @@ export function AgendaPage() {
                 <ChevronDown className={`h-5 w-5 text-slate-500 transition-transform ${openMonthYear ? 'rotate-180' : ''}`} />
               </button>
               {openMonthYear && (
-                <div className="absolute left-0 top-full z-10 mt-1 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-sm font-medium text-slate-600">Ano</span>
-                    <div className="flex items-center gap-1">
+                <div className="absolute left-0 top-full z-10 mt-1 min-w-[320px] rounded-lg border border-slate-200 bg-white p-4 shadow-lg">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap">Ano</span>
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setYear((y) => y - 1)}
@@ -377,7 +377,7 @@ export function AgendaPage() {
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className="grid grid-cols-3 gap-2 w-full">
                     {MONTH_NAMES.map((name, i) => (
                       <button
                         key={name}
@@ -386,7 +386,7 @@ export function AgendaPage() {
                           setMonth(i);
                           setOpenMonthYear(false);
                         }}
-                        className={`rounded px-2 py-1.5 text-sm ${
+                        className={`rounded px-3 py-2 text-sm whitespace-nowrap text-left min-w-0 ${
                           i === month ? 'bg-emerald-100 font-semibold text-emerald-800' : 'text-slate-700 hover:bg-slate-100'
                         }`}
                       >
@@ -453,7 +453,7 @@ export function AgendaPage() {
                 key={dateStr}
                 type="button"
                 onClick={() => (isCurrentMonth || temValor) && handleClickDia(dateStr)}
-                className={`min-h-[80px] rounded-lg border p-2 flex flex-col items-center justify-center text-center transition-colors ${
+                className={`min-h-[80px] rounded-lg border p-2 flex flex-col items-stretch text-left transition-colors ${
                   isCurrentMonth
                     ? temValor
                       ? 'border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/50 cursor-pointer'
@@ -462,7 +462,7 @@ export function AgendaPage() {
                 }`}
               >
                 <span
-                  className={`text-sm font-medium ${
+                  className={`text-sm font-medium self-start ${
                     isCurrentMonth ? 'text-slate-800' : 'text-slate-400'
                   }`}
                 >
@@ -483,12 +483,6 @@ export function AgendaPage() {
             );
           })}
         </div>
-        <div className="mt-4 pt-4 border-t border-slate-200 flex justify-end">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-right">
-            <span className="text-xs font-medium text-slate-500 block">Total do mes</span>
-            <span className="text-lg font-bold text-slate-900">{formatCurrency(totalMes)}</span>
-          </div>
-        </div>
       </div>
 
       {/* Dialog detalhe do dia */}
@@ -501,7 +495,7 @@ export function AgendaPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent>
         <DialogHeader>
           <DialogTitle>
             {diaSelecionado
@@ -572,7 +566,7 @@ export function AgendaPage() {
 
       {/* Dialog lancar direto na agenda */}
       <Dialog open={openLancarDirect} onOpenChange={setOpenLancarDirect}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Lancar na agenda</DialogTitle>
             <DialogDescription>
@@ -680,7 +674,7 @@ export function AgendaPage() {
 
       {/* Dialog editar item direto da agenda */}
       <Dialog open={!!editingDirectItem} onOpenChange={(open) => !open && setEditingDirectItem(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar item da agenda</DialogTitle>
             <DialogDescription>

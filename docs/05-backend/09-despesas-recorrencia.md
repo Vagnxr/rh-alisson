@@ -4,6 +4,19 @@ Este documento descreve o contrato e as regras de recorrência no módulo de des
 
 ---
 
+## 0. Dois modos de informar recorrência (resumo)
+
+O frontend passou a usar **dois modos** conforme a página/categoria:
+
+| Modo | Onde | Como o front envia | Backend |
+|------|------|--------------------|---------|
+| **A – Recorrência por periodicidade** | Páginas que ainda usam o formulário antigo (ex.: outras categorias de despesa) | Um único POST com `recorrencia` (mensal, bimestral, etc.) e `recorrenciaFim`. Backend gera as ocorrências. | Ver seção 2. |
+| **B – Recorrência por lista de datas** | Despesa Fixa (e, em breve, outras que usarem o novo componente) | Várias chamadas POST, **uma por parcela**, cada uma com `data`, `valor`, `tipo`, `descricao`, `comunicarAgenda`, `recorrencia: 'unica'`. Ou, se o backend oferecer, um único POST com array `parcelas` (ver seção 6). | Aceitar N POSTs iguais hoje; opcionalmente suportar POST em lote (seção 6). |
+
+As seções 1 a 5 abaixo continuam válidas para o **modo A**. A **seção 6** descreve em detalhe o **modo B** e como o backend pode alterar a lógica (ou manter a atual).
+
+---
+
 ## 1. Campos no contrato
 
 ### 1.1 Request (POST /despesas e PATCH /despesas/:id)
@@ -123,3 +136,70 @@ Tratar fim de mês (ex.: 31/01 → 28/02 ou 29/02 em ano bissexto) conforme regr
 - Tipos: `src/types/despesa.ts` (DespesaBase, DespesaInput), `src/types/recorrencia.ts` (TipoRecorrencia, RECORRENCIAS).
 - UI: checkbox “recorrente”, select de periodicidade e campo “data fim” em `DespesaPage` e `CriarDespesaPage`; valores enviados em POST/PATCH em `despesaStore` e nas páginas.
 - Cálculo de datas (apenas referência; o backend deve ter sua própria lógica): `calcularProximasOcorrencias` em `src/types/recorrencia.ts`.
+
+---
+
+## 6. Modo B – Recorrência por lista explícita de datas (novo fluxo)
+
+Usado nas páginas que têm o componente “Datas da recorrencia” (ex.: **Despesa Fixa**). O usuário marca “Recorrente” e preenche uma tabela com várias linhas: cada linha = **data** (YYYY-MM-DD) + **valor** (R$). Tipo, descrição e “Comunicar agenda” são únicos para toda a série.
+
+### 6.1 Comportamento atual do frontend (sem alteração no backend)
+
+Hoje o front faz **N chamadas POST /despesas** (uma por linha da tabela), todas com o mesmo `categoria`, `tipo`, `descricao`, `comunicarAgenda`, e cada uma com:
+
+- `data` = data daquela linha  
+- `valor` = valor daquela linha (number)  
+- `recorrencia` = **sempre `'unica'`**  
+- `recorrenciaFim` = **não enviado**
+
+Ou seja: o backend **não precisa gerar ocorrências**; ele só recebe vários POSTs independentes. Não há hoje nenhum identificador de “grupo” ou “série” entre essas despesas — elas ficam ligadas apenas por terem sido criadas no mesmo ato e compartilharem tipo/descrição.
+
+**Resumo para o backend (comportamento atual):** nenhuma mudança obrigatória. Continuar aceitando POST com `data`, `valor`, `tipo`, `descricao`, `comunicarAgenda`, `recorrencia: 'unica'`. O front chama POST uma vez por parcela.
+
+### 6.2 Opção: um único POST com várias parcelas (alteração opcional no backend)
+
+Se o backend quiser **uma única requisição** para criar toda a série (transação única, possível agrupamento, etc.), pode expor um contrato alternativo que o front pode passar a usar.
+
+**Sugestão de contrato:**
+
+- **Endpoint:** mesmo `POST /despesas` (ou, se preferir, algo como `POST /despesas/recorrencia-lote`).
+- **Body quando for “recorrência por lista”:**
+  - Incluir um array, por exemplo `parcelas`, com um objeto por ocorrência:
+    - `data` (string, YYYY-MM-DD)
+    - `valor` (number)
+  - Manter no mesmo body: `categoria`, `tipo`, `descricao`, `comunicarAgenda` (aplicados a todas as parcelas).
+
+Exemplo:
+
+```json
+{
+  "categoria": "despesa-fixa",
+  "tipo": "ALUGUEL",
+  "descricao": "Aluguel comercial",
+  "comunicarAgenda": false,
+  "parcelas": [
+    { "data": "2026-03-15", "valor": 5000 },
+    { "data": "2026-04-15", "valor": 5000 },
+    { "data": "2026-05-15", "valor": 5200 }
+  ]
+}
+```
+
+- **Comportamento esperado:** criar N registros de despesa (um por item de `parcelas`), com `recorrencia: 'unica'` em cada um. Se o backend quiser agrupar para “excluir série” ou relatórios, pode gerar e persistir um identificador de grupo (ex.: `grupoRecorrenciaId`) em todos eles; o front hoje não envia nem exige esse campo.
+- **Edição:** ao editar um item que veio dessa tabela, o front hoje envia **PATCH /despesas/:id** apenas para aquele registro (com `data`, `valor`, etc.). Se o usuário adicionou novas linhas na mesma abertura do modal, o front envia **POST** para cada linha nova (comportamento atual). Ou seja: o backend não precisa, por enquanto, de um “PATCH em lote” para a série.
+
+### 6.3 O que o frontend NÃO envia mais no modo B
+
+Nas telas que usam “Datas da recorrencia” (modo B), o front **não** envia:
+
+- `recorrencia` com valor diferente de `'unica'` (não envia mensal, bimestral, etc. nesse fluxo)
+- `recorrenciaFim`
+
+As datas e os valores são **sempre** explícitos na tabela (e, hoje, em N POSTs separados).
+
+### 6.4 Resumo para o backend
+
+| Situação | Ação do backend |
+|----------|------------------|
+| Manter como está | Nenhuma. Aceitar vários POST /despesas com `recorrencia: 'unica'` por parcela. |
+| Quiser um único POST para a série | Implementar aceitação de `parcelas` no body (ou endpoint dedicado), criar N despesas em uma transação; opcionalmente guardar `grupoRecorrenciaId` para agrupar. Avisar o front para passar a usar esse contrato no modo B. |

@@ -17,6 +17,10 @@ export interface DespesaBase {
   bancoId?: string;
   /** Despesa banco: nome do banco (retorno da API) */
   bancoNome?: string;
+  /** Categoria (quando retornada pela API) */
+  categoria?: string;
+  /** Observacao (quando retornada pela API) */
+  observacao?: string;
 }
 
 export interface DespesaInput {
@@ -27,6 +31,20 @@ export interface DespesaInput {
   comunicarAgenda?: boolean;
   recorrencia?: string;
   recorrenciaFim?: string;
+}
+
+/** Parcela para POST com array (modo B – recorrência por lista). */
+export interface ParcelaDespesaInput {
+  data: string;
+  valor: number;
+}
+
+/** Body para criar despesas em lote (POST com parcelas). data/valor vêm em cada parcela. */
+export interface DespesaComParcelasInput {
+  tipo: string;
+  descricao: string;
+  comunicarAgenda?: boolean;
+  parcelas: ParcelaDespesaInput[];
 }
 
 // Tipos padrao por categoria de despesa (conforme planilha)

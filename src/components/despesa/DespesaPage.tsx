@@ -9,17 +9,18 @@ import {
 } from '@tanstack/react-table';
 import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { DespesaBase, DespesaInput, DespesaCategoriaConfig, DespesaCategoria } from '@/types/despesa';
+import type { DespesaBase, DespesaInput, DespesaComParcelasInput, DespesaCategoriaConfig, DespesaCategoria } from '@/types/despesa';
 import { TIPOS_DESPESA, ABREVIACOES_TIPO_FUNCIONARIO } from '@/types/despesa';
 import type { TipoRecorrencia } from '@/types/recorrencia';
 import { SelectRecorrencia, RecorrenciaBadge } from '@/components/ui/select-recorrencia';
+import { DataValorList, type DataValorItem } from '@/components/ui/data-valor-list';
 import { useDespesaTiposStore } from '@/stores/despesaTiposStore';
 import { useAgendaStore } from '@/stores/agendaStore';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
-import { formatDateToLocalYYYYMMDD, formatDateStringToBR } from '@/lib/date';
+import { formatDateToLocalYYYYMMDD, formatDateStringToBR, addOneMonth } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import {
   Dialog,
@@ -40,8 +41,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-/** Ordem padrao das colunas; recorrencia vem do backend e e exibida na tabela. */
-const DESPESA_TABLE_DEFAULT_ORDER = ['data', 'tipo', 'descricao', 'valor', 'recorrencia'];
+/** Ordem padrao quando a API nao envia columns. Nenhuma coluna e forçada; as colunas vêm do backend. */
+const DESPESA_TABLE_DEFAULT_ORDER = ['data', 'tipo', 'descricao', 'valor'];
 
 interface DespesaPageProps {
   config: DespesaCategoriaConfig;
@@ -52,8 +53,12 @@ interface DespesaPageProps {
   addItem: (data: DespesaInput) => Promise<void>;
   updateItem: (id: string, data: Partial<DespesaInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
+  /** Modo B: criar serie em um unico POST com parcelas. Quando informado e useRecorrenciaDataValorList, usado na criacao. */
+  addItemComParcelas?: (data: DespesaComParcelasInput) => Promise<void>;
   /** Exibir opcao "Comunicar agenda" no formulario. Investimento nao usa. Default true. */
   showComunicarAgenda?: boolean;
+  /** Usar lista Data/Valor (recorrencia como multiplas linhas com data) em vez de campo unico + checkbox recorrente. */
+  useRecorrenciaDataValorList?: boolean;
 }
 
 function formatCurrency(value: number) {
@@ -80,7 +85,9 @@ export function DespesaPage({
   addItem,
   updateItem,
   deleteItem,
+  addItemComParcelas,
   showComunicarAgenda = true,
+  useRecorrenciaDataValorList = false,
 }: DespesaPageProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -88,7 +95,8 @@ export function DespesaPage({
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
 
-  const [formData, setFormData] = useState<Omit<DespesaInput, 'valor'> & { valor: string } & { recorrente: boolean }>({
+  type FormState = Omit<DespesaInput, 'valor'> & { valor: string } & { recorrente: boolean } & { valores?: DataValorItem[] };
+  const [formData, setFormData] = useState<FormState>({
     data: '',
     tipo: '',
     descricao: '',
@@ -155,6 +163,9 @@ export function DespesaPage({
         recorrencia: item.recorrencia,
         recorrenciaFim: item.recorrenciaFim,
         recorrente: rec !== 'unica',
+        ...(useRecorrenciaDataValorList && rec !== 'unica'
+          ? { valores: [{ data: formatDateForInput(item.data), valor: formatValorForInput(item.valor) }] }
+          : {}),
       });
     } else {
       setEditingItem(null);
@@ -173,7 +184,14 @@ export function DespesaPage({
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingItem(null);
-    setFormData({ data: '', tipo: '', descricao: '', valor: '', comunicarAgenda: false, recorrente: false });
+    setFormData({
+      data: '',
+      tipo: '',
+      descricao: '',
+      valor: '',
+      comunicarAgenda: false,
+      recorrente: false,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -181,6 +199,70 @@ export function DespesaPage({
 
     if (!formData.tipo) {
       toast.error('Tipo e obrigatorio');
+      return;
+    }
+
+    if (useRecorrenciaDataValorList && formData.recorrente && formData.valores?.length) {
+      const validRows = formData.valores.filter(
+        (r) => r.data.trim() && parseValorFromInput(r.valor) > 0
+      );
+      if (validRows.length === 0) {
+        toast.error('Adicione ao menos uma data com valor maior que zero na tabela.');
+        return;
+      }
+      try {
+        if (editingItem) {
+          const first = validRows[0];
+          await updateItem(editingItem.id, {
+            data: first.data,
+            tipo: formData.tipo,
+            descricao: formData.descricao,
+            valor: parseValorFromInput(first.valor),
+            comunicarAgenda: formData.comunicarAgenda,
+            recorrencia: 'unica',
+          });
+          for (let i = 1; i < validRows.length; i++) {
+            const row = validRows[i];
+            await addItem({
+              data: row.data,
+              tipo: formData.tipo,
+              descricao: formData.descricao,
+              valor: parseValorFromInput(row.valor),
+              comunicarAgenda: formData.comunicarAgenda,
+              recorrencia: 'unica',
+            });
+          }
+          toast.success(validRows.length > 1 ? 'Registro atualizado e demais parcelas adicionadas.' : 'Registro atualizado com sucesso!');
+        } else if (addItemComParcelas && validRows.length > 0) {
+          await addItemComParcelas({
+            tipo: formData.tipo,
+            descricao: formData.descricao,
+            comunicarAgenda: formData.comunicarAgenda,
+            parcelas: validRows.map((r) => ({
+              data: r.data,
+              valor: parseValorFromInput(r.valor),
+            })),
+          });
+          toast.success(validRows.length > 1 ? `${validRows.length} registros adicionados.` : 'Registro adicionado com sucesso!');
+        } else {
+          for (const row of validRows) {
+            await addItem({
+              data: row.data,
+              tipo: formData.tipo,
+              descricao: formData.descricao,
+              valor: parseValorFromInput(row.valor),
+              comunicarAgenda: formData.comunicarAgenda,
+              recorrencia: 'unica',
+            });
+          }
+          toast.success(validRows.length > 1 ? `${validRows.length} registros adicionados.` : 'Registro adicionado com sucesso!');
+        }
+        handleCloseDialog();
+        await fetchItems(dateParams);
+        fetchAgendaDias(dateParams).catch(() => {});
+      } catch {
+        toast.error('Erro ao salvar registro');
+      }
       return;
     }
 
@@ -221,8 +303,8 @@ export function DespesaPage({
       await deleteItem(deleteItemId);
       toast.success('Registro excluido com sucesso!');
       setDeleteItemId(null);
-    } catch {
-      toast.error('Erro ao excluir registro');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao excluir registro');
     }
   };
 
@@ -309,6 +391,13 @@ export function DespesaPage({
           const value = (row.getValue('recorrencia') as string) || 'unica';
           const indice = row.original.recorrenciaIndice;
           if (value === 'unica') {
+            if (indice) {
+              return (
+                <span className="text-sm font-medium text-slate-600" title="Parcela da série">
+                  {indice}
+                </span>
+              );
+            }
             return <span className="text-slate-400">-</span>;
           }
           return (
@@ -320,6 +409,24 @@ export function DespesaPage({
             </span>
           );
         },
+      },
+      comunicarAgenda: {
+        accessorKey: 'comunicarAgenda',
+        header: 'Comunicar agenda',
+        cell: ({ row }) => {
+          const v = row.original.comunicarAgenda;
+          return v ? <span className="text-slate-900">Sim</span> : <span className="text-slate-900">Nao</span>;
+        },
+      },
+      categoria: {
+        accessorKey: 'categoria',
+        header: 'Categoria',
+        cell: ({ row }) => row.original.categoria ?? '-',
+      },
+      observacao: {
+        accessorKey: 'observacao',
+        header: 'Observacao',
+        cell: ({ row }) => row.original.observacao ?? '-',
       },
     }),
     [config.key]
@@ -358,8 +465,8 @@ export function DespesaPage({
         columnsFromApi ?? null,
         DESPESA_TABLE_DEFAULT_ORDER,
         actionsColumn,
-        ['tipo', 'recorrencia'],
-        DESPESA_TABLE_DEFAULT_ORDER
+        undefined,
+        columnsFromApi?.length ? undefined : DESPESA_TABLE_DEFAULT_ORDER
       ),
     [columnDefsByKey, columnsFromApi, actionsColumn]
   );
@@ -399,20 +506,41 @@ export function DespesaPage({
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
           <ExportButtons
-            data={(filteredItems ?? []).map((item) => ({
-              data: formatDate(item.data),
-              tipo: item.tipo || '-',
-              descricao: item.descricao,
-              valor: formatCurrency(item.valor),
-              recorrencia: item.recorrencia ?? 'unica',
-            }))}
-            columns={[
-              { key: 'data', label: 'Data' },
-              { key: 'tipo', label: 'Tipo' },
-              { key: 'descricao', label: 'Descricao' },
-              { key: 'valor', label: 'Valor' },
-              { key: 'recorrencia', label: 'Recorrencia' },
-            ]}
+            data={
+              columnsFromApi?.length
+                ? (filteredItems ?? []).map((item) => {
+                    const row: Record<string, string> = {};
+                    const itemAny = item as unknown as Record<string, unknown>;
+                    for (const col of columnsFromApi) {
+                      if (col.id === 'data') row.data = formatDate(item.data);
+                      else if (col.id === 'tipo') row.tipo = item.tipo || '-';
+                      else if (col.id === 'descricao') row.descricao = item.descricao;
+                      else if (col.id === 'valor') row.valor = formatCurrency(item.valor);
+                      else if (col.id === 'recorrencia') row.recorrencia = item.recorrencia ?? 'unica';
+                      else if (col.id === 'comunicarAgenda') row.comunicarAgenda = item.comunicarAgenda ? 'Sim' : 'Nao';
+                      else row[col.id] = String(itemAny[col.id] ?? '-');
+                    }
+                    return row;
+                  })
+                : (filteredItems ?? []).map((item) => ({
+                    data: formatDate(item.data),
+                    tipo: item.tipo || '-',
+                    descricao: item.descricao,
+                    valor: formatCurrency(item.valor),
+                    recorrencia: item.recorrencia ?? 'unica',
+                  }))
+            }
+            columns={
+              columnsFromApi?.length
+                ? columnsFromApi.map((c) => ({ key: c.id, label: c.label }))
+                : [
+                    { key: 'data', label: 'Data' },
+                    { key: 'tipo', label: 'Tipo' },
+                    { key: 'descricao', label: 'Descricao' },
+                    { key: 'valor', label: 'Valor' },
+                    { key: 'recorrencia', label: 'Recorrencia' },
+                  ]
+            }
             filename={config.key}
             title={config.title}
           />
@@ -554,7 +682,7 @@ export function DespesaPage({
 
       {/* Dialog Adicionar/Editar */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {editingItem ? 'Editar Registro' : 'Novo Registro'}
@@ -672,9 +800,20 @@ export function DespesaPage({
                   id="recorrente"
                   type="checkbox"
                   checked={formData.recorrente || false}
-                  onChange={(e) =>
-                    setFormData({ ...formData, recorrente: e.target.checked })
-                  }
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setFormData((prev) => ({
+                      ...prev,
+                      recorrente: checked,
+                        ...(useRecorrenciaDataValorList && checked
+                          ? {
+                              valores: prev.valores?.length
+                                ? [{ data: prev.data, valor: prev.valor }, ...prev.valores.slice(1)]
+                                : [{ data: prev.data, valor: prev.valor }],
+                            }
+                          : {}),
+                    }));
+                  }}
                   className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
                 <label
@@ -684,7 +823,22 @@ export function DespesaPage({
                   Recorrente
                 </label>
               </div>
-              {formData.recorrente && (
+              {formData.recorrente && useRecorrenciaDataValorList && formData.valores && (
+                <DataValorList
+                  value={formData.valores}
+                  onChange={(valores) => setFormData({ ...formData, valores })}
+                  label="Datas da recorrencia"
+                  addLabel="Adicionar valor"
+                  showTotal
+                  getNewItem={(valores) => {
+                    const ultima = valores[valores.length - 1];
+                    const dataBase = ultima?.data?.trim() || formData.data;
+                    const proximaData = dataBase ? addOneMonth(dataBase) : formatDateToLocalYYYYMMDD(new Date());
+                    return { data: proximaData, valor: formData.valor };
+                  }}
+                />
+              )}
+              {formData.recorrente && !useRecorrenciaDataValorList && (
                 <div className="grid grid-cols-2 gap-4">
                   <SelectRecorrencia
                     value={(formData.recorrencia as TipoRecorrencia) || 'mensal'}
@@ -761,7 +915,7 @@ export function DespesaPage({
 
       {/* Dialog Gerenciar Tipos */}
       <Dialog open={isTiposDialogOpen} onOpenChange={setIsTiposDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Gerenciar tipos</DialogTitle>
             <DialogDescription>
