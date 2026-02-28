@@ -1,5 +1,10 @@
 import { create } from 'zustand';
-import type { DiaAgenda, AgendaItem, AgendaItemDirectInput } from '@/types/agenda';
+import type {
+  DiaAgenda,
+  AgendaItem,
+  AgendaItemDirectInput,
+  AgendaItemDirectComParcelasInput,
+} from '@/types/agenda';
 import { api } from '@/lib/api';
 
 interface AgendaState {
@@ -14,6 +19,7 @@ interface AgendaActions {
   fetchDias: (params?: { dataInicio?: string; dataFim?: string; lojaId?: string }) => Promise<DiaAgenda[]>;
   fetchDia: (data: string) => Promise<DiaAgenda | null>;
   addItemDirect: (data: AgendaItemDirectInput) => Promise<void>;
+  addItemDirectComParcelas: (data: AgendaItemDirectComParcelasInput) => Promise<void>;
   updateItemDirect: (itemId: string, data: { data: string; descricao: string; valor: number }) => Promise<void>;
   marcarPago: (itemId: string) => Promise<void>;
   marcarPagoLote: (ids: string[]) => Promise<void>;
@@ -25,6 +31,7 @@ interface AgendaActions {
 
 function normalizeItem(raw: unknown): AgendaItem {
   const o = raw as Record<string, unknown>;
+  const parcela = o.parcela != null ? String(o.parcela) : (o.recorrenciaIndice != null ? String(o.recorrenciaIndice) : undefined);
   return {
     id: String(o.id ?? ''),
     descricao: o.descricao != null ? String(o.descricao) : undefined,
@@ -32,7 +39,7 @@ function normalizeItem(raw: unknown): AgendaItem {
     tipo: (o.tipo === 'entrada' || o.tipo === 'saida' ? o.tipo : 'saida') as 'entrada' | 'saida',
     origem: o.origem != null ? String(o.origem) : undefined,
     tipoDespesa: o.tipoDespesa != null ? String(o.tipoDespesa) : undefined,
-    parcela: o.parcela != null ? String(o.parcela) : undefined,
+    parcela: parcela || undefined,
     pago: Boolean(o.pago),
   };
 }
@@ -102,6 +109,16 @@ export const useAgendaStore = create<AgendaState & AgendaActions>((set, get) => 
       ...(payload.lojaId != null && payload.lojaId !== '' && { lojaId: payload.lojaId }),
       ...(payload.recorrencia != null && payload.recorrencia !== 'unica' && { recorrencia: payload.recorrencia }),
       ...(payload.recorrenciaFim != null && payload.recorrenciaFim !== '' && { recorrenciaFim: payload.recorrenciaFim }),
+    };
+    await api.post('agenda/itens', body);
+  },
+
+  addItemDirectComParcelas: async (payload: AgendaItemDirectComParcelasInput) => {
+    set({ error: null });
+    const body: Record<string, unknown> = {
+      descricao: payload.descricao,
+      ...(payload.lojaId != null && payload.lojaId !== '' && { lojaId: payload.lojaId }),
+      parcelas: payload.parcelas,
     };
     await api.post('agenda/itens', body);
   },

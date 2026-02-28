@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -46,13 +46,29 @@ import { cn } from '@/lib/cn';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { InputCNPJ, InputTelefone } from '@/components/ui/input-masked';
 import { PAGINAS_PERMISSAO, fetchAdminPaginas } from '@/lib/paginasPermissao';
+import { fetchCNPJReceitaWS, onlyDigitsCnpj } from '@/lib/receitaws';
 
-const ADMIN_TENANTS_TABLE_DEFAULT_ORDER = ['name', 'responsavel', 'telefone', 'usersCount', 'isActive', 'createdAt'];
+const ADMIN_TENANTS_TABLE_DEFAULT_ORDER = [
+  'name',
+  'responsavel',
+  'telefone',
+  'usersCount',
+  'isActive',
+  'createdAt',
+];
 
 export function AdminTenantsPage() {
-  const user = useAuthStore((s) => s.user);
-  const { tenants, columns: columnsFromApi, isLoading, fetchTenants, addTenant, updateTenant, deleteTenant, toggleTenantStatus } =
-    useAdminTenantsStore();
+  const user = useAuthStore(s => s.user);
+  const {
+    tenants,
+    columns: columnsFromApi,
+    isLoading,
+    fetchTenants,
+    addTenant,
+    updateTenant,
+    deleteTenant,
+    toggleTenantStatus,
+  } = useAdminTenantsStore();
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -62,6 +78,8 @@ export function AdminTenantsPage() {
   const [tenantToDelete, setTenantToDelete] = useState<AdminTenant | null>(null);
   const [paginasList, setPaginasList] = useState<typeof PAGINAS_PERMISSAO>(PAGINAS_PERMISSAO);
   const [loadingPaginas, setLoadingPaginas] = useState(false);
+  const [loadingCnpj, setLoadingCnpj] = useState(false);
+  const lastFetchedCnpjRef = useRef<string | null>(null);
 
   const [formData, setFormData] = useState<AdminTenantFormData>({
     name: '',
@@ -108,18 +126,14 @@ export function AdminTenantsPage() {
         cell: ({ row }) => (
           <div>
             <p className="text-slate-600">{row.original.responsavel || '-'}</p>
-            {row.original.email && (
-              <p className="text-sm text-slate-500">{row.original.email}</p>
-            )}
+            {row.original.email && <p className="text-sm text-slate-500">{row.original.email}</p>}
           </div>
         ),
       },
       telefone: {
         accessorKey: 'telefone',
         header: 'Telefone',
-        cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.telefone || '-'}</span>
-        ),
+        cell: ({ row }) => <span className="text-slate-600">{row.original.telefone || '-'}</span>,
       },
       usersCount: {
         accessorKey: 'usersCount',
@@ -138,7 +152,7 @@ export function AdminTenantsPage() {
           <span
             className={cn(
               'rounded-full px-2.5 py-1 text-xs font-medium',
-              row.original.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+              row.original.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700',
             )}
           >
             {row.original.isActive ? 'Ativa' : 'Inativa'}
@@ -148,11 +162,10 @@ export function AdminTenantsPage() {
       createdAt: {
         accessorKey: 'createdAt',
         header: 'Criada em',
-        cell: ({ row }) =>
-          new Date(row.original.createdAt).toLocaleDateString('pt-BR'),
+        cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString('pt-BR'),
       },
     }),
-    []
+    [],
   );
 
   const columns = useMemo(
@@ -170,11 +183,17 @@ export function AdminTenantsPage() {
                 onClick={() => handleToggleStatus(row.original)}
                 className={cn(
                   'rounded-lg p-2 transition-colors',
-                  row.original.isActive ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'
+                  row.original.isActive
+                    ? 'text-amber-600 hover:bg-amber-50'
+                    : 'text-emerald-600 hover:bg-emerald-50',
                 )}
                 title={row.original.isActive ? 'Desativar' : 'Ativar'}
               >
-                {row.original.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                {row.original.isActive ? (
+                  <PowerOff className="h-4 w-4" />
+                ) : (
+                  <Power className="h-4 w-4" />
+                )}
               </button>
               <button
                 onClick={() => handleEdit(row.original)}
@@ -193,9 +212,9 @@ export function AdminTenantsPage() {
               </button>
             </div>
           ),
-        }
+        },
       ),
-    [columnDefsByKey, columnsFromApi]
+    [columnDefsByKey, columnsFromApi],
   );
 
   const table = useReactTable({
@@ -211,20 +230,24 @@ export function AdminTenantsPage() {
 
   const loadPaginasForDialog = (
     tenantId?: string | null,
-    onLoaded?: (list: Awaited<ReturnType<typeof fetchAdminPaginas>>) => void
+    onLoaded?: (list: Awaited<ReturnType<typeof fetchAdminPaginas>>) => void,
   ) => {
     setLoadingPaginas(true);
     setPaginasList(PAGINAS_PERMISSAO);
     fetchAdminPaginas(tenantId)
-      .then((list) => {
-        setPaginasList(list);
-        onLoaded?.(list);
+      .then(list => {
+        const unicas = list.filter(
+          (p, i, arr) => arr.findIndex(x => x.id === p.id) === i,
+        );
+        setPaginasList(unicas);
+        onLoaded?.(unicas);
       })
       .finally(() => setLoadingPaginas(false));
   };
 
   const handleAdd = () => {
     setEditingTenant(null);
+    lastFetchedCnpjRef.current = null;
     setFormData({
       name: '',
       cnpj: '',
@@ -241,8 +264,58 @@ export function AdminTenantsPage() {
     loadPaginasForDialog();
   };
 
+  const handleBuscarCNPJ = async (cnpjInput?: string) => {
+    const cnpj = (cnpjInput ?? formData.cnpj) ?? '';
+    const digits = onlyDigitsCnpj(cnpj);
+    if (digits.length !== 14) return;
+    if (lastFetchedCnpjRef.current === digits) return;
+    lastFetchedCnpjRef.current = digits;
+    setLoadingCnpj(true);
+    try {
+      const data = await fetchCNPJReceitaWS(cnpj);
+      if (!data) {
+        toast.error('Nao foi possivel obter os dados do CNPJ. Tente novamente.');
+        return;
+      }
+      const enderecoParts = [
+        [data.logradouro, data.numero].filter(Boolean).join(', '),
+        data.complemento,
+        data.bairro,
+        data.municipio,
+        data.uf,
+        data.cep,
+      ].filter(Boolean);
+      setFormData(prev => ({
+        ...prev,
+        name: (data.nome ?? '').toUpperCase(),
+        endereco: enderecoParts.join(' - '),
+        email: data.email ?? prev.email,
+        telefone: data.telefone ?? prev.telefone,
+      }));
+      toast.success('Dados preenchidos pela Receita Federal. Revise e salve.');
+    } catch {
+      lastFetchedCnpjRef.current = null;
+      toast.error('Erro ao consultar CNPJ.');
+    } finally {
+      setLoadingCnpj(false);
+    }
+  };
+
+  const handleCnpjChange = (masked: string) => {
+    const digits = onlyDigitsCnpj(masked);
+    if (digits.length < 14) lastFetchedCnpjRef.current = null;
+    setFormData(prev => ({ ...prev, cnpj: masked }));
+    if (digits.length === 14) handleBuscarCNPJ(masked);
+  };
+
+  const handleCnpjBlur = () => {
+    if (onlyDigitsCnpj(formData.cnpj ?? '').length === 14) handleBuscarCNPJ();
+  };
+
   const handleEdit = (tenant: AdminTenant) => {
     setEditingTenant(tenant);
+    lastFetchedCnpjRef.current =
+      onlyDigitsCnpj(tenant.cnpj ?? '').length === 14 ? onlyDigitsCnpj(tenant.cnpj ?? '') : null;
     setFormData({
       name: tenant.name,
       cnpj: tenant.cnpj || '',
@@ -252,16 +325,18 @@ export function AdminTenantsPage() {
       responsavel: tenant.responsavel || '',
       isActive: tenant.isActive,
       isMultiloja: tenant.isMultiloja ?? false,
-      paginasPermitidas: Array.isArray(tenant.paginasPermitidas) ? [...tenant.paginasPermitidas] : [],
+      paginasPermitidas: Array.isArray(tenant.paginasPermitidas)
+        ? [...tenant.paginasPermitidas]
+        : [],
       logo: (tenant as { logo?: string }).logo || '',
     });
     setIsDialogOpen(true);
     const tenantIdForPaginas = user?.isSuperAdmin ? undefined : tenant.id;
-    loadPaginasForDialog(tenantIdForPaginas, (list) => {
-      const ids = list.every((p) => p.permitido === undefined)
-        ? list.map((p) => p.id)
-        : list.filter((p) => p.permitido).map((p) => p.id);
-      setFormData((prev) => ({ ...prev, paginasPermitidas: ids }));
+    loadPaginasForDialog(tenantIdForPaginas, list => {
+      const ids = list.every(p => p.permitido === undefined)
+        ? list.map(p => p.id)
+        : list.filter(p => p.permitido).map(p => p.id);
+      setFormData(prev => ({ ...prev, paginasPermitidas: ids }));
     });
   };
 
@@ -278,7 +353,7 @@ export function AdminTenantsPage() {
     const success = await toggleTenantStatus(tenant.id);
     if (success) {
       toast.success(
-        tenant.isActive ? 'Empresa desativada com sucesso' : 'Empresa ativada com sucesso'
+        tenant.isActive ? 'Empresa desativada com sucesso' : 'Empresa ativada com sucesso',
       );
     }
   };
@@ -335,13 +410,13 @@ export function AdminTenantsPage() {
 
       {/* Filtro */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
           placeholder="Buscar por nome, CNPJ ou responsavel..."
           value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:max-w-xs"
+          onChange={e => setGlobalFilter(e.target.value)}
+          className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pr-4 pl-10 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none sm:max-w-xs"
         />
       </div>
 
@@ -355,17 +430,15 @@ export function AdminTenantsPage() {
           <div className="flex flex-col items-center justify-center py-12">
             <Building2 className="h-12 w-12 text-slate-300" />
             <p className="mt-4 font-medium text-slate-900">Nenhuma empresa cadastrada</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Clique em "Nova Empresa" para adicionar
-            </p>
+            <p className="mt-1 text-sm text-slate-500">Clique em "Nova Empresa" para adicionar</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                {table.getHeaderGroups().map((headerGroup) => (
+                {table.getHeaderGroups().map(headerGroup => (
                   <tr key={headerGroup.id} className="border-b border-slate-200 bg-slate-50">
-                    {headerGroup.headers.map((header) => (
+                    {headerGroup.headers.map(header => (
                       <th
                         key={header.id}
                         className="px-4 py-3 text-left text-sm font-semibold text-slate-600"
@@ -379,12 +452,12 @@ export function AdminTenantsPage() {
                 ))}
               </thead>
               <tbody>
-                {table.getRowModel().rows.map((row) => (
+                {table.getRowModel().rows.map(row => (
                   <tr
                     key={row.id}
                     className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50"
                   >
-                    {row.getVisibleCells().map((cell) => (
+                    {row.getVisibleCells().map(cell => (
                       <td key={cell.id} className="px-4 py-3 text-sm text-slate-600">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
@@ -410,179 +483,185 @@ export function AdminTenantsPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="flex max-h-[90vh] flex-col">
           <DialogHeader>
-            <DialogTitle>
-              {editingTenant ? 'Editar Empresa' : 'Nova Empresa'}
-            </DialogTitle>
+            <DialogTitle>{editingTenant ? 'Editar Empresa' : 'Nova Empresa'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <form onSubmit={handleSubmit} className="mt-5 flex min-h-0 flex-1 flex-col">
             <DialogBody className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Nome da Empresa *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  placeholder="Razao Social da Empresa"
-                />
-              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Nome da Empresa *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    placeholder="Razao Social da Empresa"
+                  />
+                </div>
 
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Logo / Imagem da empresa
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="block w-full text-sm text-slate-600 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-emerald-700"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => setFormData((f) => ({ ...f, logo: String(reader.result ?? '') }));
-                    reader.readAsDataURL(file);
-                  }}
-                />
-                {formData.logo && (
-                  <div className="mt-2 flex items-center gap-3">
-                    <img src={formData.logo} alt="Logo" className="h-14 w-14 rounded border border-slate-200 object-contain bg-white" />
-                    <button
-                      type="button"
-                      onClick={() => setFormData((f) => ({ ...f, logo: '' }))}
-                      className="text-sm text-red-600 hover:underline"
-                    >
-                      Remover imagem
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <InputCNPJ
-                label="CNPJ"
-                value={formData.cnpj}
-                onValueChange={(masked) => setFormData({ ...formData, cnpj: masked })}
-              />
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Responsavel
-                </label>
-                <input
-                  type="text"
-                  value={formData.responsavel}
-                  onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  placeholder="Nome do responsavel"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  placeholder="contato@empresa.com"
-                />
-              </div>
-
-              <InputTelefone
-                label="Telefone"
-                value={formData.telefone}
-                onValueChange={(masked) => setFormData({ ...formData, telefone: masked })}
-              />
-
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Endereco
-                </label>
-                <input
-                  type="text"
-                  value={formData.endereco}
-                  onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  placeholder="Endereco completo"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <label htmlFor="isActive" className="text-sm text-slate-700">
-                  Empresa ativa
-                </label>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isMultiloja"
-                  checked={formData.isMultiloja ?? false}
-                  onChange={(e) => setFormData({ ...formData, isMultiloja: e.target.checked })}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <label htmlFor="isMultiloja" className="text-sm text-slate-700">
-                  Multiloja (acesso à tela Lojas)
-                </label>
-              </div>
-            </div>
-
-            <div className="border-t border-slate-200 pt-4">
-              <p className="mb-2 text-sm font-medium text-slate-700">
-                Telas permitidas para esta empresa
-              </p>
-              <p className="mb-3 text-xs text-slate-500">
-                Selecione quais paginas todos os usuarios desta empresa poderao acessar. Deixe em branco para permitir todas (conforme backend).
-              </p>
-              {loadingPaginas && (
-                <p className="text-xs text-slate-500">Carregando paginas...</p>
-              )}
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {paginasList.map((pagina) => {
-                    const checked = (formData.paginasPermitidas ?? []).includes(pagina.id);
-                    return (
-                      <label
-                        key={pagina.id}
-                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-100"
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Logo / Imagem da empresa
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="block w-full text-sm text-slate-600 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-emerald-700"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () =>
+                        setFormData(f => ({ ...f, logo: String(reader.result ?? '') }));
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  {formData.logo && (
+                    <div className="mt-2 flex items-center gap-3">
+                      <img
+                        src={formData.logo}
+                        alt="Logo"
+                        className="h-14 w-14 rounded border border-slate-200 bg-white object-contain"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData(f => ({ ...f, logo: '' }))}
+                        className="text-sm text-red-600 hover:underline"
                       >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => {
-                            const next = e.target.checked
-                              ? [...(formData.paginasPermitidas ?? []), pagina.id]
-                              : (formData.paginasPermitidas ?? []).filter((id) => id !== pagina.id);
-                            setFormData({ ...formData, paginasPermitidas: next });
-                          }}
-                          className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                        />
-                        <span className="text-sm text-slate-700">{pagina.label}</span>
-                      </label>
-                    );
-                  })}
+                        Remover imagem
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <InputCNPJ
+                    label="CNPJ"
+                    value={formData.cnpj}
+                    onValueChange={handleCnpjChange}
+                    onBlur={handleCnpjBlur}
+                  />
+                  {loadingCnpj && (
+                    <div className="absolute right-3 top-9 flex items-center text-slate-400">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Responsavel
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.responsavel}
+                    onChange={e => setFormData({ ...formData, responsavel: e.target.value })}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    placeholder="Nome do responsavel"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    placeholder="contato@empresa.com"
+                  />
+                </div>
+
+                <InputTelefone
+                  label="Telefone"
+                  value={formData.telefone}
+                  onValueChange={masked => setFormData({ ...formData, telefone: masked })}
+                />
+
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Endereco</label>
+                  <input
+                    type="text"
+                    value={formData.endereco}
+                    onChange={e => setFormData({ ...formData, endereco: e.target.value })}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    placeholder="Endereco completo"
+                  />
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, paginasPermitidas: [] })}
-                className="mt-2 text-xs text-slate-500 underline hover:text-slate-700"
-              >
-                Limpar selecao (backend pode tratar como todas)
-              </button>
-            </div>
+
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    checked={formData.isActive}
+                    onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <label htmlFor="isActive" className="text-sm text-slate-700">
+                    Empresa ativa
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="isMultiloja"
+                    checked={formData.isMultiloja ?? false}
+                    onChange={e => setFormData({ ...formData, isMultiloja: e.target.checked })}
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <label htmlFor="isMultiloja" className="text-sm text-slate-700">
+                    Multiloja (acesso à tela Lojas)
+                  </label>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-200 pt-4">
+                <p className="mb-2 text-sm font-medium text-slate-700">
+                  Telas permitidas para esta empresa
+                </p>
+                <p className="mb-3 text-xs text-slate-500">
+                  Selecione quais paginas todos os usuarios desta empresa poderao acessar. Deixe em
+                  branco para permitir todas (conforme backend).
+                </p>
+                {loadingPaginas && <p className="text-xs text-slate-500">Carregando paginas...</p>}
+                <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {paginasList.map(pagina => {
+                      const checked = (formData.paginasPermitidas ?? []).includes(pagina.id);
+                      return (
+                        <label
+                          key={pagina.id}
+                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-100"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={e => {
+                              const next = e.target.checked
+                                ? [...(formData.paginasPermitidas ?? []), pagina.id]
+                                : (formData.paginasPermitidas ?? []).filter(id => id !== pagina.id);
+                              setFormData({ ...formData, paginasPermitidas: next });
+                            }}
+                            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <span className="text-sm text-slate-700">{pagina.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, paginasPermitidas: [] })}
+                  className="mt-2 text-xs text-slate-500 underline hover:text-slate-700"
+                >
+                  Limpar seleção
+                </button>
+              </div>
             </DialogBody>
             <DialogFooter className="flex gap-3 pt-4">
               <button
@@ -612,16 +691,13 @@ export function AdminTenantsPage() {
             <AlertDialogTitle>Excluir empresa?</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir a empresa{' '}
-              <span className="font-medium">{tenantToDelete?.name}</span>? Esta acao nao pode
-              ser desfeita.
+              <span className="font-medium">{tenantToDelete?.name}</span>? Esta acao nao pode ser
+              desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>

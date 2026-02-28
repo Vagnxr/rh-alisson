@@ -150,6 +150,8 @@ export interface EntradaRow {
   valores?: EntradaValorItem[];
   /** Total da nota (soma dos valores). Backend pode retornar. */
   total?: number;
+  /** Contas a pagar (parcelas de boleto): vencimento (YYYY-MM-DD) e valor. */
+  contasAPagar?: { vencimento: string; valor: number }[];
   /** Campos legados (backend pode ainda enviar) */
   industrializacao?: number;
   comercializacao?: number;

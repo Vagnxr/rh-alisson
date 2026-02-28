@@ -22,9 +22,18 @@ export interface InputMaskedProps extends Omit<InputHTMLAttributes<HTMLInputElem
 }
 
 const InputMasked = forwardRef<HTMLInputElement, InputMaskedProps>(
-  ({ mask, value = '', onValueChange, showValidation = false, label, error, hint, className, ...props }, ref) => {
+  ({ mask, value = '', onValueChange, showValidation = false, label, error, hint, className, onBlur, ...props }, ref) => {
     const [isFocused, setIsFocused] = useState(false);
     const [isTouched, setIsTouched] = useState(false);
+
+    const handleBlur = useCallback(
+      (e: React.FocusEvent<HTMLInputElement>) => {
+        setIsFocused(false);
+        setIsTouched(true);
+        onBlur?.(e);
+      },
+      [onBlur]
+    );
 
     const handleChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,10 +122,7 @@ const InputMasked = forwardRef<HTMLInputElement, InputMaskedProps>(
             value={value}
             onChange={handleChange}
             onFocus={() => setIsFocused(true)}
-            onBlur={() => {
-              setIsFocused(false);
-              setIsTouched(true);
-            }}
+            onBlur={handleBlur}
             placeholder={props.placeholder || getPlaceholder()}
             className={cn(
               'w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 transition-colors',

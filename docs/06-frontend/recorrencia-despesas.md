@@ -24,6 +24,9 @@ Este documento descreve o fluxo de recorrência implementado no frontend para as
 | Despesa Veículo | useDespesaVeiculoStore | sim | sim |
 | Despesa (categoria dinâmica) | useDespesaDinamicaStore | sim, exceto quando categoria = despesa-banco | sim, exceto quando categoria = despesa-banco |
 | Despesa Banco | DespesaBancoPage (outro componente) | não tem recorrência | — |
+| Renda Extra | useRendaExtraStore | sim | sim |
+| Investimento | useInvestimentoStore | sim | sim |
+| Agenda (lançar direto) | useAgendaStore | sim (checkbox + DataValorList) | addItemDirectComParcelas |
 
 ---
 

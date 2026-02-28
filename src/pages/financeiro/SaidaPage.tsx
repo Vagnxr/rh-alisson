@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import {
@@ -19,18 +19,10 @@ import {
   DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api';
+import { buildTableColumns } from '@/lib/buildTableColumns';
 import { dateFilterToParams } from '@/lib/financeiro-api';
+import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import type { SaidaRow, SaidaFormaPagamento } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR } from '@/lib/date';
@@ -76,28 +68,39 @@ const defaultForm = () => ({
   gas: '',
 });
 
+const SAIDA_DEFAULT_ORDER = [
+  'data',
+  'fornecedor',
+  'formaPagamento',
+  'industrializacao',
+  'comercializacao',
+  'embalagem',
+  'materialUsoCons',
+  'mercadoriaUsoCons',
+  'gas',
+];
+
 export function SaidaPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   const [items, setItems] = useState<SaidaRow[]>([]);
+  const [columnsFromApi, setColumnsFromApi] = useState<TableColumnConfigFromApi[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<SaidaRow | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState(defaultForm());
 
   const fetchList = useCallback(() => {
     setLoading(true);
     api
-      .get<SaidaRow[]>('financeiro/saida', { params: dateFilterToParams(dateFilter) })
+      .get<{ data?: SaidaRow[]; columns?: TableColumnConfigFromApi[] }>('financeiro/saida', {
+        params: dateFilterToParams(dateFilter),
+      })
       .then(res => {
-        const list = Array.isArray(res.data) ? res.data : [];
-        setItems(
-          list.filter(
-            r =>
-              !r.formaPagamento || r.formaPagamento === 'BOLETO' || r.formaPagamento === 'CARTAO',
-          ),
-        );
+        const body = res.data as { data?: SaidaRow[]; columns?: TableColumnConfigFromApi[] } | undefined;
+        const list = body?.data ?? (Array.isArray(res.data) ? res.data : []);
+        setItems(Array.isArray(list) ? list : []);
+        setColumnsFromApi(body?.columns ?? null);
       })
       .catch(err => toast.error(err?.message ?? 'Erro ao carregar'))
       .finally(() => setLoading(false));
@@ -172,24 +175,13 @@ export function SaidaPage() {
     }
   };
 
-  const handleDelete = () => {
-    if (!deleteId) return;
-    api
-      .delete(`financeiro/saida/${deleteId}`)
-      .then(() => {
-        setItems(prev => prev.filter(r => r.id !== deleteId));
-        setDeleteId(null);
-        toast.success('Registro excluido.');
-      })
-      .catch(err => toast.error(err?.message ?? 'Erro ao excluir'));
-  };
-
-  const columns = useMemo<ColumnDef<SaidaRow>[]>(
-    () => [
-      {
+  const columnDefsByKey = useMemo<Record<string, ColumnDef<SaidaRow>>>(
+    () => ({
+      data: {
         accessorKey: 'data',
         header: ({ column }) => (
           <button
+            type="button"
             className="flex items-center gap-1 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
@@ -198,68 +190,62 @@ export function SaidaPage() {
         ),
         cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
       },
-      {
-        accessorKey: 'formaPagamento',
-        header: 'Forma pagamento',
-        cell: ({ row }) => (row.original.formaPagamento ?? '-') as string,
-      },
-      { accessorKey: 'fornecedor', header: 'Fornecedor' },
-      {
-        accessorKey: 'comercializacao',
-        header: 'Comercializacao',
-        cell: ({ row }) => formatCurrency(row.getValue('comercializacao')),
-      },
-      {
-        accessorKey: 'industrializacao',
-        header: 'Industrializacao',
-        cell: ({ row }) => formatCurrency(row.getValue('industrializacao')),
-      },
-      {
-        accessorKey: 'embalagem',
-        header: 'Embalagem',
-        cell: ({ row }) => formatCurrency(row.getValue('embalagem')),
-      },
-      {
-        accessorKey: 'materialUsoCons',
-        header: 'Material uso/cons.',
-        cell: ({ row }) => formatCurrency(row.getValue('materialUsoCons')),
-      },
-      {
-        accessorKey: 'mercadoriaUsoCons',
-        header: 'Mercadoria uso/cons.',
-        cell: ({ row }) => formatCurrency(row.getValue('mercadoriaUsoCons')),
-      },
-      {
-        accessorKey: 'gas',
-        header: 'GLP',
-        cell: ({ row }) => formatCurrency(row.getValue('gas')),
-      },
-      {
-        id: 'actions',
-        header: () => <span className="sr-only">Acoes</span>,
+      fornecedor: {
+        accessorKey: 'fornecedor',
+        header: 'Fornecedor',
         cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1">
-            <button
-              type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              title="Editar"
-              onClick={() => handleOpenDialog(row.original)}
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-              title="Excluir"
-              onClick={() => setDeleteId(row.original.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
+          <span className="text-slate-600">{row.original.fornecedor ?? '-'}</span>
         ),
       },
-    ],
+      formaPagamento: {
+        accessorKey: 'formaPagamento',
+        header: 'Forma pag.',
+        cell: ({ row }) => (
+          <span className="text-slate-600">{row.original.formaPagamento ?? '-'}</span>
+        ),
+      },
+      industrializacao: {
+        accessorKey: 'industrializacao',
+        header: 'Industrialização',
+        cell: ({ row }) => formatCurrency(Number(row.original.industrializacao ?? 0)),
+      },
+      comercializacao: {
+        accessorKey: 'comercializacao',
+        header: 'Comercialização',
+        cell: ({ row }) => formatCurrency(Number(row.original.comercializacao ?? 0)),
+      },
+      embalagem: {
+        accessorKey: 'embalagem',
+        header: 'Embalagem',
+        cell: ({ row }) => formatCurrency(Number(row.original.embalagem ?? 0)),
+      },
+      materialUsoCons: {
+        accessorKey: 'materialUsoCons',
+        header: 'Material uso/cons',
+        cell: ({ row }) => formatCurrency(Number(row.original.materialUsoCons ?? 0)),
+      },
+      mercadoriaUsoCons: {
+        accessorKey: 'mercadoriaUsoCons',
+        header: 'Mercadoria uso/cons',
+        cell: ({ row }) => formatCurrency(Number(row.original.mercadoriaUsoCons ?? 0)),
+      },
+      gas: {
+        accessorKey: 'gas',
+        header: 'Gás',
+        cell: ({ row }) => formatCurrency(Number(row.original.gas ?? 0)),
+      },
+    }),
     [],
+  );
+
+  const columns = useMemo(
+    () =>
+      buildTableColumns<SaidaRow>(
+        columnDefsByKey,
+        columnsFromApi ?? null,
+        SAIDA_DEFAULT_ORDER,
+      ),
+    [columnDefsByKey, columnsFromApi],
   );
 
   const table = useReactTable({
@@ -452,20 +438,6 @@ export function SaidaPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteId} onOpenChange={open => !open && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusao</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este registro?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

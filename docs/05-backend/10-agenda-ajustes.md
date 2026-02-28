@@ -29,29 +29,58 @@ Nenhuma alteração obrigatória no backend. Manter o retorno com `totalEntradas
 
 ---
 
-## 3. Lançar item direto na agenda (com recorrência)
+## 3. Lançar item direto na agenda – dois modos
 
-**Objetivo:** O usuário pode lançar um item **só na agenda** (não cria despesa). O front envia **tipo** (entrada/saída), **recorrência** e **data fim da recorrência**. O backend deve aceitar esses campos e, quando houver recorrência, criar um item por ocorrência.
+O front da Agenda passou a usar o mesmo padrão de recorrência da Despesa Fixa: **recorrência por lista de datas** (checkbox "Recorrente" + tabela Data/Valor). O backend deve aceitar os dois formatos abaixo no **POST /agenda/itens**.
 
-**Endpoint:** **POST /agenda/itens**
+### 3.1 Modo único (um item)
 
-**Body aceito (campos adicionais):**
+Body com `data` e `valor` (sem array `parcelas`):
 
-| Campo           | Tipo   | Obrigatório | Descrição |
-|-----------------|--------|-------------|-----------|
-| data            | string | sim         | Data da primeira ocorrência (YYYY-MM-DD). |
-| valor           | number | sim         | Valor. |
-| descricao       | string | nao         | Descrição do item. |
-| lojaId          | string | nao         | UUID da loja. |
-| **tipo**        | string | nao         | `"entrada"` ou `"saida"`. Default: `"saida"`. |
-| **recorrencia** | string | nao         | `"unica"`, `"semanal"`, `"quinzenal"`, `"mensal"`, `"bimestral"`, `"trimestral"`, `"semestral"`, `"anual"`. Default: `"unica"`. |
-| **recorrenciaFim** | string | nao      | Data limite (YYYY-MM-DD). Opcional; se omitido, gerar até 12 meses à frente (ou política do negócio). |
+| Campo     | Tipo   | Obrigatório | Descrição |
+|-----------|--------|-------------|-----------|
+| data      | string | sim         | Data (YYYY-MM-DD). |
+| valor     | number | sim         | Valor. |
+| descricao | string | nao         | Descrição. |
+| lojaId    | string | nao         | UUID da loja. |
 
-**Regra quando `recorrencia` ≠ `unica`:**
+Criar **um** item de agenda nessa data, com `origem: "Agenda"`.
 
-- Criar **um item de agenda por ocorrência**, com as mesmas características (descricao, valor, tipo), nas datas calculadas conforme a recorrência (mesma lógica das despesas recorrentes: mensal = mesmo dia no mês seguinte, etc.).
-- Parar ao atingir `recorrenciaFim` ou 12 meses a partir de `data`, o que vier primeiro.
-- Cada item criado deve constar em GET /agenda/dias e GET /agenda/dias/:data com `origem: "Agenda"` (ou equivalente).
+### 3.2 Modo recorrente por lista (parcelas)
+
+Body com **parcelas** (array). O front envia uma lista explícita de datas e valores (igual ao fluxo de Despesa Fixa).
+
+| Campo      | Tipo   | Obrigatório | Descrição |
+|------------|--------|-------------|-----------|
+| descricao  | string | sim         | Descrição (única para toda a série). |
+| lojaId     | string | nao         | UUID da loja. |
+| **parcelas** | array | sim         | Lista de `{ data: string (YYYY-MM-DD), valor: number }`. Mínimo 1 elemento. |
+
+**Regra:**
+
+- Se o body contiver **parcelas** (array com pelo menos um elemento), **ignorar** os campos avulsos `data` e `valor`.
+- Criar **um item de agenda por elemento** de `parcelas`, todos com a mesma `descricao` (e `lojaId` se informado).
+- Cada item criado deve constar em GET /agenda/dias e GET /agenda/dias/:data com `origem: "Agenda"`.
+- Tipo (entrada/saída): o front hoje envia apenas itens de saída na agenda direta; o backend pode fixar como `tipo: "saida"` ou aceitar um campo opcional `tipo` no body (e nas parcelas não há tipo por parcela).
+
+**Exemplo de body (modo parcelas):**
+
+```json
+{
+  "descricao": "Aluguel",
+  "parcelas": [
+    { "data": "2026-03-10", "valor": 1500 },
+    { "data": "2026-04-10", "valor": 1500 },
+    { "data": "2026-05-10", "valor": 1500 }
+  ]
+}
+```
+
+Resposta: 201 ou 200, conforme contrato atual. Não é obrigatório retornar os itens criados; o front recarrega a lista (fetchDias) após o POST.
+
+### 3.3 Modo antigo (recorrência por periodicidade) – opcional
+
+Se o backend já implementou POST com `recorrencia` e `recorrenciaFim`, pode manter para compatibilidade. O front da Agenda **não envia mais** esse formato; ele só envia **modo único** (data + valor) ou **modo parcelas** (descricao + parcelas).
 
 ---
 
@@ -61,4 +90,4 @@ Nenhuma alteração obrigatória no backend. Manter o retorno com `totalEntradas
 |------|------------------|
 | Exibir despesa (fixa, etc.) | Incluir **origem** e **tipoDespesa** em cada item em GET /agenda/dias e GET /agenda/dias/:data. |
 | Total do dia sem sinal | Nenhuma mudança. |
-| Lançar direto na agenda com recorrência | POST /agenda/itens aceitar **tipo**, **recorrencia**, **recorrenciaFim** e gerar múltiplos itens quando houver recorrência. |
+| Lançar direto na agenda | POST /agenda/itens aceitar: (1) **data** + **valor** + descricao para um item; (2) **descricao** + **parcelas** (array de `{ data, valor }`) para vários itens em uma única requisição. |

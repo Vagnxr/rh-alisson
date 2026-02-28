@@ -41,6 +41,7 @@ import {
   VendaPerdaPage,
   AgendaPage,
 } from '@/pages/financeiro';
+import { TelaBrancaPage } from '@/pages/TelaBrancaPage';
 
 /** Pagina placeholder para rotas do menu que ainda nao tem componente registrado. */
 function PlaceholderPage({ path }: { path: string }) {
@@ -93,6 +94,7 @@ export const PATH_TO_COMPONENT: Record<string, ComponentType<any>> = {
   '/pedido-venda': PedidoVendaPage,
   '/outras-funcoes/a-receber': AReceberPage,
   '/outras-funcoes/venda-perda': VendaPerdaPage,
+  '/tela-branca': TelaBrancaPage,
 };
 
 /** Rotas com parametro (path do React Router). Uma rota por padrao. */

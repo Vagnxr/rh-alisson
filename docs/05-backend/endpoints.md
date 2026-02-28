@@ -69,6 +69,16 @@ Detalhes em 01-contrato (Login, Cadastro) e api-specification.md.
 
 ---
 
+## Consulta CNPJ (ReceitaWS)
+
+Proxy para evitar CORS: o front chama o backend, que consulta a ReceitaWS. Ver **12-consulta-cnpj-receitaws.md**.
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | /consulta-cnpj?cnpj=14digitos | Retorna dados do CNPJ (razão social, endereço, etc.) em `data` |
+
+---
+
 ## Socios e Movimentacoes
 
 | Metodo | Endpoint | Descricao |

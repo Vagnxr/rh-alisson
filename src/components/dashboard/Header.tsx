@@ -181,8 +181,8 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        {/* Menu Admin - Apenas para Super Admin */}
-        {user?.isSuperAdmin && (
+        {/* Menu Admin: Super Admin (Empresas + Usuarios) ou usuario com permissao admin-usuarios (só Usuarios) */}
+        {(user?.isSuperAdmin || user?.permissoes?.includes('admin-usuarios')) && (
           <div className="relative" ref={adminMenuRef}>
             <button
               onClick={() => setShowAdminMenu(!showAdminMenu)}
@@ -195,14 +195,16 @@ export function Header() {
 
             {showAdminMenu && (
               <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                <Link
-                  to="/admin/empresas"
-                  onClick={() => setShowAdminMenu(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                >
-                  <Building2 className="h-4 w-4" />
-                  Empresas
-                </Link>
+                {user?.isSuperAdmin && (
+                  <Link
+                    to="/admin/empresas"
+                    onClick={() => setShowAdminMenu(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                  >
+                    <Building2 className="h-4 w-4" />
+                    Empresas
+                  </Link>
+                )}
                 <Link
                   to="/admin/usuarios"
                   onClick={() => setShowAdminMenu(false)}

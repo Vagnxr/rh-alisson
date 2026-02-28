@@ -1,8 +1,11 @@
 /**
  * Integração com ReceitaWS para consulta de CNPJ.
- * API pública: https://www.receitaws.com.br/v1/cnpj/{cnpj}
- * CNPJ deve ser passado apenas com dígitos (14 caracteres).
+ * A consulta é feita via backend (GET /consulta-cnpj?cnpj=...) para evitar CORS.
+ * O backend deve chamar a API ReceitaWS (https://receitaws.com.br/v1) e retornar { success: true, data: ReceitaWSResponse }.
+ * Documentação backend: docs/05-backend/12-consulta-cnpj-receitaws.md
  */
+
+import { api } from '@/lib/api';
 
 export interface ReceitaWSResponse {
   status?: string;
@@ -26,7 +29,8 @@ export function onlyDigitsCnpj(str: string): string {
 }
 
 /**
- * Busca dados do CNPJ na ReceitaWS.
+ * Busca dados do CNPJ via backend (proxy para ReceitaWS).
+ * O backend chama a ReceitaWS e retorna os dados; assim evita-se CORS no browser.
  * @param cnpj - CNPJ com ou sem formatação (será limpo para 14 dígitos)
  * @returns Dados mapeados para uso no formulário ou null se falhar
  */
@@ -35,12 +39,9 @@ export async function fetchCNPJReceitaWS(cnpj: string): Promise<ReceitaWSRespons
   if (digits.length !== 14) return null;
 
   try {
-    const res = await fetch(`https://www.receitaws.com.br/v1/cnpj/${digits}`, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    });
-    const data = (await res.json()) as ReceitaWSResponse;
-    if (data.status === 'ERROR' || data.message) return null;
+    const res = await api.get<ReceitaWSResponse>('consulta-cnpj', { params: { cnpj: digits } });
+    const data = res.data;
+    if (!data || data.status === 'ERROR' || data.message) return null;
     return data;
   } catch {
     return null;

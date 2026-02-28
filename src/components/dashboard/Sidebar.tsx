@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Receipt,
@@ -354,9 +354,13 @@ export function Sidebar() {
           'w-64',
         )}
       >
-        {/* Header */}
+        {/* Header: logo clicavel -> tela em branco (privacidade) ou voltar ao dashboard */}
         <div className="flex h-16 items-center border-b border-slate-200 px-3">
-          <div className={cn('flex shrink-0 items-center justify-around overflow-hidden')}>
+          <Link
+            to={location.pathname === '/tela-branca' ? '/dashboard' : '/tela-branca'}
+            title={location.pathname === '/tela-branca' ? 'Voltar' : 'Tela em branco (privacidade)'}
+            className={cn('flex shrink-0 items-center justify-around overflow-hidden rounded-lg transition-opacity hover:opacity-90')}
+          >
             {isExpanded ? (
               <img
                 src="/logotipo-colorido.svg"
@@ -373,7 +377,7 @@ export function Sidebar() {
                 )}
               />
             )}
-          </div>
+          </Link>
 
           {/* Botao Pin (desktop) - sempre visivel quando expandido */}
           <button

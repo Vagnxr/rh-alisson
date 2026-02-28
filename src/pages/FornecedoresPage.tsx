@@ -18,7 +18,24 @@ import { cn } from '@/lib/cn';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import type { CreateFornecedorDto, UpdateFornecedorDto } from '@/types/fornecedor';
 
-const FORNECEDOR_TABLE_DEFAULT_ORDER = ['tipo', 'cnpj', 'razaoSocial', 'nomeFantasia', 'nome', 'documento', 'contatoEmpresa', 'endereco', 'isAtivo'];
+/** Ordem padrao quando a API nao envia columns. */
+const FORNECEDOR_TABLE_DEFAULT_ORDER = [
+  'tipo', 'cnpj', 'cpf', 'razaoSocial', 'nomeFantasia', 'nomeCompleto', 'nomeComercial',
+  'endereco', 'contatoEmpresa', 'contatoVendedor', 'observacoes', 'isAtivo', 'createdAt', 'updatedAt',
+];
+
+function SortableHeader({ column, children }: { column: { getIsSorted: () => false | 'asc' | 'desc'; toggleSorting: (asc: boolean) => void }; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      className="flex items-center gap-1 font-medium"
+      onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+    >
+      {children}
+      <ArrowUpDown className="h-4 w-4" />
+    </button>
+  );
+}
 
 export function FornecedoresPage() {
   const {
@@ -80,156 +97,100 @@ export function FornecedoresPage() {
     }
   };
 
-  const columnDefsByKey = useMemo<Record<string, ColumnDef<Fornecedor>>>(
-    () => ({
+  const columnDefsByKey = useMemo<Record<string, ColumnDef<Fornecedor>>>(() => ({
       tipo: {
         accessorKey: 'tipo',
-        header: ({ column }) => (
-          <button
-            className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Tipo
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        ),
+        header: ({ column }) => <SortableHeader column={column}>Tipo</SortableHeader>,
         cell: ({ row }) => {
           const tipo = row.getValue('tipo') as string;
           return (
             <div className="flex items-center gap-2">
-              {tipo === 'cnpj' ? (
-                <Building2 className="h-4 w-4 text-slate-400" />
-              ) : (
-                <User className="h-4 w-4 text-slate-400" />
-              )}
-              <span className="text-sm text-slate-600">{tipo.toUpperCase()}</span>
-            </div>
-          );
-        },
-      },
-      nome: {
-        accessorFn: (row) => (row.tipo === 'cnpj' ? row.razaoSocial : row.nomeCompleto),
-        id: 'nome',
-        header: ({ column }) => (
-          <button
-            className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Nome / Razao Social
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        ),
-        cell: ({ row }) => {
-          const fornecedor = row.original;
-          if (fornecedor.tipo === 'cnpj') {
-            return (
-              <div>
-                <div className="font-medium text-slate-900">{fornecedor.razaoSocial}</div>
-                <div className="text-xs text-slate-500">{fornecedor.nomeFantasia}</div>
-              </div>
-            );
-          }
-          return (
-            <div>
-              <div className="font-medium text-slate-900">{fornecedor.nomeCompleto}</div>
-              {fornecedor.nomeComercial && (
-                <div className="text-xs text-slate-500">{fornecedor.nomeComercial}</div>
-              )}
+              {tipo === 'cnpj' ? <Building2 className="h-4 w-4 text-slate-400" /> : <User className="h-4 w-4 text-slate-400" />}
+              <span className="text-sm text-slate-600">{tipo?.toUpperCase() ?? '-'}</span>
             </div>
           );
         },
       },
       cnpj: {
         accessorKey: 'cnpj',
-        header: ({ column }) => (
-          <button
-            className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            CNPJ
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
+        header: ({ column }) => <SortableHeader column={column}>CNPJ</SortableHeader>,
+        cell: ({ row }) => (
+          <span className="text-sm text-slate-600">{row.original.tipo === 'cnpj' ? row.original.cnpj : '-'}</span>
         ),
-        cell: ({ row }) => {
-          const f = row.original;
-          return <span className="text-sm text-slate-600">{f.tipo === 'cnpj' ? f.cnpj : '-'}</span>;
-        },
+      },
+      cpf: {
+        accessorFn: (row) => (row.tipo === 'cpf' ? row.cpf : ''),
+        id: 'cpf',
+        header: ({ column }) => <SortableHeader column={column}>CPF</SortableHeader>,
+        cell: ({ row }) => (
+          <span className="text-sm text-slate-600">{row.original.tipo === 'cpf' ? row.original.cpf : '-'}</span>
+        ),
       },
       razaoSocial: {
         accessorKey: 'razaoSocial',
-        header: ({ column }) => (
-          <button
-            className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Razao Social
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
+        header: ({ column }) => <SortableHeader column={column}>Razao Social</SortableHeader>,
+        cell: ({ row }) => (
+          <span className="text-sm text-slate-600">{row.original.tipo === 'cnpj' ? row.original.razaoSocial : '-'}</span>
         ),
-        cell: ({ row }) => {
-          const f = row.original;
-          return <span className="text-sm text-slate-600">{f.tipo === 'cnpj' ? f.razaoSocial : '-'}</span>;
-        },
       },
       nomeFantasia: {
         accessorKey: 'nomeFantasia',
-        header: ({ column }) => (
-          <button
-            className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Nome Fantasia
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
+        header: ({ column }) => <SortableHeader column={column}>Nome Fantasia</SortableHeader>,
+        cell: ({ row }) => (
+          <span className="text-sm text-slate-600">{row.original.tipo === 'cnpj' ? row.original.nomeFantasia : '-'}</span>
         ),
-        cell: ({ row }) => {
-          const f = row.original;
-          return <span className="text-sm text-slate-600">{f.tipo === 'cnpj' ? f.nomeFantasia : '-'}</span>;
-        },
       },
-      documento: {
-        accessorFn: (row) => (row.tipo === 'cnpj' ? row.cnpj : row.cpf),
-        id: 'documento',
-        header: ({ column }) => (
-          <button
-            className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Documento
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
+      nomeCompleto: {
+        accessorKey: 'nomeCompleto',
+        header: ({ column }) => <SortableHeader column={column}>Nome Completo</SortableHeader>,
+        cell: ({ row }) => (
+          <span className="text-sm text-slate-600">{row.original.tipo === 'cpf' ? row.original.nomeCompleto : '-'}</span>
         ),
+      },
+      nomeComercial: {
+        accessorKey: 'nomeComercial',
+        header: ({ column }) => <SortableHeader column={column}>Nome Comercial</SortableHeader>,
+        cell: ({ row }) => (
+          <span className="text-sm text-slate-600">{row.original.tipo === 'cpf' ? row.original.nomeComercial ?? '-' : '-'}</span>
+        ),
+      },
+      endereco: {
+        accessorKey: 'endereco',
+        header: 'Endereco',
         cell: ({ row }) => {
-          const fornecedor = row.original;
-          return <span className="text-sm text-slate-600">{fornecedor.tipo === 'cnpj' ? fornecedor.cnpj : fornecedor.cpf}</span>;
+          const e = row.original.endereco;
+          return <span className="text-sm text-slate-600">{e?.cidade && e?.uf ? `${e.cidade} / ${e.uf}` : '-'}</span>;
         },
       },
       contatoEmpresa: {
         accessorKey: 'contatoEmpresa',
         header: 'Contato',
         cell: ({ row }) => {
-          const contato = row.original.contatoEmpresa;
+          const c = row.original.contatoEmpresa;
           return (
             <div className="text-sm">
-              <div className="text-slate-900">{contato.emailPrincipal}</div>
-              {contato.telefonePrincipal && (
-                <div className="text-xs text-slate-500">{contato.telefonePrincipal}</div>
-              )}
+              {c?.emailPrincipal && <div className="text-slate-900">{c.emailPrincipal}</div>}
+              {c?.telefonePrincipal && <div className="text-xs text-slate-500">{c.telefonePrincipal}</div>}
+              {!c?.emailPrincipal && !c?.telefonePrincipal && '-'}
             </div>
           );
         },
       },
-      endereco: {
-        accessorKey: 'endereco',
-        header: 'Cidade / UF',
-        cell: ({ row }) => {
-          const endereco = row.original.endereco;
-          return (
-            <span className="text-sm text-slate-600">
-              {endereco.cidade} / {endereco.uf}
-            </span>
-          );
-        },
+      contatoVendedor: {
+        accessorKey: 'contatoVendedor',
+        header: 'Contato Vendedor',
+        cell: ({ row }) => (
+          <span className="text-sm text-slate-600">{row.original.contatoVendedor?.nome ?? '-'}</span>
+        ),
+      },
+      observacoes: {
+        accessorKey: 'observacoes',
+        header: 'Observacoes',
+        cell: ({ row }) => (
+          <span className="max-w-[200px] truncate text-sm text-slate-600" title={row.original.observacoes ?? ''}>
+            {row.original.observacoes ?? '-'}
+          </span>
+        ),
       },
       isAtivo: {
         accessorKey: 'isAtivo',
@@ -239,7 +200,7 @@ export function FornecedoresPage() {
           return (
             <span
               className={cn(
-                'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
                 isAtivo ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
               )}
             >
@@ -248,9 +209,26 @@ export function FornecedoresPage() {
           );
         },
       },
+      createdAt: {
+        accessorKey: 'createdAt',
+        header: ({ column }) => <SortableHeader column={column}>Criado em</SortableHeader>,
+        cell: ({ row }) => (
+          <span className="text-sm text-slate-600">
+            {row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('pt-BR') : '-'}
+          </span>
+        ),
+      },
+      updatedAt: {
+        accessorKey: 'updatedAt',
+        header: ({ column }) => <SortableHeader column={column}>Atualizado em</SortableHeader>,
+        cell: ({ row }) => (
+          <span className="text-sm text-slate-600">
+            {row.original.updatedAt ? new Date(row.original.updatedAt).toLocaleDateString('pt-BR') : '-'}
+          </span>
+        ),
+      },
     }),
-    []
-  );
+  []);
 
   const columns = useMemo(
     () =>

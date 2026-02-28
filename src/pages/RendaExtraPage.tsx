@@ -14,6 +14,7 @@ export function RendaExtraPage() {
   const isLoading = useRendaExtraStore((s) => s.isLoading);
   const fetchItems = useRendaExtraStore((s) => s.fetchItems);
   const addItem = useRendaExtraStore((s) => s.addItem);
+  const addItemComParcelas = useRendaExtraStore((s) => s.addItemComParcelas);
   const updateItem = useRendaExtraStore((s) => s.updateItem);
   const deleteItem = useRendaExtraStore((s) => s.deleteItem);
 
@@ -25,9 +26,11 @@ export function RendaExtraPage() {
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}
+      addItemComParcelas={addItemComParcelas}
       updateItem={updateItem}
       deleteItem={deleteItem}
       showComunicarAgenda={false}
+      useRecorrenciaDataValorList
     />
   );
 }

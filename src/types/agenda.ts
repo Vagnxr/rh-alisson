@@ -30,3 +30,16 @@ export interface AgendaItemDirectInput {
   recorrencia?: string;
   recorrenciaFim?: string;
 }
+
+/** Parcela para POST com array (recorrencia por lista de datas). */
+export interface AgendaParcelaInput {
+  data: string;
+  valor: number;
+}
+
+/** Body para lancar na agenda em lote (POST com parcelas). */
+export interface AgendaItemDirectComParcelasInput {
+  descricao: string;
+  lojaId?: string;
+  parcelas: AgendaParcelaInput[];
+}

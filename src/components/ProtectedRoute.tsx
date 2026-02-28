@@ -75,6 +75,14 @@ export function AuthOnlyRoute() {
 export function SuperAdminRoute() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
+  const acessosFetchedAtMount = useAuthStore((s) => s.acessosFetchedAtMount);
+  const fetchAcessos = useAuthStore((s) => s.fetchAcessos);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchAcessos();
+    }
+  }, [isAuthenticated, user?.id, fetchAcessos]);
 
   // Nao autenticado -> login
   if (!isAuthenticated) {
@@ -83,6 +91,62 @@ export function SuperAdminRoute() {
 
   // Nao e super admin -> dashboard
   if (!user?.isSuperAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Apos refresh, espera o primeiro GET /auth/acessos para ter menu (sidebar) sincronizado
+  if (!acessosFetchedAtMount) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" aria-hidden />
+      </div>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <Outlet />
+    </DashboardLayout>
+  );
+}
+
+/** Rota admin: /admin/usuarios para quem tem admin-usuarios ou super admin; /admin/empresas só super admin. */
+export function AdminRoute() {
+  const location = useLocation();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const acessosFetchedAtMount = useAuthStore((s) => s.acessosFetchedAtMount);
+  const fetchAcessos = useAuthStore((s) => s.fetchAcessos);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchAcessos();
+    }
+  }, [isAuthenticated, user?.id, fetchAcessos]);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!acessosFetchedAtMount) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" aria-hidden />
+      </div>
+    );
+  }
+
+  const pathname = location.pathname;
+  const isAdminUsuarios = pathname === '/admin/usuarios' || pathname.startsWith('/admin/usuarios');
+  const isAdminEmpresas = pathname === '/admin/empresas' || pathname.startsWith('/admin/empresas');
+
+  const podeUsuarios = user?.isSuperAdmin || user?.permissoes?.includes('admin-usuarios');
+  const podeEmpresas = user?.isSuperAdmin;
+
+  if (isAdminUsuarios && !podeUsuarios) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  if (isAdminEmpresas && !podeEmpresas) {
     return <Navigate to="/dashboard" replace />;
   }
 

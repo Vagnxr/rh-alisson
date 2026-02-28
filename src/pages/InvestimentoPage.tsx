@@ -10,9 +10,11 @@ const config = {
 
 export function InvestimentoPage() {
   const items = useInvestimentoStore((s) => s.items);
+  const columns = useInvestimentoStore((s) => s.columns);
   const isLoading = useInvestimentoStore((s) => s.isLoading);
   const fetchItems = useInvestimentoStore((s) => s.fetchItems);
   const addItem = useInvestimentoStore((s) => s.addItem);
+  const addItemComParcelas = useInvestimentoStore((s) => s.addItemComParcelas);
   const updateItem = useInvestimentoStore((s) => s.updateItem);
   const deleteItem = useInvestimentoStore((s) => s.deleteItem);
 
@@ -20,13 +22,15 @@ export function InvestimentoPage() {
     <DespesaPage
       config={config}
       items={items}
-      columns={null}
+      columns={columns}
       isLoading={isLoading}
       fetchItems={fetchItems}
       addItem={addItem}
+      addItemComParcelas={addItemComParcelas}
       updateItem={updateItem}
       deleteItem={deleteItem}
       showComunicarAgenda={false}
+      useRecorrenciaDataValorList
     />
   );
 }

@@ -4,7 +4,8 @@ import { RegisterPage } from '@/pages/RegisterPage';
 import { TenantSelectPage } from '@/pages/TenantSelectPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminTenantsPage } from '@/pages/admin/AdminTenantsPage';
-import { ProtectedRoute, AuthOnlyRoute, SuperAdminRoute } from '@/components/ProtectedRoute';
+import { TelaBrancaPage } from '@/pages/TelaBrancaPage';
+import { ProtectedRoute, AuthOnlyRoute, AdminRoute } from '@/components/ProtectedRoute';
 import { DynamicProtectedRoutes } from '@/components/DynamicProtectedRoutes';
 import { Toaster } from '@/components/ui/sonner';
 import '@/index.css';
@@ -22,14 +23,15 @@ function App() {
           <Route path="/selecionar-empresa" element={<TenantSelectPage />} />
         </Route>
 
-        {/* Rotas administrativas - Super Admin Only */}
-        <Route element={<SuperAdminRoute />}>
+        {/* Rotas administrativas: /admin/usuarios para admin-usuarios ou super admin; /admin/empresas só super admin */}
+        <Route element={<AdminRoute />}>
           <Route path="/admin/usuarios" element={<AdminUsersPage />} />
           <Route path="/admin/empresas" element={<AdminTenantsPage />} />
         </Route>
 
         {/* Rotas protegidas: pathname resolve no registro (menu do backend). Ver routeRegistry. */}
         <Route element={<ProtectedRoute />}>
+          <Route path="/tela-branca" element={<TelaBrancaPage />} />
           <Route path="*" element={<DynamicProtectedRoutes />} />
         </Route>
 

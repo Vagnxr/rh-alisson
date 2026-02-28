@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Loader2, Search } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -113,6 +113,7 @@ export function FornecedorForm({
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loadingCnpj, setLoadingCnpj] = useState(false);
+  const lastFetchedCnpjRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (fornecedor) {
@@ -162,19 +163,21 @@ export function FornecedorForm({
         cnpj: (initialCnpj ?? '').trim() || initialFormData.cnpj,
       });
     }
+    const digits = fornecedor?.tipo === 'cnpj' ? onlyDigitsCnpj(fornecedor.cnpj ?? '') : onlyDigitsCnpj((initialCnpj ?? '').trim());
+    lastFetchedCnpjRef.current = digits.length === 14 ? digits : null;
     setErrors({});
   }, [fornecedor, open, initialCnpj]);
 
-  const handleBuscarCNPJ = async () => {
-    const digits = onlyDigitsCnpj(formData.cnpj);
-    if (digits.length !== 14) {
-      toast.error('Informe um CNPJ válido com 14 dígitos para buscar.');
-      return;
-    }
+  const handleBuscarCNPJ = async (cnpjInput?: string) => {
+    const cnpj = cnpjInput ?? formData.cnpj;
+    const digits = onlyDigitsCnpj(cnpj);
+    if (digits.length !== 14) return;
+    if (lastFetchedCnpjRef.current === digits) return;
+    lastFetchedCnpjRef.current = digits;
     setLoadingCnpj(true);
     setErrors((e) => ({ ...e, cnpj: '' }));
     try {
-      const data = await fetchCNPJReceitaWS(formData.cnpj);
+      const data = await fetchCNPJReceitaWS(cnpj);
       if (!data) {
         toast.error('Não foi possível obter os dados do CNPJ. Tente novamente.');
         return;
@@ -208,10 +211,22 @@ export function FornecedorForm({
       }));
       toast.success('Dados preenchidos pela Receita Federal. Revise e salve.');
     } catch {
+      lastFetchedCnpjRef.current = null;
       toast.error('Erro ao consultar CNPJ.');
     } finally {
       setLoadingCnpj(false);
     }
+  };
+
+  const handleCnpjChange = (value: string) => {
+    const digits = onlyDigitsCnpj(value);
+    if (digits.length < 14) lastFetchedCnpjRef.current = null;
+    setFormData({ ...formData, cnpj: value });
+    if (digits.length === 14) handleBuscarCNPJ(value);
+  };
+
+  const handleCnpjBlur = () => {
+    if (onlyDigitsCnpj(formData.cnpj).length === 14) handleBuscarCNPJ();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -325,29 +340,39 @@ export function FornecedorForm({
           {/* Campos CNPJ */}
           {formData.tipo === 'cnpj' && (
             <div className="space-y-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
-                <div className="min-w-0 flex-1">
-                  <InputCNPJ
-                    label="CNPJ"
-                    value={formData.cnpj}
-                    onValueChange={(value) => setFormData({ ...formData, cnpj: value })}
-                    error={errors.cnpj}
-                    required
-                  />
+              <div className="relative">
+                <InputCNPJ
+                  label="CNPJ"
+                  value={formData.cnpj}
+                  onValueChange={handleCnpjChange}
+                  onBlur={handleCnpjBlur}
+                  error={errors.cnpj}
+                  hint="Preencha os 14 dígitos ou clique fora do campo para buscar dados na Receita Federal."
+                  required
+                />
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  {loadingCnpj && (
+                    <span className="flex items-center gap-1.5 text-sm text-slate-500">
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                      Consultando...
+                    </span>
+                  )}
+                  {!loadingCnpj && onlyDigitsCnpj(formData.cnpj).length === 14 && (
+                    <button
+                      type="button"
+                      onClick={() => handleBuscarCNPJ()}
+                      className="text-sm font-medium text-emerald-600 hover:underline"
+                    >
+                      Buscar dados (Receita Federal)
+                    </button>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={handleBuscarCNPJ}
-                  disabled={loadingCnpj}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-emerald-600 bg-white px-4 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50"
-                >
-                  {loadingCnpj ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  Buscar dados (ReceitaWS)
-                </button>
+                {loadingCnpj && (
+                  <span className="absolute right-3 top-9 flex items-center text-slate-400">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-slate-500">
-                Preencha o CNPJ e clique em &quot;Buscar dados&quot; para preencher automaticamente razão social, endereço e contato.
-              </p>
               <InputUppercase
                 label="Razão Social"
                 value={formData.razaoSocial}
