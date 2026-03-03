@@ -153,7 +153,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
+          <div className="absolute right-0 top-full z-50 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-medium text-slate-700">Periodo</span>
               <button

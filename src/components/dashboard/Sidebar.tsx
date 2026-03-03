@@ -321,8 +321,8 @@ export function Sidebar() {
 
   // Fechar sidebar no mobile ao trocar de rota (evita ficar fixa/aberta)
   useEffect(() => {
-    if (isOpen) close();
-  }, [location.pathname, isOpen, close]);
+    close();
+  }, [location.pathname, close]);
 
   // Desktop: expande se pinned OU hover
   const isDesktop =

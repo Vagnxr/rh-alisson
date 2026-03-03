@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, Plus, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DiaAgenda, AgendaItem, AgendaItemDirectInput } from '@/types/agenda';
 import { useAgendaStore } from '@/stores/agendaStore';
@@ -117,7 +117,8 @@ export function AgendaPage() {
   const [openMonthYear, setOpenMonthYear] = useState(false);
   const monthYearRef = useRef<HTMLDivElement>(null);
   const [editingDirectItem, setEditingDirectItem] = useState<AgendaItem | null>(null);
-  const [formEditDirect, setFormEditDirect] = useState({ data: '', descricao: '', valor: 0 });
+  const [formEditDirect, setFormEditDirect] = useState({ data: '', descricao: '', valor: '' });
+  const [excluirItemId, setExcluirItemId] = useState<string | null>(null);
 
   const {
     dias,
@@ -130,6 +131,7 @@ export function AgendaPage() {
     addItemDirect,
     addItemDirectComParcelas,
     updateItemDirect,
+    deleteItemDirect,
     marcarPago,
     marcarPagoLote,
     desmarcarPago,
@@ -288,7 +290,7 @@ export function AgendaPage() {
     setFormEditDirect({
       data: diaSelecionado.data,
       descricao: item.descricao ?? '',
-      valor: item.valor,
+      valor: formatValorForInput(item.valor),
     });
   };
 
@@ -296,11 +298,12 @@ export function AgendaPage() {
     e.preventDefault();
     if (!editingDirectItem) return;
     const descricao = formEditDirect.descricao.trim();
+    const valorNum = parseValorFromInput(formEditDirect.valor);
     if (!descricao) {
       toast.error('Preencha Data, Descricao e Valor.');
       return;
     }
-    if (formEditDirect.valor <= 0) {
+    if (valorNum <= 0) {
       toast.error('Preencha Data, Descricao e Valor.');
       return;
     }
@@ -308,7 +311,7 @@ export function AgendaPage() {
       await updateItemDirect(editingDirectItem.id, {
         data: formEditDirect.data,
         descricao,
-        valor: formEditDirect.valor,
+        valor: valorNum,
       });
       toast.success('Item atualizado.');
       setEditingDirectItem(null);
@@ -316,6 +319,19 @@ export function AgendaPage() {
       if (diaSelecionado) await fetchDia(diaSelecionado.data);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao atualizar.');
+    }
+  };
+
+  const handleExcluirItem = async () => {
+    if (!excluirItemId) return;
+    try {
+      await deleteItemDirect(excluirItemId);
+      toast.success('Lancamento excluido da agenda.');
+      setExcluirItemId(null);
+      await fetchDias({ dataInicio, dataFim });
+      if (diaSelecionado?.data) await fetchDia(diaSelecionado.data);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao excluir.');
     }
   };
 
@@ -408,7 +424,7 @@ export function AgendaPage() {
                 />
               </button>
               {openMonthYear && (
-                <div className="absolute top-full left-0 z-10 mt-1 min-w-[320px] rounded-lg border border-slate-200 bg-white p-4 shadow-lg">
+                <div className="absolute top-full left-0 z-10 mt-1 w-[min(320px,calc(100vw-2rem))] rounded-lg border border-slate-200 bg-white p-4 shadow-lg">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <span className="text-sm font-medium whitespace-nowrap text-slate-600">
                       Ano
@@ -592,7 +608,9 @@ export function AgendaPage() {
                           selected={selectedIds.has(item.id)}
                           onToggleSelect={() => handleToggleSelect(item.id)}
                           editavel={!item.origem || item.origem === 'Agenda'}
+                          excluivel={!item.origem || item.origem === 'Agenda'}
                           onEdit={() => handleOpenEditDirect(item)}
+                          onExcluir={() => setExcluirItemId(item.id)}
                           onDesmarcarPago={() => handleDesmarcarPago(item.id)}
                         />
                       ))
@@ -775,13 +793,13 @@ export function AgendaPage() {
               </label>
               <input
                 id="edit-direct-valor"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formEditDirect.valor || ''}
+                type="text"
+                inputMode="decimal"
+                value={formEditDirect.valor}
                 onChange={e =>
-                  setFormEditDirect({ ...formEditDirect, valor: parseFloat(e.target.value) || 0 })
+                  setFormEditDirect({ ...formEditDirect, valor: e.target.value })
                 }
+                placeholder="0,00"
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 required
               />
@@ -825,6 +843,25 @@ export function AgendaPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Confirmar excluir lancamento da agenda */}
+      <AlertDialog
+        open={!!excluirItemId}
+        onOpenChange={open => !open && setExcluirItemId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir lancamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Excluir este lancamento da agenda? Esta acao nao pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleExcluirItem}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -834,14 +871,18 @@ function ItemRow({
   selected,
   onToggleSelect,
   editavel,
+  excluivel,
   onEdit,
+  onExcluir,
   onDesmarcarPago,
 }: {
   item: AgendaItem;
   selected: boolean;
   onToggleSelect: () => void;
   editavel?: boolean;
+  excluivel?: boolean;
   onEdit?: () => void;
+  onExcluir?: () => void;
   onDesmarcarPago?: () => void;
 }) {
   return (
@@ -887,6 +928,16 @@ function ItemRow({
           title="Editar"
         >
           <Pencil className="h-4 w-4" />
+        </button>
+      )}
+      {excluivel && onExcluir && (
+        <button
+          type="button"
+          onClick={onExcluir}
+          className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+          title="Excluir da agenda"
+        >
+          <Trash2 className="h-4 w-4" />
         </button>
       )}
       {item.pago && onDesmarcarPago && (

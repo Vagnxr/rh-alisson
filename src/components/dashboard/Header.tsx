@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { LogOut, User, Bell, Menu, Building2, ChevronDown, Users, Settings, Store } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
@@ -19,9 +20,32 @@ export function Header() {
   const [showTenantMenu, setShowTenantMenu] = useState(false);
   const [showLojaMenu, setShowLojaMenu] = useState(false);
   const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const [portalDropdown, setPortalDropdown] = useState<{
+    type: 'tenant' | 'loja' | 'admin';
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const tenantMenuRef = useRef<HTMLDivElement>(null);
   const lojaMenuRef = useRef<HTMLDivElement>(null);
   const adminMenuRef = useRef<HTMLDivElement>(null);
+  const dropdownPortalRef = useRef<HTMLDivElement>(null);
+
+  // Calcula posicao e abre dropdown via Portal (evita scroll no header)
+  useEffect(() => {
+    if (showTenantMenu && tenantMenuRef.current) {
+      const rect = tenantMenuRef.current.getBoundingClientRect();
+      setPortalDropdown({ type: 'tenant', top: rect.bottom + 4, left: rect.left, width: 192 });
+    } else if (showLojaMenu && lojaMenuRef.current) {
+      const rect = lojaMenuRef.current.getBoundingClientRect();
+      setPortalDropdown({ type: 'loja', top: rect.bottom + 4, left: rect.left, width: 224 });
+    } else if (showAdminMenu && adminMenuRef.current) {
+      const rect = adminMenuRef.current.getBoundingClientRect();
+      setPortalDropdown({ type: 'admin', top: rect.bottom + 4, left: rect.right - 192, width: 192 });
+    } else {
+      setPortalDropdown(null);
+    }
+  }, [showTenantMenu, showLojaMenu, showAdminMenu]);
 
   // Lojas do tenant atual (API pode nao retornar tenantId; nesse caso considera do tenant atual)
   const lojasDoTenant = useMemo(() => {
@@ -47,22 +71,24 @@ export function Header() {
     }
   }, [lojasDoTenant, lojaAtual, setLojaAtual]);
 
-  // Fecha menus ao clicar fora
+  // Fecha menus ao clicar fora (considera dropdown renderizado via Portal)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (tenantMenuRef.current && !tenantMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const inPortal = dropdownPortalRef.current?.contains(target);
+      if (showTenantMenu && tenantMenuRef.current && !tenantMenuRef.current.contains(target) && !inPortal) {
         setShowTenantMenu(false);
       }
-      if (lojaMenuRef.current && !lojaMenuRef.current.contains(event.target as Node)) {
+      if (showLojaMenu && lojaMenuRef.current && !lojaMenuRef.current.contains(target) && !inPortal) {
         setShowLojaMenu(false);
       }
-      if (adminMenuRef.current && !adminMenuRef.current.contains(event.target as Node)) {
+      if (showAdminMenu && adminMenuRef.current && !adminMenuRef.current.contains(target) && !inPortal) {
         setShowAdminMenu(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [showTenantMenu, showLojaMenu, showAdminMenu]);
 
   const handleLogout = () => {
     logout();
@@ -83,13 +109,14 @@ export function Header() {
   };
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 sm:h-16 sm:px-6">
-      <div className="flex items-center gap-3">
-        {/* Logo (tenant ou padrao) */}
-        {/* Botao menu mobile */}
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:h-16 sm:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        {/* Botao menu mobile - shrink-0 garante area de toque em telas pequenas */}
         <button
+          type="button"
           onClick={toggleSidebar}
-          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
+          aria-label="Abrir menu"
+          className="shrink-0 rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -115,18 +142,6 @@ export function Header() {
               )}
             </button>
 
-            {/* Menu dropdown para super admin */}
-            {showTenantMenu && user?.isSuperAdmin && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                <button
-                  onClick={handleChangeTenant}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                >
-                  <Building2 className="h-4 w-4" />
-                  Trocar empresa
-                </button>
-              </div>
-            )}
           </div>
         )}
 
@@ -145,33 +160,6 @@ export function Header() {
               <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${showLojaMenu ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* Menu dropdown de lojas */}
-            {showLojaMenu && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                <div className="border-b border-slate-100 px-3 py-2">
-                  <span className="text-xs font-medium uppercase text-slate-500">Selecione a loja</span>
-                </div>
-                {lojasDoTenant.map((loja) => (
-                  <button
-                    key={loja.id}
-                    onClick={() => handleSelectLoja(loja.id)}
-                    className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors ${
-                      lojaAtual?.id === loja.id
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Store className="h-4 w-4" />
-                    <span className="flex-1 text-left">{loja.apelido}</span>
-                    {loja.isMatriz && (
-                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">
-                        MATRIZ
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         )}
 
@@ -180,7 +168,7 @@ export function Header() {
         </h2>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-4">
         {/* Menu Admin: Super Admin (Empresas + Usuarios) ou usuario com permissao admin-usuarios (só Usuarios) */}
         {(user?.isSuperAdmin || user?.permissoes?.includes('admin-usuarios')) && (
           <div className="relative" ref={adminMenuRef}>
@@ -193,28 +181,6 @@ export function Header() {
               <ChevronDown className={`h-4 w-4 transition-transform ${showAdminMenu ? 'rotate-180' : ''}`} />
             </button>
 
-            {showAdminMenu && (
-              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                {user?.isSuperAdmin && (
-                  <Link
-                    to="/admin/empresas"
-                    onClick={() => setShowAdminMenu(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                  >
-                    <Building2 className="h-4 w-4" />
-                    Empresas
-                  </Link>
-                )}
-                <Link
-                  to="/admin/usuarios"
-                  onClick={() => setShowAdminMenu(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                >
-                  <Users className="h-4 w-4" />
-                  Usuarios
-                </Link>
-              </div>
-            )}
           </div>
         )}
 
@@ -249,6 +215,79 @@ export function Header() {
           </button>
         </div>
       </div>
+
+      {/* Dropdowns via Portal - fora do header para evitar scroll vertical */}
+      {portalDropdown &&
+        createPortal(
+          <div
+            ref={dropdownPortalRef}
+            className="fixed z-[9999] rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+            style={{
+              top: portalDropdown.top,
+              left: portalDropdown.left,
+              width: portalDropdown.width,
+            }}
+          >
+            {portalDropdown.type === 'tenant' && (
+              <button
+                onClick={handleChangeTenant}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+              >
+                <Building2 className="h-4 w-4" />
+                Trocar empresa
+              </button>
+            )}
+            {portalDropdown.type === 'loja' && (
+              <>
+                <div className="border-b border-slate-100 px-3 py-2">
+                  <span className="text-xs font-medium uppercase text-slate-500">Selecione a loja</span>
+                </div>
+                {lojasDoTenant.map((loja) => (
+                  <button
+                    key={loja.id}
+                    onClick={() => handleSelectLoja(loja.id)}
+                    className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                      lojaAtual?.id === loja.id
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Store className="h-4 w-4" />
+                    <span className="flex-1 text-left">{loja.apelido}</span>
+                    {loja.isMatriz && (
+                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">
+                        MATRIZ
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </>
+            )}
+            {portalDropdown.type === 'admin' && (
+              <>
+                {user?.isSuperAdmin && (
+                  <Link
+                    to="/admin/empresas"
+                    onClick={() => setShowAdminMenu(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                  >
+                    <Building2 className="h-4 w-4" />
+                    Empresas
+                  </Link>
+                )}
+                <Link
+                  to="/admin/usuarios"
+                  onClick={() => setShowAdminMenu(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                >
+                  <Users className="h-4 w-4" />
+                  Usuarios
+                </Link>
+              </>
+            )}
+          </div>,
+          document.body
+        )}
     </header>
   );
 }

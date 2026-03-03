@@ -21,6 +21,7 @@ interface AgendaActions {
   addItemDirect: (data: AgendaItemDirectInput) => Promise<void>;
   addItemDirectComParcelas: (data: AgendaItemDirectComParcelasInput) => Promise<void>;
   updateItemDirect: (itemId: string, data: { data: string; descricao: string; valor: number }) => Promise<void>;
+  deleteItemDirect: (itemId: string) => Promise<void>;
   marcarPago: (itemId: string) => Promise<void>;
   marcarPagoLote: (ids: string[]) => Promise<void>;
   desmarcarPago: (itemId: string) => Promise<void>;
@@ -142,6 +143,36 @@ export const useAgendaStore = create<AgendaState & AgendaActions>((set, get) => 
           itens: d.itens.map((i) =>
             i.id === itemId ? { ...i, data: data.data, descricao: data.descricao, valor: data.valor } : i
           ),
+        };
+      }),
+    });
+  },
+
+  deleteItemDirect: async (itemId: string) => {
+    set({ error: null });
+    await api.delete(`agenda/itens/${itemId}`);
+    const { diaSelecionado } = get();
+    if (diaSelecionado?.itens) {
+      const itensRestantes = diaSelecionado.itens.filter((i) => i.id !== itemId);
+      set({
+        diaSelecionado: {
+          ...diaSelecionado,
+          itens: itensRestantes,
+          totalEntradas: itensRestantes.reduce((s, i) => s + (i.tipo === 'entrada' ? i.valor : 0), 0),
+          totalSaidas: itensRestantes.reduce((s, i) => s + (i.tipo === 'saida' ? i.valor : 0), 0),
+        },
+      });
+    }
+    const { dias } = get();
+    set({
+      dias: dias.map((d) => {
+        if (!d.itens?.some((i) => i.id === itemId)) return d;
+        const itensRestantes = d.itens.filter((i) => i.id !== itemId);
+        return {
+          ...d,
+          itens: itensRestantes,
+          totalEntradas: itensRestantes.reduce((s, i) => s + (i.tipo === 'entrada' ? i.valor : 0), 0),
+          totalSaidas: itensRestantes.reduce((s, i) => s + (i.tipo === 'saida' ? i.valor : 0), 0),
         };
       }),
     });

@@ -736,7 +736,12 @@ export function SociosPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setSelectedSocio(null)}
+            onClick={() => {
+              setSelectedSocio(null);
+              lastMovimentacoesParamsRef.current = null;
+              fetchResumo();
+              fetchMovimentacoes(undefined, movimentacoesFiltros);
+            }}
             className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
           >
             <ArrowLeft className="h-5 w-5" />

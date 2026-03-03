@@ -291,16 +291,16 @@ export function FornecedoresPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="min-w-0 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Fornecedores</h1>
-          <p className="mt-1 text-sm text-slate-500">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-bold text-slate-900 sm:text-2xl">Fornecedores</h1>
+          <p className="mt-1 truncate text-sm text-slate-500">
             Gerencie seus fornecedores (CNPJ e CPF)
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           {/* Aba Ativos / Inativos */}
           <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
             <button
@@ -334,7 +334,7 @@ export function FornecedoresPage() {
             placeholder="Buscar fornecedores..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-64"
+            className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-64"
           />
           {/* Exportação */}
           <ExportButtons
@@ -372,10 +372,10 @@ export function FornecedoresPage() {
       </div>
 
       {/* Tabela */}
-      <div className="rounded-xl border border-slate-200 bg-white">
-        {/* Tabela Desktop */}
+      <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+        {/* Tabela Desktop - scroll horizontal apenas na tabela */}
         <div className="hidden overflow-x-auto sm:block">
-          <table className="w-full">
+          <table className="w-full min-w-[600px]">
             <thead className="border-b border-slate-200 bg-slate-50">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>

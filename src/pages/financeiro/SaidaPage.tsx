@@ -93,14 +93,14 @@ export function SaidaPage() {
   const fetchList = useCallback(() => {
     setLoading(true);
     api
-      .get<{ data?: SaidaRow[]; columns?: TableColumnConfigFromApi[] }>('financeiro/saida', {
+      .get<SaidaRow[]>('financeiro/saida', {
         params: dateFilterToParams(dateFilter),
       })
       .then(res => {
-        const body = res.data as { data?: SaidaRow[]; columns?: TableColumnConfigFromApi[] } | undefined;
-        const list = body?.data ?? (Array.isArray(res.data) ? res.data : []);
-        setItems(Array.isArray(list) ? list : []);
-        setColumnsFromApi(body?.columns ?? null);
+        const list = Array.isArray(res.data) ? res.data : [];
+        const cols = res.columns ?? null;
+        setItems(list);
+        setColumnsFromApi(cols);
       })
       .catch(err => toast.error(err?.message ?? 'Erro ao carregar'))
       .finally(() => setLoading(false));

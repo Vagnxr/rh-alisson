@@ -15,7 +15,7 @@ import {
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
-import { onlyNumbers, isValidCNPJ, maskCNPJ } from '@/lib/masks';
+import { onlyNumbers, isValidCNPJ, isValidCPF, maskCNPJ, maskCPF } from '@/lib/masks';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import type { EntradaRow, EntradaValorItem } from '@/types/financeiro';
 import type { CreateFornecedorDto } from '@/types/fornecedor';
@@ -31,7 +31,6 @@ import {
   MODELOS_NOTA_INICIAIS,
   TIPOS_ENTRADA,
   slugify,
-  parseNum,
   formatCurrency,
   normalizeVencimentoToYYYYMMDD,
   type FormaPagamentoFromApi,
@@ -81,61 +80,77 @@ export function EntradaPage() {
   const [formData, setFormData] = useState<EntradaFormData>(defaultForm());
   const { fornecedores, fetchFornecedores, addFornecedor } = useFornecedorStore();
 
-  /** Resolve nome/erro do fornecedor apenas pela lista local (sem consulta-cnpj). */
-  const resolveFornecedorByCnpj = useCallback(
-    (cnpjValue?: string) => {
-      const raw = (cnpjValue ?? formData.fornecedor).trim();
+  /** Resolve nome/erro do fornecedor pela lista local (CPF 11 dígitos ou CNPJ 14 dígitos). */
+  const resolveFornecedorByDocumento = useCallback(
+    (docValue?: string) => {
+      const raw = (docValue ?? formData.fornecedor).trim();
       const digits = onlyNumbers(raw);
-      if (digits.length !== 14) return;
-      const found = fornecedores.find(f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
-      if (found && found.tipo === 'cnpj') {
-        setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');
-        setFornecedorError(null);
-      } else {
-        setFornecedorNome(null);
-        setFornecedorError(
-          'Fornecedor não cadastrado. Cadastre em Fornecedores ou use o botão abaixo.',
-        );
+      if (digits.length === 11) {
+        const found = fornecedores.find(f => f.tipo === 'cpf' && onlyNumbers(f.cpf) === digits);
+        if (found && found.tipo === 'cpf') {
+          setFornecedorNome(found.nomeCompleto || found.nomeComercial || '');
+          setFornecedorError(null);
+        } else {
+          setFornecedorNome(null);
+          setFornecedorError(
+            'Fornecedor não cadastrado. Cadastre em Fornecedores ou use o botão abaixo.',
+          );
+        }
+        return;
+      }
+      if (digits.length === 14) {
+        const found = fornecedores.find(f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
+        if (found && found.tipo === 'cnpj') {
+          setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');
+          setFornecedorError(null);
+        } else {
+          setFornecedorNome(null);
+          setFornecedorError(
+            'Fornecedor não cadastrado. Cadastre em Fornecedores ou use o botão abaixo.',
+          );
+        }
       }
     },
     [formData.fornecedor, fornecedores],
   );
 
-  const handleCnpjFornecedorChange = useCallback(
+  const handleFornecedorChange = useCallback(
     (value: string) => {
-      setFormData(prev => ({ ...prev, fornecedor: value }));
+      const digits = onlyNumbers(value).slice(0, 14);
+      const masked = digits.length <= 11 ? maskCPF(digits) : maskCNPJ(digits);
+      setFormData(prev => ({ ...prev, fornecedor: masked }));
       setFornecedorNome(null);
       setFornecedorError(null);
-      if (onlyNumbers(value).length === 14) resolveFornecedorByCnpj(value);
+      if (digits.length === 11) resolveFornecedorByDocumento(masked);
+      else if (digits.length === 14) resolveFornecedorByDocumento(masked);
     },
-    [resolveFornecedorByCnpj],
+    [resolveFornecedorByDocumento],
   );
 
-  const handleCnpjFornecedorBlur = useCallback(() => {
-    if (onlyNumbers(formData.fornecedor).length === 14) resolveFornecedorByCnpj();
-  }, [formData.fornecedor, resolveFornecedorByCnpj]);
+  const handleFornecedorBlur = useCallback(() => {
+    const digits = onlyNumbers(formData.fornecedor);
+    if (digits.length === 11 || digits.length === 14) resolveFornecedorByDocumento();
+  }, [formData.fornecedor, resolveFornecedorByDocumento]);
 
-  const handleCnpjFornecedorPaste = useCallback(
+  const handleFornecedorPaste = useCallback(
     (e: React.ClipboardEvent<HTMLInputElement>) => {
       e.preventDefault();
       const pasted = e.clipboardData.getData('text');
       const digits = onlyNumbers(pasted).slice(0, 14);
-      const masked = maskCNPJ(digits);
+      const masked = digits.length <= 11 ? maskCPF(digits) : maskCNPJ(digits);
       setFormData(prev => ({ ...prev, fornecedor: masked }));
       setFornecedorNome(null);
       setFornecedorError(null);
-      if (digits.length === 14) resolveFornecedorByCnpj(masked);
+      if (digits.length === 11 || digits.length === 14) resolveFornecedorByDocumento(masked);
     },
-    [resolveFornecedorByCnpj],
+    [resolveFornecedorByDocumento],
   );
 
   const totalValores = useMemo(() => {
-    return formData.valores.reduce((acc, v) => acc + parseNum(v.valor), 0);
+    return formData.valores.reduce((acc, v) => acc + parseValorFromInput(v.valor), 0);
   }, [formData.valores]);
 
-  const formaBoleto = Boolean(
-    formData.formaPagamentoId && slugify(formData.formaPagamentoId) === 'boleto',
-  );
+  const showRecorrencia = true;
 
   const valorTotalNotaNum = parseValorFromInput(formData.valorTotalNota);
   const somaCategoriasDiverge =
@@ -196,16 +211,30 @@ export function EntradaPage() {
   useEffect(() => {
     if (!isDialogOpen || !editingItem) return;
     const digits = onlyNumbers(editingItem.fornecedor || '');
-    if (digits.length !== 14) return;
-    const found = fornecedores.find(f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
-    if (found && found.tipo === 'cnpj') {
-      setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');
-      setFornecedorError(null);
-    } else if (!found) {
-      setFornecedorNome(null);
-      setFornecedorError(
-        'Fornecedor não cadastrado. Cadastre em Fornecedores ou use o botão abaixo.',
-      );
+    if (digits.length === 11) {
+      const found = fornecedores.find(f => f.tipo === 'cpf' && onlyNumbers(f.cpf) === digits);
+      if (found && found.tipo === 'cpf') {
+        setFornecedorNome(found.nomeCompleto || found.nomeComercial || '');
+        setFornecedorError(null);
+      } else {
+        setFornecedorNome(null);
+        setFornecedorError(
+          'Fornecedor não cadastrado. Cadastre em Fornecedores ou use o botão abaixo.',
+        );
+      }
+      return;
+    }
+    if (digits.length === 14) {
+      const found = fornecedores.find(f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
+      if (found && found.tipo === 'cnpj') {
+        setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');
+        setFornecedorError(null);
+      } else {
+        setFornecedorNome(null);
+        setFornecedorError(
+          'Fornecedor não cadastrado. Cadastre em Fornecedores ou use o botão abaixo.',
+        );
+      }
     }
   }, [isDialogOpen, editingItem, fornecedores]);
 
@@ -213,16 +242,24 @@ export function EntradaPage() {
     if (item) {
       setEditingItem(item);
       const fornecedorVal = item.fornecedor || '';
-      const cnpjDisplay =
-        onlyNumbers(fornecedorVal).length === 14 ? maskCNPJ(fornecedorVal) : fornecedorVal;
+      const docDigits = onlyNumbers(fornecedorVal);
+      const docDisplay =
+        docDigits.length === 14
+          ? maskCNPJ(fornecedorVal)
+          : docDigits.length === 11
+            ? maskCPF(fornecedorVal)
+            : fornecedorVal;
       const valoresFromRow = item.valores?.length
-        ? item.valores.map(v => ({ categoriaId: v.categoriaId, valor: String(v.valor) }))
+        ? item.valores.map(v => ({
+            categoriaId: v.categoriaId,
+            valor: formatValorForInput(Number(v.valor) || 0),
+          }))
         : categorias
             .map(c => ({
               categoriaId: c.id,
-              valor: String((item as unknown as Record<string, number>)[c.id] ?? 0),
+              valor: formatValorForInput(Number((item as unknown as Record<string, number>)[c.id]) || 0),
             }))
-            .filter(v => parseNum(v.valor) > 0);
+            .filter(v => parseValorFromInput(v.valor) > 0);
       if (valoresFromRow.length === 0 && categorias.length > 0) {
         valoresFromRow.push({ categoriaId: categorias[0].id, valor: '0' });
       }
@@ -235,7 +272,7 @@ export function EntradaPage() {
         dataEmissao: item.dataEmissao?.split('T')[0] ?? item.dataEmissao?.slice(0, 10) ?? '',
         numeroNota: item.numeroNota ?? '',
         tipoEntradaId: item.tipoEntrada ?? TIPOS_ENTRADA[0] ?? 'Compra',
-        fornecedor: cnpjDisplay,
+        fornecedor: docDisplay,
         modeloNotaId: item.modeloNota ?? modelosNota[0] ?? '',
         formaPagamentoId: item.formaPagamento ?? formasPagamento[0]?.nome ?? '',
         valorTotalNota: totalFromRow > 0 ? formatValorForInput(totalFromRow) : '',
@@ -243,7 +280,7 @@ export function EntradaPage() {
         contasAPagar: Array.isArray(rawContas)
           ? rawContas.map(p => ({
               vencimento: normalizeVencimentoToYYYYMMDD(p.vencimento as string | Date),
-              valor: String(p.valor ?? ''),
+              valor: p.valor != null ? formatValorForInput(Number(p.valor)) : '',
             }))
           : [],
       });
@@ -380,19 +417,32 @@ export function EntradaPage() {
     e.preventDefault();
     const fornecedorRaw = formData.fornecedor.trim();
     const fornecedorNumeros = onlyNumbers(fornecedorRaw);
-    if (fornecedorNumeros.length !== 14) {
-      toast.error('Informe o CNPJ do fornecedor (14 digitos).');
-      return;
-    }
-    if (!isValidCNPJ(fornecedorRaw)) {
-      toast.error('CNPJ do fornecedor invalido.');
-      return;
-    }
-    const existeFornecedor = fornecedores.some(
-      f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === fornecedorNumeros,
-    );
-    if (!existeFornecedor) {
-      toast.error('Fornecedor nao cadastrado. Cadastre em Fornecedores antes.');
+    if (fornecedorNumeros.length === 11) {
+      if (!isValidCPF(fornecedorRaw)) {
+        toast.error('CPF do fornecedor invalido.');
+        return;
+      }
+      const existeFornecedor = fornecedores.some(
+        f => f.tipo === 'cpf' && onlyNumbers(f.cpf) === fornecedorNumeros,
+      );
+      if (!existeFornecedor) {
+        toast.error('Fornecedor nao cadastrado. Cadastre em Fornecedores antes.');
+        return;
+      }
+    } else if (fornecedorNumeros.length === 14) {
+      if (!isValidCNPJ(fornecedorRaw)) {
+        toast.error('CNPJ do fornecedor invalido.');
+        return;
+      }
+      const existeFornecedor = fornecedores.some(
+        f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === fornecedorNumeros,
+      );
+      if (!existeFornecedor) {
+        toast.error('Fornecedor nao cadastrado. Cadastre em Fornecedores antes.');
+        return;
+      }
+    } else {
+      toast.error('Informe o CPF (11 digitos) ou CNPJ (14 digitos) do fornecedor.');
       return;
     }
     if (formData.valores.length === 0) {
@@ -403,7 +453,7 @@ export function EntradaPage() {
       .map(v => ({
         categoriaId: v.categoriaId,
         categoriaNome: categorias.find(c => c.id === v.categoriaId)?.nome,
-        valor: parseNum(v.valor),
+        valor: parseValorFromInput(v.valor),
       }))
       .filter(v => v.valor > 0);
     if (valoresBody.length === 0) {
@@ -433,10 +483,10 @@ export function EntradaPage() {
       valores: valoresBody,
       total,
     };
-    if (formaBoleto && formData.contasAPagar?.length) {
+    if (formData.contasAPagar?.length) {
       const parcelas = formData.contasAPagar
-        .filter(p => p.vencimento.trim() && parseNum(p.valor) > 0)
-        .map(p => ({ vencimento: p.vencimento.slice(0, 10), valor: parseNum(p.valor) }));
+        .filter(p => p.vencimento.trim() && parseValorFromInput(p.valor) > 0)
+        .map(p => ({ vencimento: p.vencimento.slice(0, 10), valor: parseValorFromInput(p.valor) }));
       if (parcelas.length) body.contasAPagar = parcelas;
     }
     if (editingItem) {
@@ -580,10 +630,10 @@ export function EntradaPage() {
         somaCategoriasDiverge={somaCategoriasDiverge}
         totalValores={totalValores}
         valorTotalNotaNum={valorTotalNotaNum}
-        formaBoleto={formaBoleto}
-        onFornecedorChange={handleCnpjFornecedorChange}
-        onFornecedorBlur={handleCnpjFornecedorBlur}
-        onFornecedorPaste={handleCnpjFornecedorPaste}
+        formaBoleto={showRecorrencia}
+        onFornecedorChange={handleFornecedorChange}
+        onFornecedorBlur={handleFornecedorBlur}
+        onFornecedorPaste={handleFornecedorPaste}
         onCadastroFornecedorOpen={() => setCadastroFornecedorOpen(true)}
         addValorLine={addValorLine}
         removeValorLine={removeValorLine}
@@ -619,7 +669,8 @@ export function EntradaPage() {
       <FornecedorForm
         open={cadastroFornecedorOpen}
         onOpenChange={setCadastroFornecedorOpen}
-        initialCnpj={formData.fornecedor}
+        initialCnpj={onlyNumbers(formData.fornecedor).length === 14 ? formData.fornecedor : undefined}
+        initialCpf={onlyNumbers(formData.fornecedor).length === 11 ? formData.fornecedor : undefined}
         onSubmit={async data => {
           await addFornecedor(data as CreateFornecedorDto);
           toast.success('Fornecedor cadastrado.');
@@ -627,10 +678,18 @@ export function EntradaPage() {
           await fetchFornecedores();
           const digits = onlyNumbers(formData.fornecedor);
           const list = useFornecedorStore.getState().fornecedores;
-          const found = list.find(f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
-          if (found && found.tipo === 'cnpj') {
-            setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');
-            setFornecedorError(null);
+          if (digits.length === 11) {
+            const found = list.find(f => f.tipo === 'cpf' && onlyNumbers(f.cpf) === digits);
+            if (found && found.tipo === 'cpf') {
+              setFornecedorNome(found.nomeCompleto || found.nomeComercial || '');
+              setFornecedorError(null);
+            }
+          } else if (digits.length === 14) {
+            const found = list.find(f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
+            if (found && found.tipo === 'cnpj') {
+              setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');
+              setFornecedorError(null);
+            }
           }
         }}
         isLoading={false}

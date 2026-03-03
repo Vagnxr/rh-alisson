@@ -8,7 +8,6 @@ import {
   DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { maskCNPJ } from '@/lib/masks';
 import type { EntradaRow } from '@/types/financeiro';
 import {
   INPUT_CLASS,
@@ -136,14 +135,14 @@ export function EntradaFormDialog({
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">CNPJ do fornecedor</label>
+                  <label className="text-sm font-medium text-slate-700">CNPJ ou CPF do fornecedor</label>
                   <input
                     type="text"
                     inputMode="numeric"
-                    placeholder="00.000.000/0000-00"
+                    placeholder="00.000.000/0000-00 ou 000.000.000-00"
                     maxLength={18}
                     value={formData.fornecedor}
-                    onChange={e => onFornecedorChange(maskCNPJ(e.target.value))}
+                    onChange={e => onFornecedorChange(e.target.value)}
                     onBlur={onFornecedorBlur}
                     onPaste={onFornecedorPaste}
                     className={cn(INPUT_CLASS, fornecedorError && 'border-red-500')}

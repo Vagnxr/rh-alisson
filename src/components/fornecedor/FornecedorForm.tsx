@@ -29,6 +29,8 @@ interface FornecedorFormProps {
   fornecedor?: Fornecedor;
   /** Quando aberto para novo fornecedor (sem fornecedor), preenche o campo CNPJ com este valor (ex.: vindo da tela Entrada). */
   initialCnpj?: string;
+  /** Quando aberto para novo fornecedor (sem fornecedor), preenche o campo CPF com este valor (ex.: vindo da tela Entrada). */
+  initialCpf?: string;
   onSubmit: (data: CreateFornecedorDto | UpdateFornecedorDto) => Promise<void>;
   isLoading?: boolean;
 }
@@ -107,6 +109,7 @@ export function FornecedorForm({
   onOpenChange,
   fornecedor,
   initialCnpj,
+  initialCpf,
   onSubmit,
   isLoading = false,
 }: FornecedorFormProps) {
@@ -158,15 +161,21 @@ export function FornecedorForm({
         });
       }
     } else {
+      const cpfDigits = onlyDigitsCnpj((initialCpf ?? '').trim());
+      const cnpjDigits = onlyDigitsCnpj((initialCnpj ?? '').trim());
+      const isCpf = cpfDigits.length === 11;
+      const isCnpj = cnpjDigits.length === 14;
       setFormData({
         ...initialFormData,
-        cnpj: (initialCnpj ?? '').trim() || initialFormData.cnpj,
+        tipo: isCpf ? 'cpf' : 'cnpj',
+        cnpj: isCnpj ? (initialCnpj ?? '').trim() : initialFormData.cnpj,
+        cpf: isCpf ? (initialCpf ?? '').trim() : initialFormData.cpf,
       });
     }
-    const digits = fornecedor?.tipo === 'cnpj' ? onlyDigitsCnpj(fornecedor.cnpj ?? '') : onlyDigitsCnpj((initialCnpj ?? '').trim());
+    const digits = fornecedor?.tipo === 'cnpj' ? onlyDigitsCnpj(fornecedor.cnpj ?? '') : fornecedor?.tipo === 'cpf' ? onlyDigitsCnpj(fornecedor.cpf ?? '') : onlyDigitsCnpj((initialCnpj ?? '').trim() || (initialCpf ?? '').trim());
     lastFetchedCnpjRef.current = digits.length === 14 ? digits : null;
     setErrors({});
-  }, [fornecedor, open, initialCnpj]);
+  }, [fornecedor, open, initialCnpj, initialCpf]);
 
   const handleBuscarCNPJ = async (cnpjInput?: string) => {
     const cnpj = cnpjInput ?? formData.cnpj;
