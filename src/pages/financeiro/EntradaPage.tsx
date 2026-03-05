@@ -210,7 +210,7 @@ export function EntradaPage() {
 
   useEffect(() => {
     if (!isDialogOpen || !editingItem) return;
-    const digits = onlyNumbers(editingItem.fornecedor || '');
+    const digits = onlyNumbers((editingItem.cnpjCpf ?? editingItem.fornecedor) ?? '');
     if (digits.length === 11) {
       const found = fornecedores.find(f => f.tipo === 'cpf' && onlyNumbers(f.cpf) === digits);
       if (found && found.tipo === 'cpf') {
@@ -241,14 +241,14 @@ export function EntradaPage() {
   const handleOpenDialog = (item?: EntradaRow) => {
     if (item) {
       setEditingItem(item);
-      const fornecedorVal = item.fornecedor || '';
-      const docDigits = onlyNumbers(fornecedorVal);
+      const docRaw = (item.cnpjCpf ?? item.fornecedor ?? '').toString().trim();
+      const docDigits = onlyNumbers(docRaw);
       const docDisplay =
         docDigits.length === 14
-          ? maskCNPJ(fornecedorVal)
+          ? maskCNPJ(docDigits)
           : docDigits.length === 11
-            ? maskCPF(fornecedorVal)
-            : fornecedorVal;
+            ? maskCPF(docDigits)
+            : docRaw || '';
       const valoresFromRow = item.valores?.length
         ? item.valores.map(v => ({
             categoriaId: v.categoriaId,
@@ -545,8 +545,6 @@ export function EntradaPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <DateFilter value={dateFilter} onChange={setDateFilter} />
-          <span className="hidden h-6 w-px bg-slate-200 sm:block" aria-hidden />
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -574,7 +572,7 @@ export function EntradaPage() {
             </button>
           </div>
           <span className="hidden h-6 w-px bg-slate-200 sm:block" aria-hidden />
-          <div className="flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2">
             <ExportButtons
               data={items.map(r => ({
                 data: formatDateStringToBR(r.data),
@@ -595,6 +593,7 @@ export function EntradaPage() {
               filename="entrada"
               title="Entrada"
             />
+            <DateFilter value={dateFilter} onChange={setDateFilter} />
             <button
               type="button"
               onClick={() => handleOpenDialog()}
@@ -669,8 +668,8 @@ export function EntradaPage() {
       <FornecedorForm
         open={cadastroFornecedorOpen}
         onOpenChange={setCadastroFornecedorOpen}
-        initialCnpj={onlyNumbers(formData.fornecedor).length === 14 ? formData.fornecedor : undefined}
-        initialCpf={onlyNumbers(formData.fornecedor).length === 11 ? formData.fornecedor : undefined}
+        initialCnpj={undefined}
+        initialCpf={undefined}
         onSubmit={async data => {
           await addFornecedor(data as CreateFornecedorDto);
           toast.success('Fornecedor cadastrado.');

@@ -12,7 +12,16 @@ import { buildTableColumns } from '@/lib/buildTableColumns';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import type { EntradaRow } from '@/types/financeiro';
 import { formatDateStringToBR } from '@/lib/date';
+import { onlyNumbers, maskCPF, maskCNPJ } from '@/lib/masks';
 import { formatCurrency } from './constants';
+
+function formatCnpjCpf(value: string | undefined): string {
+  if (!value) return '-';
+  const digits = onlyNumbers(value);
+  if (digits.length === 11) return maskCPF(digits);
+  if (digits.length === 14) return maskCNPJ(digits);
+  return value;
+}
 
 const ENTRADA_DEFAULT_ORDER = [
   'modeloNota',
@@ -55,11 +64,11 @@ export function EntradaTable({
         ),
       },
       cnpjCpf: {
-        accessorKey: 'fornecedor',
+        accessorKey: 'cnpjCpf',
         id: 'cnpjCpf',
         header: 'CNPJ/CPF',
         cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.fornecedor ?? '-'}</span>
+          <span className="text-slate-600">{formatCnpjCpf(row.original.cnpjCpf) ?? '-'}</span>
         ),
       },
       fornecedor: {

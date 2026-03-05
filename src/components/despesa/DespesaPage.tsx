@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-table';
 import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { DespesaBase, DespesaInput, DespesaComParcelasInput, DespesaCategoriaConfig, DespesaCategoria } from '@/types/despesa';
+import type { DespesaBase, DespesaInput, DespesaComParcelasInput, DespesaUpdatePayload, DespesaCategoriaConfig, DespesaCategoria } from '@/types/despesa';
 import { TIPOS_DESPESA, ABREVIACOES_TIPO_FUNCIONARIO } from '@/types/despesa';
 import type { TipoRecorrencia } from '@/types/recorrencia';
 import { SelectRecorrencia, RecorrenciaBadge } from '@/components/ui/select-recorrencia';
@@ -51,7 +51,7 @@ interface DespesaPageProps {
   isLoading: boolean;
   fetchItems: (params?: { dataInicio?: string; dataFim?: string }) => Promise<void>;
   addItem: (data: DespesaInput) => Promise<void>;
-  updateItem: (id: string, data: Partial<DespesaInput>) => Promise<void>;
+  updateItem: (id: string, data: DespesaUpdatePayload) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
   /** Modo B: criar serie em um unico POST com parcelas. Quando informado e useRecorrenciaDataValorList, usado na criacao. */
   addItemComParcelas?: (data: DespesaComParcelasInput) => Promise<void>;
@@ -154,6 +154,17 @@ export function DespesaPage({
     if (item) {
       setEditingItem(item);
       const rec = (item.recorrencia ?? 'unica') as TipoRecorrencia;
+      const parcelasFromBackend = item.parcelas && item.parcelas.length > 0;
+      const normData = (s: string) => (s ?? '').toString().split('T')[0] || (s ?? '').toString().slice(0, 10);
+      let valoresInit: DataValorItem[] | undefined;
+      if (useRecorrenciaDataValorList && parcelasFromBackend) {
+        valoresInit = item.parcelas!.map((p) => ({
+          data: normData(p.dataVencimento ?? ''),
+          valor: formatValorForInput(Number(p.valor) || 0),
+        }));
+      } else if (useRecorrenciaDataValorList && rec !== 'unica') {
+        valoresInit = [{ data: formatDateForInput(item.data), valor: formatValorForInput(item.valor) }];
+      }
       setFormData({
         data: formatDateForInput(item.data),
         tipo: item.tipo || '',
@@ -162,10 +173,8 @@ export function DespesaPage({
         comunicarAgenda: item.comunicarAgenda || false,
         recorrencia: item.recorrencia,
         recorrenciaFim: item.recorrenciaFim,
-        recorrente: rec !== 'unica',
-        ...(useRecorrenciaDataValorList && rec !== 'unica'
-          ? { valores: [{ data: formatDateForInput(item.data), valor: formatValorForInput(item.valor) }] }
-          : {}),
+        recorrente: parcelasFromBackend ? true : rec !== 'unica',
+        ...(valoresInit ? { valores: valoresInit } : {}),
       });
     } else {
       setEditingItem(null);
@@ -212,27 +221,16 @@ export function DespesaPage({
       }
       try {
         if (editingItem) {
-          const first = validRows[0];
           await updateItem(editingItem.id, {
-            data: first.data,
             tipo: formData.tipo,
             descricao: formData.descricao,
-            valor: parseValorFromInput(first.valor),
             comunicarAgenda: formData.comunicarAgenda,
-            recorrencia: 'unica',
+            parcelas: validRows.map((r) => ({
+              data: r.data.trim().slice(0, 10),
+              valor: parseValorFromInput(r.valor),
+            })),
           });
-          for (let i = 1; i < validRows.length; i++) {
-            const row = validRows[i];
-            await addItem({
-              data: row.data,
-              tipo: formData.tipo,
-              descricao: formData.descricao,
-              valor: parseValorFromInput(row.valor),
-              comunicarAgenda: formData.comunicarAgenda,
-              recorrencia: 'unica',
-            });
-          }
-          toast.success(validRows.length > 1 ? 'Registro atualizado e demais parcelas adicionadas.' : 'Registro atualizado com sucesso!');
+          toast.success('Registro atualizado com sucesso!');
         } else if (addItemComParcelas && validRows.length > 0) {
           await addItemComParcelas({
             tipo: formData.tipo,

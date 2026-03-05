@@ -127,7 +127,7 @@ function SocioCard({ resumo, onClick, onEdit }: SocioCardProps) {
 
       <div className="mt-4 rounded-lg bg-slate-100 p-3">
         <p className="text-xs text-slate-600">Total lançado</p>
-        <p className={cn('text-lg font-semibold', formatCurrencySocios(saldoTotal).isNegative ? 'text-red-600' : 'text-black')}>
+        <p className="text-lg font-semibold text-slate-900">
           {formatCurrencySocios(saldoTotal).text}
         </p>
       </div>
@@ -210,7 +210,7 @@ function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }:
                 </button>
                 <button
                   onClick={() => onDelete(mov.id)}
-                  className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -579,7 +579,7 @@ export function SociosPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-900">Total Geral - Todos os Socios</p>
-                <p className={cn('text-2xl font-bold', formatCurrencySocios(totalGeral).isNegative ? 'text-red-600' : 'text-slate-900')}>
+                <p className="text-2xl font-bold text-slate-900">
                   {formatCurrencySocios(totalGeral).text}
                 </p>
               </div>
@@ -664,12 +664,12 @@ export function SociosPage() {
             >
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Nome <span className="text-red-500">*</span>
+                  Nome <span className="text-slate-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={socioFormData.nome}
-                  onChange={(e) => setSocioFormData({ ...socioFormData, nome: e.target.value })}
+                  onChange={(e) => setSocioFormData({ ...socioFormData, nome: e.target.value.toUpperCase() })}
                   placeholder="Nome completo"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                   required
@@ -677,7 +677,7 @@ export function SociosPage() {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  CPF <span className="text-red-500">*</span>
+                  CPF <span className="text-slate-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -692,7 +692,7 @@ export function SociosPage() {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Percentual de participacao (%) <span className="text-red-500">*</span>
+                  Percentual de participacao (%) <span className="text-slate-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -788,7 +788,7 @@ export function SociosPage() {
           <div className="space-y-4 pb-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Data <span className="text-red-500">*</span></label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Data <span className="text-slate-500">*</span></label>
                 <input
                   type="date"
                   value={formData.data}
@@ -798,7 +798,7 @@ export function SociosPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Tipo <span className="text-red-500">*</span></label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Tipo <span className="text-slate-500">*</span></label>
                 <div className="flex gap-1">
                   <select
                     value={formData.tipo}
@@ -844,7 +844,7 @@ export function SociosPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Valor <span className="text-red-500">*</span></label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Valor <span className="text-slate-500">*</span></label>
               <input
                 type="text"
                 value={formData.valor}
@@ -930,7 +930,7 @@ export function SociosPage() {
                             .then(() => toast.success('Tipo removido.'))
                             .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao remover'));
                         }}
-                        className="rounded p-1 text-red-600 hover:bg-red-50"
+                        className="rounded p-1 text-slate-600 hover:bg-slate-100"
                         title="Excluir tipo"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -955,7 +955,7 @@ export function SociosPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={handleDelete} className="bg-slate-700 hover:bg-slate-800">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>

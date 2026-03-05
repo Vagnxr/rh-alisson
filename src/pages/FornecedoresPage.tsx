@@ -14,6 +14,7 @@ import type { Fornecedor } from '@/types/fornecedor';
 import { useFornecedorStore } from '@/stores/fornecedorStore';
 import { FornecedorForm } from '@/components/fornecedor/FornecedorForm';
 import { ExportButtons } from '@/components/ui/export-buttons';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import type { CreateFornecedorDto, UpdateFornecedorDto } from '@/types/fornecedor';
@@ -53,6 +54,7 @@ export function FornecedoresPage() {
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [globalFilter, setGlobalFilter] = useState('');
   const [viewStatus, setViewStatus] = useState<'ativos' | 'inativos'>('ativos');
+  const [viewTipo, setViewTipo] = useState<'todos' | 'cnpj' | 'cpf'>('todos');
 
   useEffect(() => {
     fetchFornecedores();
@@ -267,14 +269,28 @@ export function FornecedoresPage() {
   );
 
   const fornecedoresFiltrados = useMemo(() => {
-    if (viewStatus === 'ativos') return fornecedores.filter((f) => f.isAtivo !== false);
-    return fornecedores.filter((f) => f.isAtivo === false);
-  }, [fornecedores, viewStatus]);
+    let list = viewStatus === 'ativos'
+      ? fornecedores.filter((f) => f.isAtivo !== false)
+      : fornecedores.filter((f) => f.isAtivo === false);
+    if (viewTipo === 'cnpj') list = list.filter((f) => f.tipo === 'cnpj');
+    else if (viewTipo === 'cpf') list = list.filter((f) => f.tipo === 'cpf');
+    return list;
+  }, [fornecedores, viewStatus, viewTipo]);
+
+  const columnVisibility = useMemo((): Record<string, boolean> => {
+    if (viewTipo === 'cpf') {
+      return { razaoSocial: false, nomeFantasia: false, cnpj: false };
+    }
+    if (viewTipo === 'cnpj') {
+      return { cpf: false, nomeCompleto: false };
+    }
+    return {};
+  }, [viewTipo]);
 
   const table = useReactTable({
     data: fornecedoresFiltrados,
     columns,
-    state: { sorting, globalFilter },
+    state: { sorting, globalFilter, columnVisibility },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
@@ -328,6 +344,22 @@ export function FornecedoresPage() {
               Inativos
             </button>
           </div>
+          {/* Aba CNPJ / CPF */}
+          <Tabs value={viewTipo} onValueChange={(v) => setViewTipo(v as 'todos' | 'cnpj' | 'cpf')}>
+            <TabsList className="h-auto rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+              <TabsTrigger value="todos" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:shadow-sm">
+                Todos
+              </TabsTrigger>
+              <TabsTrigger value="cnpj" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:shadow-sm">
+                <Building2 className="mr-1.5 h-4 w-4" />
+                CNPJ
+              </TabsTrigger>
+              <TabsTrigger value="cpf" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:shadow-sm">
+                <User className="mr-1.5 h-4 w-4" />
+                CPF
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
           {/* Busca */}
           <input
             type="text"
@@ -401,9 +433,17 @@ export function FornecedoresPage() {
                   >
                     {globalFilter
                       ? 'Nenhum fornecedor encontrado'
-                      : viewStatus === 'ativos'
-                        ? 'Nenhum fornecedor ativo'
-                        : 'Nenhum fornecedor inativo'}
+                      : viewTipo === 'cnpj'
+                        ? viewStatus === 'ativos'
+                          ? 'Nenhum fornecedor ativo com CNPJ'
+                          : 'Nenhum fornecedor inativo com CNPJ'
+                        : viewTipo === 'cpf'
+                          ? viewStatus === 'ativos'
+                            ? 'Nenhum fornecedor ativo com CPF'
+                            : 'Nenhum fornecedor inativo com CPF'
+                          : viewStatus === 'ativos'
+                            ? 'Nenhum fornecedor ativo'
+                            : 'Nenhum fornecedor inativo'}
                   </td>
                 </tr>
               ) : (
@@ -430,9 +470,17 @@ export function FornecedoresPage() {
             <div className="px-4 py-12 text-center text-sm text-slate-500">
               {globalFilter
                 ? 'Nenhum fornecedor encontrado'
-                : viewStatus === 'ativos'
-                  ? 'Nenhum fornecedor ativo'
-                  : 'Nenhum fornecedor inativo'}
+                : viewTipo === 'cnpj'
+                  ? viewStatus === 'ativos'
+                    ? 'Nenhum fornecedor ativo com CNPJ'
+                    : 'Nenhum fornecedor inativo com CNPJ'
+                  : viewTipo === 'cpf'
+                    ? viewStatus === 'ativos'
+                      ? 'Nenhum fornecedor ativo com CPF'
+                      : 'Nenhum fornecedor inativo com CPF'
+                    : viewStatus === 'ativos'
+                      ? 'Nenhum fornecedor ativo'
+                      : 'Nenhum fornecedor inativo'}
             </div>
           ) : (
             table.getRowModel().rows.map((row) => {

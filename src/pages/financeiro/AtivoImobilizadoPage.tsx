@@ -74,31 +74,50 @@ export function AtivoImobilizadoPage() {
       let parcelas: DataValorItem[] = [];
       let parcelasIds: string[] = [];
       if (isBoleto) {
-        let doGrupo: AtivoImobilizadoRow[];
-        if (grupoId && entradas.length > 0) {
-          doGrupo = entradas.filter((r) => (r.recorrenciaGrupoId ?? (r as { recorrencia_grupo_id?: string }).recorrencia_grupo_id) === grupoId);
-        } else if (entradas.length > 0 && item.recorrenciaIndice) {
-          doGrupo = entradas.filter(
-            (r) =>
-              (r.formaPagto ?? '').toString().toLowerCase() === 'boleto' &&
-              r.nf === item.nf &&
-              r.descricaoFornecedor === item.descricaoFornecedor &&
-              r.recorrenciaIndice
-          );
+        const parcelasFromBackend = item.parcelas && item.parcelas.length > 0;
+        if (parcelasFromBackend) {
+          const normData = (s: string) => (s ?? '').toString().split('T')[0] || (s ?? '').toString().slice(0, 10);
+          parcelas = item.parcelas!.map((p) => ({
+            data: normData(p.dataVencimento ?? ''),
+            valor: formatValorForInput(Number(p.valor) || 0),
+          }));
+          const itemDataNorm = normData(item.data);
+          const itemValorNum = Number(item.valor);
+          parcelasIds = parcelas.map((_, i) => {
+            const p = item.parcelas![i];
+            const dataMatch = normData(p.dataVencimento ?? '') === itemDataNorm;
+            const valorMatch = Number(p?.valor) === itemValorNum;
+            return dataMatch && valorMatch ? item.id : '';
+          });
+          if (!parcelasIds.includes(item.id)) parcelasIds[0] = item.id;
         } else {
-          doGrupo = [item];
+          let doGrupo: AtivoImobilizadoRow[];
+          if (grupoId && entradas.length > 0) {
+            doGrupo = entradas.filter((r) => (r.recorrenciaGrupoId ?? (r as { recorrencia_grupo_id?: string }).recorrencia_grupo_id) === grupoId);
+          } else if (entradas.length > 0 && item.recorrenciaIndice) {
+            doGrupo = entradas.filter(
+              (r) =>
+                (r.formaPagto ?? '').toString().toLowerCase() === 'boleto' &&
+                r.nf === item.nf &&
+                r.descricaoFornecedor === item.descricaoFornecedor &&
+                r.recorrenciaIndice
+            );
+          } else {
+            doGrupo = [item];
+          }
+          if (doGrupo.length === 0) doGrupo = [item];
+          const ordenados = [...doGrupo].sort((a, b) => {
+            const indiceA = parseRecorrenciaIndice(a.recorrenciaIndice);
+            const indiceB = parseRecorrenciaIndice(b.recorrenciaIndice);
+            if (indiceA != null && indiceB != null) return indiceA - indiceB;
+            return (a.data || '').localeCompare(b.data || '');
+          });
+          parcelas = ordenados.map((r) => ({
+            data: (r.data ?? '').toString().split('T')[0] || (r.data ?? '').toString().slice(0, 10),
+            valor: formatValorForInput(Number(r.valor) || 0),
+          }));
+          parcelasIds = ordenados.map((r) => r.id);
         }
-        const ordenados = [...doGrupo].sort((a, b) => {
-          const indiceA = parseRecorrenciaIndice(a.recorrenciaIndice);
-          const indiceB = parseRecorrenciaIndice(b.recorrenciaIndice);
-          if (indiceA != null && indiceB != null) return indiceA - indiceB;
-          return (a.data || '').localeCompare(b.data || '');
-        });
-        parcelas = ordenados.map((r) => ({
-          data: r.data.split('T')[0] || r.data.slice(0, 10),
-          valor: formatValorForInput(Number(r.valor) || 0),
-        }));
-        parcelasIds = ordenados.map((r) => r.id);
       }
       setFormEntrada({
         data: item.data.split('T')[0] || item.data.slice(0, 10),
@@ -217,24 +236,40 @@ export function AtivoImobilizadoPage() {
       return;
     }
     if (editingEntrada) {
-      let data = formEntrada.data.slice(0, 10);
-      let valorNum = parseValorFromInput(formEntrada.valor);
-      if (formEntrada.formaPagto === 'Boleto' && formEntrada.parcelasIds.length > 0) {
-        const idx = formEntrada.parcelasIds.indexOf(editingEntrada.id);
-        if (idx >= 0 && formEntrada.parcelas[idx]) {
-          data = formEntrada.parcelas[idx].data.trim().slice(0, 10);
-          valorNum = parseValorFromInput(formEntrada.parcelas[idx].valor);
+      const baseBody: Record<string, unknown> = {
+        tipo: 'entrada',
+        nf: formEntrada.nf.trim(),
+        descricaoFornecedor: descricao,
+        formaPagto: formEntrada.formaPagto,
+        comunicarAgenda: formEntrada.comunicarAgenda,
+      };
+      if (editingEntrada.recorrencia != null) baseBody.recorrencia = editingEntrada.recorrencia;
+      if (editingEntrada.recorrenciaFim != null) baseBody.recorrenciaFim = editingEntrada.recorrenciaFim;
+
+      if (formEntrada.formaPagto === 'Boleto' && formEntrada.parcelas.length > 0) {
+        const parcelasPayload = formEntrada.parcelas.map((p) => ({
+          data: (p.data ?? '').trim().slice(0, 10),
+          valor: parseValorFromInput(p.valor),
+        }));
+        const validas = parcelasPayload.filter((p) => p.data && Number.isFinite(p.valor) && p.valor >= 0);
+        if (validas.length === 0) {
+          toast.error('Adicione ao menos uma parcela com data e valor.');
+          return;
         }
+        baseBody.parcelas = validas;
       } else {
-        valorNum = parseValorFromInput(formEntrada.valor);
+        const data = formEntrada.data.slice(0, 10);
+        const valorNum = parseValorFromInput(formEntrada.valor);
         if (formEntrada.valor.trim() === '' || !Number.isFinite(valorNum)) {
           toast.error('Preencha Data, N.F., Descricao/Fornecedor e Valor.');
           return;
         }
+        baseBody.data = data;
+        baseBody.valor = valorNum;
       }
-      const body = { data, nf: formEntrada.nf.trim(), descricaoFornecedor: descricao, valor: valorNum, formaPagto: formEntrada.formaPagto };
+
       api
-        .patch<AtivoImobilizadoRow>(`financeiro/ativo-imobilizado/${editingEntrada.id}`, body)
+        .patch<AtivoImobilizadoRow>(`financeiro/ativo-imobilizado/${editingEntrada.id}`, baseBody)
         .then(() => {
           toast.success('Registro atualizado.');
           fetchEntradas();
@@ -546,7 +581,7 @@ export function AtivoImobilizadoPage() {
           <DialogHeader>
             <DialogTitle>{editingEntrada ? 'Editar Entrada' : 'Nova Entrada'}</DialogTitle>
             <DialogDescription>
-              {formEntrada.formaPagto === 'Boleto' && !editingEntrada
+              {formEntrada.formaPagto === 'Boleto'
                 ? 'Para Boleto: preencha N.F., descricao/fornecedor e as parcelas (vencimento e valor).'
                 : 'Preencha data, N.F., descricao/fornecedor, valor e forma de pagto.'}
             </DialogDescription>
@@ -596,7 +631,7 @@ export function AtivoImobilizadoPage() {
                 <label className="text-sm font-medium text-slate-700">Descricao / Fornecedor <span className="text-red-500">*</span></label>
                 <input type="text" value={formEntrada.descricaoFornecedor} onChange={(e) => setFormEntrada({ ...formEntrada, descricaoFornecedor: e.target.value.toUpperCase() })} className={`${inputClass} uppercase`} required />
               </div>
-              {(editingEntrada || formEntrada.formaPagto !== 'Boleto') && (
+              {formEntrada.formaPagto !== 'Boleto' && (
                 <>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">Data <span className="text-red-500">*</span></label>

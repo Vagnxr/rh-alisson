@@ -38,14 +38,10 @@ import { ExportButtons } from '@/components/ui/export-buttons';
 import { useConfiguracaoStore } from '@/stores/configuracaoStore';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { formatDateStringToBR } from '@/lib/date';
+import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-}
-
-function parseNum(v: string): number {
-  const n = parseFloat(String(v).replace(',', '.'));
-  return Number.isFinite(n) ? n : 0;
 }
 
 const inputClass =
@@ -155,7 +151,7 @@ function columnsApiToColunaConfig(cols: TableColumnConfigFromApi[]): ColunaConfi
     order: c.order,
     isVisible: true,
     isRequired: c.id === 'dia' || c.id === 'total',
-    somarNoTotal: c.id !== 'dia' && c.id !== 'total',
+    somarNoTotal: c.id !== 'dia' && c.id !== 'total' && c.id !== 'desconto',
     subtrairNoTotal: false,
   }));
 }
@@ -211,7 +207,8 @@ export function CaixaPage() {
     return colunasVisiveis
       .filter((c) => c.id !== 'dia' && c.id !== 'total')
       .reduce((sum, c) => {
-        const val = parseNum(formData[c.id] ?? '0');
+        if (c.id === 'desconto') return sum;
+        const val = parseValorFromInput(formData[c.id] ?? '0');
         if (c.subtrairNoTotal) return sum - val;
         if (c.somarNoTotal) return sum + val;
         return sum;
@@ -248,7 +245,12 @@ export function CaixaPage() {
     };
     colunasValor.forEach((c) => {
       const val = item != null ? item[c.id] : '';
-      base[c.id] = val !== undefined && val !== null ? String(val) : '';
+      if (val === undefined || val === null || val === '') {
+        base[c.id] = '';
+      } else {
+        const num = Number(val);
+        base[c.id] = Number.isFinite(num) ? formatValorForInput(num) : String(val);
+      }
     });
     setFormData(base);
     setEditingItem(item ?? null);
@@ -269,7 +271,7 @@ export function CaixaPage() {
       total,
     };
     colunasValor.forEach((c) => {
-      body[c.id] = parseNum(formData[c.id] ?? '0');
+      body[c.id] = parseValorFromInput(formData[c.id] ?? '0');
     });
     if (editingItem) {
       api

@@ -11,6 +11,8 @@ export interface DespesaBase {
   recorrenciaIndice?: string;
   /** Data limite da recorrencia (YYYY-MM-DD). Opcional */
   recorrenciaFim?: string;
+  /** Parcelas do grupo (quando retornado pela API). dataVencimento (YYYY-MM-DD) e valor. */
+  parcelas?: { dataVencimento: string; valor: number }[];
   createdAt: string;
   updatedAt: string;
   /** Despesa banco: id do banco (UUID) */
@@ -46,6 +48,11 @@ export interface DespesaComParcelasInput {
   comunicarAgenda?: boolean;
   parcelas: ParcelaDespesaInput[];
 }
+
+/** Payload do PATCH: campos classicos ou, quando alterando parcelas, mesmo formato do POST (tipo, descricao, comunicarAgenda, parcelas). */
+export type DespesaUpdatePayload =
+  | Partial<DespesaInput>
+  | (Pick<DespesaComParcelasInput, 'tipo' | 'descricao' | 'comunicarAgenda'> & { parcelas: ParcelaDespesaInput[] });
 
 // Tipos padrao por categoria de despesa (conforme planilha)
 export const TIPOS_DESPESA: Record<DespesaCategoria, string[]> = {

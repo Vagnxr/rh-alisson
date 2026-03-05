@@ -100,6 +100,14 @@ export interface VendaCartoesRow {
 /** Forma de pagamento na Entrada de Ativo Imobilizado. Define se Saida e gerada no mesmo dia (Dinheiro/PIX) ou via Agenda (Boleto). */
 export type AtivoImobilizadoFormaPagto = 'Dinheiro' | 'PIX' | 'Boleto';
 
+/** Parcela retornada pelo backend (ativo imobilizado entrada com recorrência). */
+export interface AtivoImobilizadoParcela {
+  /** Data de vencimento (YYYY-MM-DD). Backend envia como dataVencimento. */
+  dataVencimento: string;
+  valor: number;
+  pago?: boolean;
+}
+
 /** Linha Ativo Imobilizado (Entrada ou Saida) */
 export interface AtivoImobilizadoRow {
   id: string;
@@ -119,6 +127,8 @@ export interface AtivoImobilizadoRow {
   recorrenciaGrupoId?: string;
   /** Quando true, item aparece na Agenda e so registra saida ao marcar como pago. */
   comunicarAgenda?: boolean;
+  /** Lista de parcelas do grupo (entrada Boleto com recorrência). Backend envia quando aplicável. */
+  parcelas?: AtivoImobilizadoParcela[];
 }
 
 /** Valor por categoria na Entrada */
@@ -137,6 +147,9 @@ export interface EntradaRow {
   dataEmissao?: string;
   /** Numero da nota fiscal (opcional). Ex.: 156. */
   numeroNota?: string;
+  /** CNPJ ou CPF do fornecedor (apenas numeros). Backend envia como cnpjCpf. */
+  cnpjCpf?: string;
+  /** Nome ou razao social do fornecedor. */
   fornecedor: string;
   /** Modelo da nota: NF-e, NFC-e, etc. */
   modeloNota?: string;

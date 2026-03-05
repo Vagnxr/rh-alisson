@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
-import type { DespesaBase, DespesaInput, DespesaComParcelasInput } from '@/types/despesa';
+import type { DespesaBase, DespesaInput, DespesaComParcelasInput, DespesaUpdatePayload } from '@/types/despesa';
 import { api } from '@/lib/api';
 
 function normalizeItem(item: Record<string, unknown>): DespesaBase {
@@ -17,6 +17,12 @@ function normalizeItem(item: Record<string, unknown>): DespesaBase {
     updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
   };
   if (item.recorrenciaIndice != null) base.recorrenciaIndice = String(item.recorrenciaIndice);
+  if (Array.isArray(item.parcelas) && item.parcelas.length > 0) {
+    base.parcelas = item.parcelas.map((p: { dataVencimento?: string; valor?: number }) => ({
+      dataVencimento: String(p?.dataVencimento ?? ''),
+      valor: Number(p?.valor ?? 0),
+    }));
+  }
   return base;
 }
 
@@ -31,7 +37,7 @@ interface InvestimentoActions {
   fetchItems: (params?: { dataInicio?: string; dataFim?: string }) => Promise<void>;
   addItem: (data: DespesaInput) => Promise<void>;
   addItemComParcelas: (data: DespesaComParcelasInput) => Promise<void>;
-  updateItem: (id: string, data: Partial<DespesaInput>) => Promise<void>;
+  updateItem: (id: string, data: DespesaUpdatePayload) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
   reset: () => void;
 }
@@ -95,7 +101,7 @@ export const useInvestimentoStore = create<InvestimentoStore>((set) => ({
     }
   },
 
-  updateItem: async (id: string, data: Partial<DespesaInput>) => {
+  updateItem: async (id: string, data: DespesaUpdatePayload) => {
     set({ isLoading: true, error: null });
     try {
       const res = await api.patch<DespesaBase>(`investimentos/${id}`, data);
