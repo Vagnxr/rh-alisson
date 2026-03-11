@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
-import type { DespesaBase, DespesaInput, DespesaComParcelasInput, DespesaCategoria } from '@/types/despesa';
+import type { DespesaBase, DespesaInput, DespesaComParcelasInput, DespesaUpdatePayload, DespesaCategoria } from '@/types/despesa';
 import { api } from '@/lib/api';
 
 /** Resposta da API GET /despesas: lista em data, columns e meta opcionais. */
@@ -23,7 +23,7 @@ interface DespesaActions {
   addItem: (data: DespesaInput) => Promise<void>;
   /** Modo B: criar série em um único POST com array parcelas. */
   addItemComParcelas: (data: DespesaComParcelasInput) => Promise<void>;
-  updateItem: (id: string, data: Partial<DespesaInput>) => Promise<void>;
+  updateItem: (id: string, data: DespesaUpdatePayload) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
   reset: () => void;
 }
@@ -48,6 +48,13 @@ function normalizeDespesa(item: Record<string, unknown>): DespesaBase {
   if (item.recorrenciaIndice != null) base.recorrenciaIndice = String(item.recorrenciaIndice);
   if (item.categoria != null) base.categoria = String(item.categoria);
   if (item.observacao != null) base.observacao = String(item.observacao);
+  if (Array.isArray(item.parcelas) && item.parcelas.length > 0) {
+    base.parcelas = item.parcelas.map((p: { dataVencimento?: string; valor?: number; pago?: boolean }) => ({
+      dataVencimento: String(p?.dataVencimento ?? ''),
+      valor: Number(p?.valor ?? 0),
+      pago: Boolean(p?.pago),
+    }));
+  }
   return base;
 }
 
@@ -116,7 +123,7 @@ function createDespesaStore(categoria: DespesaCategoria) {
       }
     },
 
-    updateItem: async (id: string, data: Partial<DespesaInput>) => {
+    updateItem: async (id: string, data: DespesaUpdatePayload) => {
       set({ isLoading: true, error: null });
       try {
         const res = await api.patch<DespesaBase>(`despesas/${id}`, data);
@@ -244,7 +251,7 @@ export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) =
     }
   },
 
-  updateItem: async (id: string, data: Partial<DespesaInput>) => {
+  updateItem: async (id: string, data: DespesaUpdatePayload) => {
     set({ isLoading: true, error: null });
     try {
       const res = await api.patch<DespesaBase>(`despesas/${id}`, data);

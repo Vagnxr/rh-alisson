@@ -1,20 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  type ColumnDef,
-} from '@tanstack/react-table';
-import {
-  Users,
-  User,
-  ArrowLeft,
-  Plus,
-  Pencil,
-  Trash2,
-  Loader2,
-  Percent,
-} from 'lucide-react';
+import { useReactTable, getCoreRowModel, flexRender, type ColumnDef } from '@tanstack/react-table';
+import { Users, User, ArrowLeft, Plus, Pencil, Trash2, Loader2, Percent } from 'lucide-react';
 import { useSociosStore } from '@/stores/sociosStore';
 import { useDespesaTiposStore } from '@/stores/despesaTiposStore';
 import {
@@ -82,6 +68,22 @@ function formatCpfInput(value: string): string {
   return formatCpf(digits) || digits;
 }
 
+/** Retorna a posicao do cursor no valor formatado apos digitar/editar (preserva digitos antes do cursor). */
+function getCpfCursorPositionAfterFormat(
+  formattedValue: string,
+  digitsBeforeCursor: number,
+): number {
+  if (digitsBeforeCursor <= 0) return 0;
+  let count = 0;
+  for (let i = 0; i < formattedValue.length; i++) {
+    if (/\d/.test(formattedValue[i])) {
+      count++;
+      if (count === digitsBeforeCursor) return i + 1;
+    }
+  }
+  return formattedValue.length;
+}
+
 // Componente de Card de Socio para a pre-pagina
 interface SocioCardProps {
   resumo: ResumoSocio;
@@ -112,7 +114,7 @@ function SocioCard({ resumo, onClick, onEdit }: SocioCardProps) {
             <Percent className="h-3 w-3" />
             {socio.percentualSociedade}%
           </div>
-          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+          <div className="flex gap-1" onClick={e => e.stopPropagation()}>
             <button
               type="button"
               onClick={onEdit}
@@ -126,7 +128,7 @@ function SocioCard({ resumo, onClick, onEdit }: SocioCardProps) {
       </div>
 
       <div className="mt-4 rounded-lg bg-slate-100 p-3">
-        <p className="text-xs text-slate-600">Total lançado</p>
+        <p className="text-xs text-slate-600">{'Total lançado'}</p>
         <p className="text-lg font-semibold text-slate-900">
           {formatCurrencySocios(saldoTotal).text}
         </p>
@@ -151,7 +153,12 @@ interface MovimentacoesTableProps {
   onDelete: (id: string) => void;
 }
 
-function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }: MovimentacoesTableProps) {
+function MovimentacoesTable({
+  movimentacoes,
+  columnsFromApi,
+  onEdit,
+  onDelete,
+}: MovimentacoesTableProps) {
   const columnDefsByKey = useMemo<Record<string, ColumnDef<MovimentacaoSocio>>>(
     () => ({
       data: {
@@ -165,9 +172,7 @@ function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }:
         cell: ({ row }) => {
           const { label, cor } = getTipoMovimentacaoDisplay(row.original.tipo);
           return (
-            <span className={cn('rounded-full px-2 py-1 text-xs font-medium', cor)}>
-              {label}
-            </span>
+            <span className={cn('rounded-full px-2 py-1 text-xs font-medium', cor)}>{label}</span>
           );
         },
       },
@@ -178,15 +183,15 @@ function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }:
       },
       valor: {
         accessorKey: 'valor',
-        header: () => <span className="text-right block">Valor</span>,
+        header: () => <span className="block text-right">Valor</span>,
         cell: ({ row }) => (
-          <span className="text-right font-medium text-black block">
+          <span className="block text-right font-medium text-black">
             {formatCurrency(row.original.valor)}
           </span>
         ),
       },
     }),
-    []
+    [],
   );
 
   const columns = useMemo(
@@ -197,7 +202,7 @@ function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }:
         MOVIMENTACOES_TABLE_DEFAULT_ORDER,
         {
           id: 'actions',
-          header: () => <span className="text-center block">Acoes</span>,
+          header: () => <span className="block text-center">Acoes</span>,
           cell: ({ row }) => {
             const mov = row.original;
             return (
@@ -217,9 +222,9 @@ function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }:
               </div>
             );
           },
-        }
+        },
       ),
-    [columnDefsByKey, columnsFromApi]
+    [columnDefsByKey, columnsFromApi],
   );
 
   const table = useReactTable({
@@ -237,35 +242,37 @@ function MovimentacoesTable({ movimentacoes, columnsFromApi, onEdit, onDelete }:
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-slate-100">
-            {table.getHeaderGroups().map((headerGroup) => (
+            {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
+                {headerGroup.headers.map(header => (
                   <th
                     key={header.id}
                     className={cn(
-                      'px-4 py-3 text-xs font-medium uppercase text-slate-500',
-                      header.column.id === 'valor' ? 'text-right' : 'text-left'
+                      'px-4 py-3 text-xs font-medium text-slate-500 uppercase',
+                      header.column.id === 'valor' ? 'text-right' : 'text-left',
                     )}
                   >
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
                 ))}
               </tr>
             ))}
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {table.getRowModel().rows.map((row) => (
+            {table.getRowModel().rows.map(row => (
               <tr key={row.id} className="hover:bg-slate-50">
-                {row.getVisibleCells().map((cell) => (
+                {row.getVisibleCells().map(cell => (
                   <td
                     key={cell.id}
                     className={cn(
                       'px-4 py-3 text-sm',
-                      cell.column.id === 'valor' ? 'text-right' : 'text-left'
+                      cell.column.id === 'valor' ? 'text-right' : 'text-left',
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -313,6 +320,8 @@ export function SociosPage() {
     percentualSociedade: '',
     isAtivo: true,
   });
+  const cpfInputRef = useRef<HTMLInputElement>(null);
+  const nextCpfCursorRef = useRef<number | null>(null);
 
   // Form state (movimentacao)
   const [formData, setFormData] = useState({
@@ -322,24 +331,43 @@ export function SociosPage() {
     valor: '',
   });
 
-  const { fetchTipos, getTipos, addTipo, deleteTipo, isLoading: isLoadingTipos } = useDespesaTiposStore();
+  const {
+    fetchTipos,
+    getTipos,
+    addTipo,
+    deleteTipo,
+    isLoading: isLoadingTipos,
+  } = useDespesaTiposStore();
   const [isTiposDialogOpen, setIsTiposDialogOpen] = useState(false);
   const [novoTipoLabel, setNovoTipoLabel] = useState('');
   const TIPOS_FIXOS = Object.keys(TIPOS_MOVIMENTACAO) as TipoMovimentacaoSocio[];
-  const tiposCustom = getTipos('socios').filter((t) => !TIPOS_FIXOS.includes(t.label as TipoMovimentacaoSocio));
-  const tiposDisponiveis = [...TIPOS_FIXOS, ...tiposCustom.map((t) => t.label)];
+  const tiposCustom = getTipos('socios').filter(
+    t => !TIPOS_FIXOS.includes(t.label as TipoMovimentacaoSocio),
+  );
+  const tiposDisponiveis = [...TIPOS_FIXOS, ...tiposCustom.map(t => t.label)];
   const tiposParaListar = [
-    ...TIPOS_FIXOS.map((k) => ({ label: TIPOS_MOVIMENTACAO[k].label, id: undefined as string | undefined, key: k })),
-    ...tiposCustom.map((t) => ({ label: t.label, id: t.id, key: t.label })),
+    ...TIPOS_FIXOS.map(k => ({
+      label: TIPOS_MOVIMENTACAO[k].label,
+      id: undefined as string | undefined,
+      key: k,
+    })),
+    ...tiposCustom.map(t => ({ label: t.label, id: t.id, key: t.label })),
   ].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 
-  const movimentacoesFiltros = useMemo(() => ({
-    dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
-    dataFim: formatDateToLocalYYYYMMDD(dateFilter.endDate),
-  }), [dateFilter.startDate, dateFilter.endDate]);
+  const movimentacoesFiltros = useMemo(
+    () => ({
+      dataInicio: formatDateToLocalYYYYMMDD(dateFilter.startDate),
+      dataFim: formatDateToLocalYYYYMMDD(dateFilter.endDate),
+    }),
+    [dateFilter.startDate, dateFilter.endDate],
+  );
 
   const initialFetchDoneRef = useRef(false);
-  const lastMovimentacoesParamsRef = useRef<{ socioId?: string; dataInicio: string; dataFim: string } | null>(null);
+  const lastMovimentacoesParamsRef = useRef<{
+    socioId?: string;
+    dataInicio: string;
+    dataFim: string;
+  } | null>(null);
 
   useEffect(() => {
     if (initialFetchDoneRef.current) return;
@@ -352,12 +380,22 @@ export function SociosPage() {
     const socioId = selectedSocio?.id;
     const { dataInicio, dataFim } = movimentacoesFiltros;
     const last = lastMovimentacoesParamsRef.current;
-    if (last && last.socioId === socioId && last.dataInicio === dataInicio && last.dataFim === dataFim) {
+    if (
+      last &&
+      last.socioId === socioId &&
+      last.dataInicio === dataInicio &&
+      last.dataFim === dataFim
+    ) {
       return;
     }
     lastMovimentacoesParamsRef.current = { socioId, dataInicio, dataFim };
     fetchMovimentacoes(socioId, movimentacoesFiltros);
-  }, [fetchMovimentacoes, selectedSocio?.id, movimentacoesFiltros.dataInicio, movimentacoesFiltros.dataFim]);
+  }, [
+    fetchMovimentacoes,
+    selectedSocio?.id,
+    movimentacoesFiltros.dataInicio,
+    movimentacoesFiltros.dataFim,
+  ]);
 
   const tiposFetchedRef = useRef(false);
   useEffect(() => {
@@ -366,20 +404,29 @@ export function SociosPage() {
     fetchTipos('socios').catch(() => {});
   }, [fetchTipos]);
 
+  // Restaura posicao do cursor no CPF apos formatacao (permite editar no meio do campo)
+  useEffect(() => {
+    if (cpfInputRef.current && nextCpfCursorRef.current !== null) {
+      const pos = nextCpfCursorRef.current;
+      cpfInputRef.current.setSelectionRange(pos, pos);
+      nextCpfCursorRef.current = null;
+    }
+  }, [socioFormData.cpf]);
+
   const movimentacoesFiltradas = useMemo(() => {
     if (!selectedSocio) return [];
     return getMovimentacoesPorSocio(selectedSocio.id);
   }, [selectedSocio, movimentacoes, getMovimentacoesPorSocio]);
 
-  const resumosAtivos = useMemo(() => resumos.filter((r) => r.socio.isAtivo !== false), [resumos]);
-  const resumosInativos = useMemo(() => resumos.filter((r) => r.socio.isAtivo === false), [resumos]);
+  const resumosAtivos = useMemo(() => resumos.filter(r => r.socio.isAtivo !== false), [resumos]);
+  const resumosInativos = useMemo(() => resumos.filter(r => r.socio.isAtivo === false), [resumos]);
   const totalGeral = useMemo(() => {
     return resumosAtivos.reduce((acc, r) => acc + r.saldoTotal, 0);
   }, [resumosAtivos]);
 
   function normalizarTipoParaSelect(tipo: string): string {
     const keyLower = (tipo || '').toLowerCase();
-    const fixedKey = TIPOS_FIXOS.find((k) => k === keyLower);
+    const fixedKey = TIPOS_FIXOS.find(k => k === keyLower);
     return fixedKey ?? (tipo || '').toUpperCase();
   }
 
@@ -409,7 +456,7 @@ export function SociosPage() {
   useEffect(() => {
     if (isDialogOpen && editingMov) {
       const dataStr = typeof editingMov.data === 'string' ? editingMov.data.slice(0, 10) : '';
-      setFormData((prev) => ({
+      setFormData(prev => ({
         ...prev,
         data: dataStr,
         tipo: normalizarTipoParaSelect(editingMov.tipo),
@@ -432,7 +479,9 @@ export function SociosPage() {
     }
 
     const dataOnly = formData.data.slice(0, 10);
-    const tipoParaEnvio = TIPOS_FIXOS.includes(formData.tipo as TipoMovimentacaoSocio) ? formData.tipo : formData.tipo.toUpperCase();
+    const tipoParaEnvio = TIPOS_FIXOS.includes(formData.tipo as TipoMovimentacaoSocio)
+      ? formData.tipo
+      : formData.tipo.toUpperCase();
     const descricaoUpper = (formData.descricao || '').trim().toUpperCase();
 
     try {
@@ -517,7 +566,7 @@ export function SociosPage() {
       await fetchSocios();
       await fetchResumo();
       const nextSocios = useSociosStore.getState().socios;
-      const updated = editingSocio ? nextSocios.find((s) => s.id === editingSocio.id) : null;
+      const updated = editingSocio ? nextSocios.find(s => s.id === editingSocio.id) : null;
       if (updated && selectedSocio?.id === updated.id) {
         setSelectedSocio(updated);
       }
@@ -590,17 +639,19 @@ export function SociosPage() {
         {/* Grid de socios ativos ou lista de inativos */}
         {showInativos ? (
           resumosInativos.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 border-dashed bg-slate-50 p-12 text-center">
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
               <Users className="mx-auto h-12 w-12 text-slate-400" />
               <p className="mt-3 text-sm font-medium text-slate-600">Nenhum socio inativo</p>
-              <p className="mt-1 text-sm text-slate-500">Socios desativados aparecem aqui e podem ser reativados.</p>
+              <p className="mt-1 text-sm text-slate-500">
+                Socios desativados aparecem aqui e podem ser reativados.
+              </p>
               <Button className="mt-4" variant="outline" onClick={() => setShowInativos(false)}>
                 Voltar aos socios ativos
               </Button>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {resumosInativos.map((resumo) => (
+              {resumosInativos.map(resumo => (
                 <div
                   key={resumo.socio.id}
                   className="flex flex-col rounded-xl border border-slate-200 bg-slate-50 p-5"
@@ -619,29 +670,31 @@ export function SociosPage() {
             </div>
           )
         ) : resumosAtivos.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 border-dashed bg-slate-50 p-12 text-center">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
             <Users className="mx-auto h-12 w-12 text-slate-400" />
             <p className="mt-3 text-sm font-medium text-slate-600">Nenhum socio cadastrado</p>
-            <p className="mt-1 text-sm text-slate-500">Cadastre o primeiro socio para comecar a registrar movimentacoes.</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Cadastre o primeiro socio para comecar a registrar movimentacoes.
+            </p>
             <Button className="mt-4" onClick={() => handleOpenSocioDialog()}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Socio
             </Button>
           </div>
         ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {resumosAtivos.map((resumo) => (
-            <SocioCard
-              key={resumo.socio.id}
-              resumo={resumo}
-              onClick={() => setSelectedSocio(resumo.socio)}
-              onEdit={(e) => {
-                e.stopPropagation();
-                handleOpenSocioDialog(resumo.socio);
-              }}
-            />
-          ))}
-        </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {resumosAtivos.map(resumo => (
+              <SocioCard
+                key={resumo.socio.id}
+                resumo={resumo}
+                onClick={() => setSelectedSocio(resumo.socio)}
+                onEdit={e => {
+                  e.stopPropagation();
+                  handleOpenSocioDialog(resumo.socio);
+                }}
+              />
+            ))}
+          </div>
         )}
 
         {/* Dialog Novo/Editar Socio */}
@@ -656,7 +709,7 @@ export function SociosPage() {
               </DialogDescription>
             </DialogHeader>
             <form
-              onSubmit={(e) => {
+              onSubmit={e => {
                 e.preventDefault();
                 handleSubmitSocio();
               }}
@@ -669,7 +722,9 @@ export function SociosPage() {
                 <input
                   type="text"
                   value={socioFormData.nome}
-                  onChange={(e) => setSocioFormData({ ...socioFormData, nome: e.target.value.toUpperCase() })}
+                  onChange={e =>
+                    setSocioFormData({ ...socioFormData, nome: e.target.value.toUpperCase() })
+                  }
                   placeholder="Nome completo"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                   required
@@ -680,11 +735,23 @@ export function SociosPage() {
                   CPF <span className="text-slate-500">*</span>
                 </label>
                 <input
+                  ref={cpfInputRef}
                   type="text"
                   inputMode="numeric"
                   maxLength={14}
                   value={socioFormData.cpf}
-                  onChange={(e) => setSocioFormData({ ...socioFormData, cpf: formatCpfInput(e.target.value) })}
+                  onChange={e => {
+                    const input = e.target;
+                    const newVal = formatCpfInput(input.value);
+                    const digitsBeforeCursor = (
+                      input.value.slice(0, input.selectionStart ?? 0).match(/\d/g) || []
+                    ).length;
+                    nextCpfCursorRef.current = getCpfCursorPositionAfterFormat(
+                      newVal,
+                      digitsBeforeCursor,
+                    );
+                    setSocioFormData(prev => ({ ...prev, cpf: newVal }));
+                  }}
                   placeholder="000.000.000-00"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                   required
@@ -698,7 +765,9 @@ export function SociosPage() {
                   type="text"
                   inputMode="decimal"
                   value={socioFormData.percentualSociedade}
-                  onChange={(e) => setSocioFormData({ ...socioFormData, percentualSociedade: e.target.value })}
+                  onChange={e =>
+                    setSocioFormData({ ...socioFormData, percentualSociedade: e.target.value })
+                  }
                   placeholder="Ex: 50"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                   required
@@ -709,7 +778,7 @@ export function SociosPage() {
                   type="checkbox"
                   id="socio-ativo"
                   checked={socioFormData.isAtivo}
-                  onChange={(e) => setSocioFormData({ ...socioFormData, isAtivo: e.target.checked })}
+                  onChange={e => setSocioFormData({ ...socioFormData, isAtivo: e.target.checked })}
                   className="h-4 w-4 rounded border-slate-300"
                 />
                 <label htmlFor="socio-ativo" className="text-sm font-medium text-slate-700">
@@ -757,7 +826,7 @@ export function SociosPage() {
           <DateFilter value={dateFilter} onChange={setDateFilter} />
           <Button onClick={() => handleOpenDialog()} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
-            Nova Movimentação
+            Nova Movimenta??o
           </Button>
         </div>
       </div>
@@ -767,7 +836,7 @@ export function SociosPage() {
         movimentacoes={movimentacoesFiltradas}
         columnsFromApi={movimentacoesColumns}
         onEdit={handleOpenDialog}
-        onDelete={(id) => {
+        onDelete={id => {
           setDeletingId(id);
           setIsDeleteDialogOpen(true);
         }}
@@ -788,30 +857,34 @@ export function SociosPage() {
           <div className="space-y-4 pb-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Data <span className="text-slate-500">*</span></label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Data <span className="text-slate-500">*</span>
+                </label>
                 <input
                   type="date"
                   value={formData.data}
-                  onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+                  onChange={e => setFormData({ ...formData, data: e.target.value })}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                   required
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Tipo <span className="text-slate-500">*</span></label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Tipo <span className="text-slate-500">*</span>
+                </label>
                 <div className="flex gap-1">
                   <select
                     value={formData.tipo}
-                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                    onChange={e => setFormData({ ...formData, tipo: e.target.value })}
                     className="flex h-10 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase"
                     required
                   >
-                    {TIPOS_FIXOS.map((key) => (
+                    {TIPOS_FIXOS.map(key => (
                       <option key={key} value={key}>
                         {TIPOS_MOVIMENTACAO[key].label.toUpperCase()}
                       </option>
                     ))}
-                    {tiposCustom.map((t) => (
+                    {tiposCustom.map(t => (
                       <option key={t.id} value={t.label}>
                         {t.label.toUpperCase()}
                       </option>
@@ -837,18 +910,22 @@ export function SociosPage() {
               <input
                 type="text"
                 value={formData.descricao}
-                onChange={(e) => setFormData({ ...formData, descricao: e.target.value.toUpperCase() })}
+                onChange={e =>
+                  setFormData({ ...formData, descricao: e.target.value.toUpperCase() })
+                }
                 placeholder="Ex: Pro-labore Janeiro"
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Valor <span className="text-slate-500">*</span></label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Valor <span className="text-slate-500">*</span>
+              </label>
               <input
                 type="text"
                 value={formData.valor}
-                onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                onChange={e => setFormData({ ...formData, valor: e.target.value })}
                 placeholder="0,00"
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                 required
@@ -856,7 +933,7 @@ export function SociosPage() {
             </div>
           </div>
 
-          <DialogFooter className="pt-4 border-t border-slate-200">
+          <DialogFooter className="border-t border-slate-200 pt-4">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancelar
             </Button>
@@ -871,7 +948,8 @@ export function SociosPage() {
           <DialogHeader>
             <DialogTitle>Gerenciar tipos</DialogTitle>
             <DialogDescription>
-              Adicione ou remova tipos de movimentacao. Tipos padrao (Pro-labore, Distribuicao, etc.) nao podem ser excluidos.
+              Adicione ou remova tipos de movimentacao. Tipos padrao (Pro-labore, Distribuicao,
+              etc.) nao podem ser excluidos.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -880,8 +958,8 @@ export function SociosPage() {
                 type="text"
                 placeholder="Nome do tipo"
                 value={novoTipoLabel}
-                onChange={(e) => setNovoTipoLabel(e.target.value.trim().toUpperCase())}
-                onKeyDown={(e) => {
+                onChange={e => setNovoTipoLabel(e.target.value.trim().toUpperCase())}
+                onKeyDown={e => {
                   if (e.key === 'Enter' && novoTipoLabel.trim()) {
                     e.preventDefault();
                     addTipo('socios', novoTipoLabel.trim())
@@ -890,7 +968,9 @@ export function SociosPage() {
                         toast.success('Tipo adicionado.');
                         await fetchTipos('socios');
                       })
-                      .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao adicionar tipo'));
+                      .catch(err =>
+                        toast.error(err instanceof Error ? err.message : 'Erro ao adicionar tipo'),
+                      );
                   }
                 }}
                 className="flex flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase"
@@ -906,7 +986,9 @@ export function SociosPage() {
                       toast.success('Tipo adicionado.');
                       await fetchTipos('socios');
                     })
-                    .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao adicionar tipo'));
+                    .catch(err =>
+                      toast.error(err instanceof Error ? err.message : 'Erro ao adicionar tipo'),
+                    );
                 }}
               >
                 {isLoadingTipos ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Adicionar'}
@@ -916,7 +998,7 @@ export function SociosPage() {
               {tiposParaListar.length === 0 ? (
                 <li className="py-4 text-center text-sm text-slate-500">Nenhum tipo.</li>
               ) : (
-                tiposParaListar.map((t) => (
+                tiposParaListar.map(t => (
                   <li
                     key={t.id ?? t.key}
                     className="flex items-center justify-between rounded bg-white px-3 py-2 text-sm text-slate-800"
@@ -928,7 +1010,9 @@ export function SociosPage() {
                         onClick={() => {
                           deleteTipo(t.id!)
                             .then(() => toast.success('Tipo removido.'))
-                            .catch((err) => toast.error(err instanceof Error ? err.message : 'Erro ao remover'));
+                            .catch(err =>
+                              toast.error(err instanceof Error ? err.message : 'Erro ao remover'),
+                            );
                         }}
                         className="rounded p-1 text-slate-600 hover:bg-slate-100"
                         title="Excluir tipo"

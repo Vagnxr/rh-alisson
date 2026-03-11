@@ -51,7 +51,7 @@ export function buildTableColumns<T>(
     const def = columnDefsByKey[id];
     if (!def) continue;
     const apiCol = apiColumnsById?.get(id);
-    if (apiCol?.label != null) {
+    if (apiCol?.label != null && typeof def.header !== 'function') {
       result.push({ ...def, header: apiCol.label });
     } else {
       result.push(def);

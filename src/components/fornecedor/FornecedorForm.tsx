@@ -31,6 +31,8 @@ interface FornecedorFormProps {
   initialCnpj?: string;
   /** Quando aberto para novo fornecedor (sem fornecedor), preenche o campo CPF com este valor (ex.: vindo da tela Entrada). */
   initialCpf?: string;
+  /** Lista de fornecedores existentes para validar CNPJ duplicado ao criar. */
+  existingFornecedores?: Fornecedor[];
   onSubmit: (data: CreateFornecedorDto | UpdateFornecedorDto) => Promise<void>;
   isLoading?: boolean;
 }
@@ -110,6 +112,7 @@ export function FornecedorForm({
   fornecedor,
   initialCnpj,
   initialCpf,
+  existingFornecedores = [],
   onSubmit,
   isLoading = false,
 }: FornecedorFormProps) {
@@ -227,15 +230,58 @@ export function FornecedorForm({
     }
   };
 
+  /** Retorna true se o CNPJ (14 dígitos) já existe em existingFornecedores. */
+  const isCnpjDuplicado = (cnpjDigits: string): boolean => {
+    if (cnpjDigits.length !== 14) return false;
+    return existingFornecedores.some(
+      (f) => f.tipo === 'cnpj' && onlyDigitsCnpj(f.cnpj ?? '').length === 14 && onlyDigitsCnpj(f.cnpj ?? '') === cnpjDigits
+    );
+  };
+
+  /** Retorna true se o CPF (11 dígitos) já existe em existingFornecedores. */
+  const isCpfDuplicado = (cpfDigits: string): boolean => {
+    if (cpfDigits.length !== 11) return false;
+    return existingFornecedores.some(
+      (f) => f.tipo === 'cpf' && onlyDigitsCnpj(f.cpf ?? '').length === 11 && onlyDigitsCnpj(f.cpf ?? '') === cpfDigits
+    );
+  };
+
+  const cnpjJaCadastrado = (): boolean => {
+    if (fornecedor || formData.tipo !== 'cnpj') return false;
+    const digits = onlyDigitsCnpj(formData.cnpj);
+    return digits.length === 14 && isCnpjDuplicado(digits);
+  };
+
+  const cpfJaCadastrado = (): boolean => {
+    if (fornecedor || formData.tipo !== 'cpf') return false;
+    const digits = onlyDigitsCnpj(formData.cpf);
+    return digits.length === 11 && isCpfDuplicado(digits);
+  };
+
   const handleCnpjChange = (value: string) => {
     const digits = onlyDigitsCnpj(value);
     if (digits.length < 14) lastFetchedCnpjRef.current = null;
+    setErrors((e) => ({ ...e, cnpj: '' }));
     setFormData({ ...formData, cnpj: value });
-    if (digits.length === 14) handleBuscarCNPJ(value);
+    if (digits.length === 14 && !fornecedor) {
+      if (isCnpjDuplicado(digits)) {
+        setErrors((e) => ({ ...e, cnpj: 'Este CNPJ já está cadastrado.' }));
+        return;
+      }
+      handleBuscarCNPJ(value);
+    } else if (digits.length === 14 && fornecedor) {
+      handleBuscarCNPJ(value);
+    }
   };
 
   const handleCnpjBlur = () => {
-    if (onlyDigitsCnpj(formData.cnpj).length === 14) handleBuscarCNPJ();
+    if (onlyDigitsCnpj(formData.cnpj).length === 14) {
+      if (cnpjJaCadastrado()) {
+        setErrors((e) => ({ ...e, cnpj: 'Este CNPJ já está cadastrado.' }));
+        return;
+      }
+      handleBuscarCNPJ();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -247,10 +293,12 @@ export function FornecedorForm({
 
     if (formData.tipo === 'cnpj') {
       if (!formData.cnpj?.trim()) newErrors.cnpj = 'CNPJ é obrigatório';
+      else if (!fornecedor && cnpjJaCadastrado()) newErrors.cnpj = 'Este CNPJ já está cadastrado.';
       if (!formData.razaoSocial?.trim()) newErrors.razaoSocial = 'Razão Social é obrigatória';
       if (!formData.nomeFantasia?.trim()) newErrors.nomeFantasia = 'Nome Fantasia é obrigatório';
     } else {
       if (!formData.cpf?.trim()) newErrors.cpf = 'CPF é obrigatório';
+      else if (!fornecedor && cpfJaCadastrado()) newErrors.cpf = 'Este CPF já está cadastrado.';
       if (!formData.nomeCompleto?.trim()) newErrors.nomeCompleto = 'Nome Completo é obrigatório';
       if (!formData.nomeComercial?.trim()) newErrors.nomeComercial = 'Nome Comercial é obrigatório';
     }
@@ -405,7 +453,18 @@ export function FornecedorForm({
               <InputCPF
                 label="CPF"
                 value={formData.cpf}
-                onValueChange={(value) => setFormData({ ...formData, cpf: value })}
+                onValueChange={(value) => {
+                  setErrors((e) => ({ ...e, cpf: '' }));
+                  setFormData({ ...formData, cpf: value });
+                  if (!fornecedor && onlyDigitsCnpj(value).length === 11 && isCpfDuplicado(onlyDigitsCnpj(value))) {
+                    setErrors((e) => ({ ...e, cpf: 'Este CPF já está cadastrado.' }));
+                  }
+                }}
+                onBlur={() => {
+                  if (onlyDigitsCnpj(formData.cpf).length === 11 && cpfJaCadastrado()) {
+                    setErrors((e) => ({ ...e, cpf: 'Este CPF já está cadastrado.' }));
+                  }
+                }}
                 error={errors.cpf}
                 required
               />

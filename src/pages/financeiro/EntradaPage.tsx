@@ -60,6 +60,7 @@ export function EntradaPage() {
   const [novoModelo, setNovoModelo] = useState('');
   const [novaCategoria, setNovaCategoria] = useState('');
   const [novaForma, setNovaForma] = useState('');
+  const [novaFormaComunicarAgenda, setNovaFormaComunicarAgenda] = useState(false);
 
   const defaultForm = useCallback(() => {
     const hoje = formatDateToLocalYYYYMMDD(new Date());
@@ -73,7 +74,7 @@ export function EntradaPage() {
       formaPagamentoId: formasPagamento[0]?.nome ?? '',
       valorTotalNota: '',
       valores: [] as { categoriaId: string; valor: string }[],
-      contasAPagar: [] as { vencimento: string; valor: string }[],
+      contasAPagar: [] as { vencimento: string; valor: string; disabled?: boolean }[],
     };
   }, [modelosNota, formasPagamento]);
 
@@ -150,7 +151,12 @@ export function EntradaPage() {
     return formData.valores.reduce((acc, v) => acc + parseValorFromInput(v.valor), 0);
   }, [formData.valores]);
 
-  const showRecorrencia = true;
+  const formaBoleto = useMemo(() => {
+    const atual = formasPagamento.find(f => f.nome === formData.formaPagamentoId);
+    if (atual) return !!atual.comunicarAgenda;
+    // Fallback defensivo para backends antigos ou dados inconsistentes
+    return (formData.formaPagamentoId ?? '').toLowerCase() === 'boleto';
+  }, [formasPagamento, formData.formaPagamentoId]);
 
   const valorTotalNotaNum = parseValorFromInput(formData.valorTotalNota);
   const somaCategoriasDiverge =
@@ -281,6 +287,7 @@ export function EntradaPage() {
           ? rawContas.map(p => ({
               vencimento: normalizeVencimentoToYYYYMMDD(p.vencimento as string | Date),
               valor: p.valor != null ? formatValorForInput(Number(p.valor)) : '',
+              disabled: !!(p as { pago?: boolean }).pago,
             }))
           : [],
       });
@@ -303,10 +310,13 @@ export function EntradaPage() {
   };
 
   const onAddForma = useCallback(
-    async (nome: string) => {
+    async (nome: string, comunicarAgenda: boolean) => {
       setLoadingFormas(true);
       try {
-        await api.post('financeiro/entrada/formas-pagamento', { nome: nome.trim() });
+        await api.post('financeiro/entrada/formas-pagamento', {
+          nome: nome.trim(),
+          comunicarAgenda,
+        });
         toast.success('Forma de pagamento adicionada.');
         await fetchFormasPagamento();
       } catch (err: unknown) {
@@ -323,10 +333,13 @@ export function EntradaPage() {
   );
 
   const onEditForma = useCallback(
-    async (id: string, nome: string) => {
+    async (id: string, nome: string, comunicarAgenda: boolean) => {
       setLoadingFormas(true);
       try {
-        await api.patch(`financeiro/entrada/formas-pagamento/${id}`, { nome: nome.trim() });
+        await api.patch(`financeiro/entrada/formas-pagamento/${id}`, {
+          nome: nome.trim(),
+          comunicarAgenda,
+        });
         toast.success('Forma de pagamento atualizada.');
         await fetchFormasPagamento();
       } catch (err: unknown) {
@@ -483,10 +496,14 @@ export function EntradaPage() {
       valores: valoresBody,
       total,
     };
-    if (formData.contasAPagar?.length) {
+    // Formas que comunicam agenda (modo Boleto) devem enviar contasAPagar
+    if (formaBoleto && formData.contasAPagar?.length) {
       const parcelas = formData.contasAPagar
         .filter(p => p.vencimento.trim() && parseValorFromInput(p.valor) > 0)
-        .map(p => ({ vencimento: p.vencimento.slice(0, 10), valor: parseValorFromInput(p.valor) }));
+        .map(p => ({
+          vencimento: p.vencimento.slice(0, 10),
+          valor: parseValorFromInput(p.valor),
+        }));
       if (parcelas.length) body.contasAPagar = parcelas;
     }
     if (editingItem) {
@@ -541,7 +558,7 @@ export function EntradaPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Entrada</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Data, fornecedor, modelo da nota, categoria, valores e forma de pagamento.
+            Gerencie suas entradas.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -629,7 +646,7 @@ export function EntradaPage() {
         somaCategoriasDiverge={somaCategoriasDiverge}
         totalValores={totalValores}
         valorTotalNotaNum={valorTotalNotaNum}
-        formaBoleto={showRecorrencia}
+        formaBoleto={formaBoleto}
         onFornecedorChange={handleFornecedorChange}
         onFornecedorBlur={handleFornecedorBlur}
         onFornecedorPaste={handleFornecedorPaste}
@@ -659,6 +676,8 @@ export function EntradaPage() {
         loadingFormas={loadingFormas}
         novaForma={novaForma}
         setNovaForma={setNovaForma}
+        novaFormaComunicarAgenda={novaFormaComunicarAgenda}
+        setNovaFormaComunicarAgenda={setNovaFormaComunicarAgenda}
         onAddForma={onAddForma}
         onEditForma={onEditForma}
         onDeleteForma={onDeleteForma}
@@ -668,8 +687,9 @@ export function EntradaPage() {
       <FornecedorForm
         open={cadastroFornecedorOpen}
         onOpenChange={setCadastroFornecedorOpen}
-        initialCnpj={undefined}
-        initialCpf={undefined}
+        initialCnpj={onlyNumbers(formData.fornecedor).length === 14 ? formData.fornecedor.trim() : undefined}
+        initialCpf={onlyNumbers(formData.fornecedor).length === 11 ? formData.fornecedor.trim() : undefined}
+        existingFornecedores={fornecedores}
         onSubmit={async data => {
           await addFornecedor(data as CreateFornecedorDto);
           toast.success('Fornecedor cadastrado.');

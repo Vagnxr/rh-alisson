@@ -4,6 +4,8 @@ import { cn } from '@/lib/cn';
 export interface DataValorItem {
   data: string;
   valor: string;
+  /** Quando true, desabilita os campos data e valor (ex.: parcela ja paga). */
+  disabled?: boolean;
 }
 
 const inputBaseClass =
@@ -88,36 +90,41 @@ export function DataValorList({
         </button>
       </div>
       <div className={cn('space-y-2 overflow-y-auto px-2 py-2 min-w-0', maxHeight)}>
-        {value.map((item, i) => (
-          <div
-            key={i}
-            className="relative z-0 grid w-full grid-cols-1 items-center gap-2 min-w-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
-          >
-            <input
-              type="date"
-              value={item.data}
-              onChange={(e) => updateLine(i, 'data', e.target.value)}
-              className={cn(inputBaseClass, 'w-full min-w-0')}
-            />
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0,00"
-              value={item.valor}
-              onChange={(e) => updateLine(i, 'valor', e.target.value)}
-              className={cn(inputBaseClass, 'w-full min-w-0')}
-            />
-            <button
-              type="button"
-              onClick={() => removeLine(i)}
-              disabled={value.length <= 1}
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-400 shrink-0"
-              title="Remover"
+        {value.map((item, i) => {
+          const isRowDisabled = !!item.disabled;
+          return (
+            <div
+              key={i}
+              className="relative z-0 grid w-full grid-cols-1 items-center gap-2 min-w-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
             >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ))}
+              <input
+                type="date"
+                value={item.data}
+                onChange={(e) => updateLine(i, 'data', e.target.value)}
+                disabled={isRowDisabled}
+                className={cn(inputBaseClass, 'w-full min-w-0')}
+              />
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={item.valor}
+                onChange={(e) => updateLine(i, 'valor', e.target.value)}
+                disabled={isRowDisabled}
+                className={cn(inputBaseClass, 'w-full min-w-0')}
+              />
+              <button
+                type="button"
+                onClick={() => removeLine(i)}
+                disabled={value.length <= 1 || isRowDisabled}
+                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-400 shrink-0"
+                title={isRowDisabled ? 'Parcela paga não pode ser removida' : 'Remover'}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          );
+        })}
       </div>
       {showTotal && (
         <p className="text-xs text-slate-500">

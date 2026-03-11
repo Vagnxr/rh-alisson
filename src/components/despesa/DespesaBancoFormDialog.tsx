@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { BancoSelector } from './banco';
@@ -59,7 +60,8 @@ export function DespesaBancoFormDialog({
               : 'Preencha os dados do novo registro.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit}>
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+          <DialogBody>
           <div className="space-y-4 py-4">
             {!selectedBanco && (
               <BancoSelector
@@ -151,6 +153,7 @@ export function DespesaBancoFormDialog({
               />
             </div>
           </div>
+          </DialogBody>
 
           <DialogFooter>
             <button

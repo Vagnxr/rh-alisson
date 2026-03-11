@@ -85,7 +85,7 @@ export function AdminUsersPage() {
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-semibold"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Nome
             <ArrowUpDown className="h-4 w-4" />

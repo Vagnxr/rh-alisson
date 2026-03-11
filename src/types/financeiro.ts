@@ -164,7 +164,7 @@ export interface EntradaRow {
   /** Total da nota (soma dos valores). Backend pode retornar. */
   total?: number;
   /** Contas a pagar (parcelas de boleto): vencimento (YYYY-MM-DD) e valor. */
-  contasAPagar?: { vencimento: string; valor: number }[];
+  contasAPagar?: { vencimento: string; valor: number; pago?: boolean }[];
   /** Campos legados (backend pode ainda enviar) */
   industrializacao?: number;
   comercializacao?: number;
@@ -190,6 +190,10 @@ export interface SaidaRow {
   materialUsoCons: number;
   mercadoriaUsoCons: number;
   gas: number;
+  bonifPreco?: number;
+  bonifTroca?: number;
+  bonifLoja?: number;
+  total?: number;
 }
 
 /** Linha Pago em Dinheiro */

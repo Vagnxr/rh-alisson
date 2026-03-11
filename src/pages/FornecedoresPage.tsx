@@ -25,12 +25,12 @@ const FORNECEDOR_TABLE_DEFAULT_ORDER = [
   'endereco', 'contatoEmpresa', 'contatoVendedor', 'observacoes', 'isAtivo', 'createdAt', 'updatedAt',
 ];
 
-function SortableHeader({ column, children }: { column: { getIsSorted: () => false | 'asc' | 'desc'; toggleSorting: (asc: boolean) => void }; children: React.ReactNode }) {
+function SortableHeader({ column, children }: { column: { getToggleSortingHandler: () => ((e: unknown) => void) | undefined }; children: React.ReactNode }) {
   return (
     <button
       type="button"
       className="flex items-center gap-1 font-medium"
-      onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      onClick={column.getToggleSortingHandler()}
     >
       {children}
       <ArrowUpDown className="h-4 w-4" />
@@ -54,7 +54,7 @@ export function FornecedoresPage() {
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [globalFilter, setGlobalFilter] = useState('');
   const [viewStatus, setViewStatus] = useState<'ativos' | 'inativos'>('ativos');
-  const [viewTipo, setViewTipo] = useState<'todos' | 'cnpj' | 'cpf'>('todos');
+  const [viewTipo, setViewTipo] = useState<'cnpj' | 'cpf'>('cnpj');
 
   useEffect(() => {
     fetchFornecedores();
@@ -282,7 +282,7 @@ export function FornecedoresPage() {
       return { razaoSocial: false, nomeFantasia: false, cnpj: false };
     }
     if (viewTipo === 'cnpj') {
-      return { cpf: false, nomeCompleto: false };
+      return { cpf: false, nomeCompleto: false, nomeComercial: false };
     }
     return {};
   }, [viewTipo]);
@@ -308,16 +308,23 @@ export function FornecedoresPage() {
 
   return (
     <div className="min-w-0 space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="truncate text-xl font-bold text-slate-900 sm:text-2xl">Fornecedores</h1>
-          <p className="mt-1 truncate text-sm text-slate-500">
-            Gerencie seus fornecedores (CNPJ e CPF)
-          </p>
+      {/* Header: título e subtítulo sempre visíveis */}
+      <header className="min-w-0 space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 shrink-0">
+            <h1 className="truncate text-xl font-bold text-slate-900 sm:text-2xl">Fornecedores</h1>
+            <p className="mt-1 truncate text-sm text-slate-500">Gerencie seus fornecedores</p>
+          </div>
+          <button
+            onClick={() => handleOpenDialog()}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Novo Fornecedor</span>
+          </button>
         </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-3">
-          {/* Aba Ativos / Inativos */}
+        {/* Filtros, tipo e busca em uma linha (quebra em telas pequenas) */}
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
           <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
             <button
               type="button"
@@ -344,31 +351,25 @@ export function FornecedoresPage() {
               Inativos
             </button>
           </div>
-          {/* Aba CNPJ / CPF */}
-          <Tabs value={viewTipo} onValueChange={(v) => setViewTipo(v as 'todos' | 'cnpj' | 'cpf')}>
+          <Tabs value={viewTipo} onValueChange={(v) => setViewTipo(v as 'cnpj' | 'cpf')}>
             <TabsList className="h-auto rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-              <TabsTrigger value="todos" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:shadow-sm">
-                Todos
-              </TabsTrigger>
-              <TabsTrigger value="cnpj" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:shadow-sm">
-                <Building2 className="mr-1.5 h-4 w-4" />
+              <TabsTrigger value="cnpj" className="inline-flex items-center rounded-md px-3 py-1.5 text-sm data-[state=active]:shadow-sm">
+                <Building2 className="mr-1.5 h-4 w-4 shrink-0" />
                 CNPJ
               </TabsTrigger>
-              <TabsTrigger value="cpf" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:shadow-sm">
-                <User className="mr-1.5 h-4 w-4" />
+              <TabsTrigger value="cpf" className="inline-flex items-center rounded-md px-3 py-1.5 text-sm data-[state=active]:shadow-sm">
+                <User className="mr-1.5 h-4 w-4 shrink-0" />
                 CPF
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          {/* Busca */}
           <input
             type="text"
             placeholder="Buscar fornecedores..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-64"
+            className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:max-w-xs"
           />
-          {/* Exportação */}
           <ExportButtons
             data={fornecedores.map((f) => ({
               tipo: f.tipo.toUpperCase(),
@@ -393,15 +394,8 @@ export function FornecedoresPage() {
             filename="fornecedores"
             title="Relatório de Fornecedores"
           />
-          <button
-            onClick={() => handleOpenDialog()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Novo Fornecedor</span>
-          </button>
         </div>
-      </div>
+      </header>
 
       {/* Tabela */}
       <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -537,6 +531,7 @@ export function FornecedoresPage() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         fornecedor={editingFornecedor || undefined}
+        existingFornecedores={fornecedores}
         onSubmit={handleSubmit}
         isLoading={isLoading}
       />

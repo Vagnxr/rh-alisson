@@ -2,6 +2,14 @@ import { create } from 'zustand';
 import type { Banco } from '@/types/banco';
 import { api } from '@/lib/api';
 
+/** Normaliza item da API para o tipo Banco (backend pode enviar codigoBanco em vez de codigo). */
+function normalizarBanco(item: Banco & { codigoBanco?: string }): Banco {
+  return {
+    ...item,
+    codigo: item.codigo ?? item.codigoBanco ?? '',
+  };
+}
+
 interface BancoState {
   bancos: Banco[];
   isLoading: boolean;
@@ -11,7 +19,7 @@ interface BancoState {
 interface BancoActions {
   fetchBancos: () => Promise<void>;
   addBanco: (data: { nome: string; codigo?: string; cor?: string; logo?: string }) => Promise<Banco>;
-  updateBanco: (id: string, data: Partial<Pick<Banco, 'nome' | 'codigo' | 'cor' | 'logo'>>) => Promise<void>;
+  updateBanco: (id: string, data: Partial<Pick<Banco, 'nome' | 'codigo' | 'cor' | 'logo' | 'isActive'>>) => Promise<void>;
   deleteBanco: (id: string) => Promise<void>;
   reset: () => void;
 }
@@ -27,7 +35,8 @@ export const useBancoStore = create<BancoState & BancoActions>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await api.get<Banco[]>('bancos');
-      const list = Array.isArray(res?.data) ? res.data : [];
+      const raw = Array.isArray(res?.data) ? res.data : [];
+      const list = raw.map((b) => normalizarBanco(b as Banco & { codigoBanco?: string }));
       set({ bancos: list, isLoading: false });
     } catch {
       set({ bancos: [], isLoading: false });
@@ -53,9 +62,19 @@ export const useBancoStore = create<BancoState & BancoActions>((set, get) => ({
   updateBanco: async (id, data) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await api.patch<Banco>(`bancos/${id}`, data);
+      const res = await api.patch<Banco & { codigoBanco?: string }>(`bancos/${id}`, data);
+      const updated = res.data as Banco & { codigoBanco?: string };
       set((state) => ({
-        bancos: state.bancos.map((b) => (b.id === id ? res.data : b)),
+        bancos: state.bancos.map((b) => {
+          if (b.id !== id) return b;
+          return {
+            ...b,
+            ...updated,
+            codigo: updated.codigo ?? updated.codigoBanco ?? b.codigo,
+            cor: updated.cor ?? b.cor,
+            logo: updated.logo !== undefined ? updated.logo : b.logo,
+          };
+        }),
         isLoading: false,
       }));
     } catch (err) {

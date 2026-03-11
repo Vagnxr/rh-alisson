@@ -1,4 +1,4 @@
-import { Building2, Pencil, Plus } from 'lucide-react';
+import { Building2, Landmark, Pencil, Plus } from 'lucide-react';
 import type { Banco } from '@/types/banco';
 import { BancoLogo } from './banco';
 import { formatCurrency } from './DespesaBancoUtils';
@@ -7,6 +7,7 @@ import type { DespesaBanco } from './DespesaBancoUtils';
 interface DespesaBancoListaViewProps {
   bancos: Banco[];
   items: DespesaBanco[];
+  totalGeral: number;
   onSelectBanco: (banco: Banco) => void;
   onOpenBancos: () => void;
   onEditBanco: (banco: Banco) => void;
@@ -15,6 +16,7 @@ interface DespesaBancoListaViewProps {
 export function DespesaBancoListaView({
   bancos,
   items,
+  totalGeral,
   onSelectBanco,
   onOpenBancos,
   onEditBanco,
@@ -38,6 +40,19 @@ export function DespesaBancoListaView({
               <Building2 className="h-4 w-4" />
               Gerenciar bancos
             </button>
+          </div>
+        </div>
+
+        {/* Banner Total Geral - soma de todas as saidas de todos os bancos */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100">
+              <Landmark className="h-6 w-6 text-slate-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-900">Total Geral</p>
+              <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalGeral)}</p>
+            </div>
           </div>
         </div>
 

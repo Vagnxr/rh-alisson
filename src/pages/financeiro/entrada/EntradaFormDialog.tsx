@@ -27,7 +27,7 @@ export interface EntradaFormData {
   formaPagamentoId: string;
   valorTotalNota: string;
   valores: { categoriaId: string; valor: string }[];
-  contasAPagar: { vencimento: string; valor: string }[];
+  contasAPagar: { vencimento: string; valor: string; disabled?: boolean }[];
 }
 
 export interface EntradaFormDialogProps {
@@ -284,9 +284,22 @@ export function EntradaFormDialog({
                     setFormData(prev => ({ ...prev, formaPagamentoId: e.target.value }))
                   }
                   className={INPUT_CLASS}
+                  title={
+                    editingItem
+                      ? 'Ao editar, nao e possivel trocar entre formas que comunicam agenda e formas que nao comunicam agenda.'
+                      : undefined
+                  }
                 >
-                  {[...formasPagamento]
-                    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                  {(() => {
+                    const lista = [...formasPagamento];
+                    if (editingItem) {
+                      const atual = lista.find(f => f.nome === formData.formaPagamentoId);
+                      const atualAgenda = atual?.comunicarAgenda === true;
+                      return lista.filter(f => f.comunicarAgenda === atualAgenda);
+                    }
+                    return lista;
+                  })()
+                    .sort((a, b) => (a.nome ?? '').localeCompare(b.nome ?? '', 'pt-BR'))
                     .map(f => (
                       <option key={f.id} value={f.nome}>
                         {f.nome}
@@ -307,41 +320,54 @@ export function EntradaFormDialog({
                     </button>
                   </div>
                   <p className="text-xs text-slate-500">
-                    Vencimento e valor de cada boleto (comunica Agenda).
+                    Vencimento e valor de cada boleto.
                   </p>
                   <div className="max-h-36 space-y-2 overflow-y-auto px-2 py-1">
                     {(formData.contasAPagar?.length
                       ? formData.contasAPagar
                       : [{ vencimento: '', valor: '' }]
-                    ).map((p, i) => (
-                      <div
-                        key={i}
-                        className="grid grid-cols-[1fr_1fr_auto] items-center gap-2 min-w-0"
-                      >
-                        <input
-                          type="date"
-                          value={p.vencimento}
-                          onChange={e => updateContaAPagar(i, 'vencimento', e.target.value)}
-                          className={cn(INPUT_CLASS, 'min-w-0')}
-                        />
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          placeholder="0,00"
-                          value={p.valor}
-                          onChange={e => updateContaAPagar(i, 'valor', e.target.value)}
-                          className={cn(INPUT_CLASS, 'min-w-0')}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeContaAPagar(i)}
-                          className="shrink-0 rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600"
-                          title="Remover"
+                    ).map((p, i) => {
+                      const isDisabled = !!p.disabled;
+                      return (
+                        <div
+                          key={i}
+                          className={cn(
+                            'grid grid-cols-[1fr_1fr_auto] items-center gap-2 min-w-0',
+                            isDisabled && 'opacity-60'
+                          )}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
+                          <input
+                            type="date"
+                            value={p.vencimento}
+                            onChange={e => updateContaAPagar(i, 'vencimento', e.target.value)}
+                            className={cn(INPUT_CLASS, 'min-w-0')}
+                            disabled={isDisabled}
+                          />
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0,00"
+                            value={p.valor}
+                            onChange={e => updateContaAPagar(i, 'valor', e.target.value)}
+                            className={cn(INPUT_CLASS, 'min-w-0')}
+                            disabled={isDisabled}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeContaAPagar(i)}
+                            className="shrink-0 rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                            title={
+                              isDisabled
+                                ? 'Parcela já paga não pode ser removida'
+                                : 'Remover'
+                            }
+                            disabled={isDisabled}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

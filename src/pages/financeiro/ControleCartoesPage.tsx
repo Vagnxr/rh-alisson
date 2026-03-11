@@ -267,7 +267,7 @@ export function ControleCartoesPage() {
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Data <ArrowUpDown className="h-4 w-4" />
           </button>

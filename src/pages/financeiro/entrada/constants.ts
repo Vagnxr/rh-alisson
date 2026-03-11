@@ -20,6 +20,8 @@ export interface FormaPagamentoFromApi {
   id: string;
   nome: string;
   isDefault: boolean;
+  /** Define se a forma se comporta em "modo Boleto" (gera agenda e saida so ao pagar). */
+  comunicarAgenda: boolean;
 }
 
 /** @deprecated Usar FormaPagamentoFromApi da API. Mantido para compatibilidade. */

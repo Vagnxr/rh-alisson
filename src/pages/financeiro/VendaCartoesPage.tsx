@@ -43,7 +43,7 @@ const COLUMN_DEFS_BY_KEY: Record<string, ColumnDef<VendaCartoesRowFlex>> = {
     header: ({ column }) => (
       <button
         className="flex items-center gap-1 font-medium"
-        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        onClick={column.getToggleSortingHandler()}
       >
         Dia <ArrowUpDown className="h-4 w-4" />
       </button>

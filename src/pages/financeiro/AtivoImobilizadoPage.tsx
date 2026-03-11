@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -65,21 +65,26 @@ export function AtivoImobilizadoPage() {
     parcelasIds: [] as string[],
     comunicarAgenda: false,
   });
+  /** Ref com ultimo valor/data digitados (evita perder ao trocar forma de pagamento antes do state atualizar). */
+  const lastDataValorRef = useRef({ data: '', valor: '' });
   const handleOpenDialogEntrada = (item?: AtivoImobilizadoRow) => {
     const hoje = new Date().toISOString().split('T')[0];
     if (item) {
       setEditingEntrada(item);
       const isBoleto = (item.formaPagto ?? '').toString().toLowerCase() === 'boleto';
-      const grupoId = item.recorrenciaGrupoId ?? (item as { recorrencia_grupo_id?: string }).recorrencia_grupo_id;
+      const grupoId =
+        item.recorrenciaGrupoId ?? (item as { recorrencia_grupo_id?: string }).recorrencia_grupo_id;
       let parcelas: DataValorItem[] = [];
       let parcelasIds: string[] = [];
       if (isBoleto) {
         const parcelasFromBackend = item.parcelas && item.parcelas.length > 0;
         if (parcelasFromBackend) {
-          const normData = (s: string) => (s ?? '').toString().split('T')[0] || (s ?? '').toString().slice(0, 10);
-          parcelas = item.parcelas!.map((p) => ({
+          const normData = (s: string) =>
+            (s ?? '').toString().split('T')[0] || (s ?? '').toString().slice(0, 10);
+          parcelas = item.parcelas!.map(p => ({
             data: normData(p.dataVencimento ?? ''),
             valor: formatValorForInput(Number(p.valor) || 0),
+            disabled: !!p.pago,
           }));
           const itemDataNorm = normData(item.data);
           const itemValorNum = Number(item.valor);
@@ -93,14 +98,18 @@ export function AtivoImobilizadoPage() {
         } else {
           let doGrupo: AtivoImobilizadoRow[];
           if (grupoId && entradas.length > 0) {
-            doGrupo = entradas.filter((r) => (r.recorrenciaGrupoId ?? (r as { recorrencia_grupo_id?: string }).recorrencia_grupo_id) === grupoId);
+            doGrupo = entradas.filter(
+              r =>
+                (r.recorrenciaGrupoId ??
+                  (r as { recorrencia_grupo_id?: string }).recorrencia_grupo_id) === grupoId,
+            );
           } else if (entradas.length > 0 && item.recorrenciaIndice) {
             doGrupo = entradas.filter(
-              (r) =>
+              r =>
                 (r.formaPagto ?? '').toString().toLowerCase() === 'boleto' &&
                 r.nf === item.nf &&
                 r.descricaoFornecedor === item.descricaoFornecedor &&
-                r.recorrenciaIndice
+                r.recorrenciaIndice,
             );
           } else {
             doGrupo = [item];
@@ -112,14 +121,14 @@ export function AtivoImobilizadoPage() {
             if (indiceA != null && indiceB != null) return indiceA - indiceB;
             return (a.data || '').localeCompare(b.data || '');
           });
-          parcelas = ordenados.map((r) => ({
+          parcelas = ordenados.map(r => ({
             data: (r.data ?? '').toString().split('T')[0] || (r.data ?? '').toString().slice(0, 10),
             valor: formatValorForInput(Number(r.valor) || 0),
           }));
-          parcelasIds = ordenados.map((r) => r.id);
+          parcelasIds = ordenados.map(r => r.id);
         }
       }
-      setFormEntrada({
+      const nextState = {
         data: item.data.split('T')[0] || item.data.slice(0, 10),
         nf: item.nf,
         descricaoFornecedor: item.descricaoFornecedor,
@@ -128,7 +137,9 @@ export function AtivoImobilizadoPage() {
         parcelas,
         parcelasIds,
         comunicarAgenda: item.comunicarAgenda ?? false,
-      });
+      };
+      setFormEntrada(nextState);
+      lastDataValorRef.current = { data: nextState.data, valor: nextState.valor };
     } else {
       setEditingEntrada(null);
       setFormEntrada({
@@ -141,6 +152,7 @@ export function AtivoImobilizadoPage() {
         parcelasIds: [],
         comunicarAgenda: false,
       });
+      lastDataValorRef.current = { data: hoje, valor: '' };
     }
     setDialogEntrada(true);
   };
@@ -157,18 +169,22 @@ export function AtivoImobilizadoPage() {
   const fetchEntradas = useCallback(() => {
     setLoading1(true);
     api
-      .get<AtivoImobilizadoRow[]>('financeiro/ativo-imobilizado', { params: { ...params, tipo: 'entrada' } })
-      .then((res) => setEntradas(Array.isArray(res.data) ? res.data : []))
-      .catch((err) => toast.error(err?.message ?? 'Erro ao carregar entradas'))
+      .get<AtivoImobilizadoRow[]>('financeiro/ativo-imobilizado', {
+        params: { ...params, tipo: 'entrada' },
+      })
+      .then(res => setEntradas(Array.isArray(res.data) ? res.data : []))
+      .catch(err => toast.error(err?.message ?? 'Erro ao carregar entradas'))
       .finally(() => setLoading1(false));
   }, [params]);
 
   const fetchSaidas = useCallback(() => {
     setLoading2(true);
     api
-      .get<AtivoImobilizadoRow[]>('financeiro/ativo-imobilizado', { params: { ...params, tipo: 'saida' } })
-      .then((res) => setSaidas(Array.isArray(res.data) ? res.data : []))
-      .catch((err) => toast.error(err?.message ?? 'Erro ao carregar saidas'))
+      .get<AtivoImobilizadoRow[]>('financeiro/ativo-imobilizado', {
+        params: { ...params, tipo: 'saida' },
+      })
+      .then(res => setSaidas(Array.isArray(res.data) ? res.data : []))
+      .catch(err => toast.error(err?.message ?? 'Erro ao carregar saidas'))
       .finally(() => setLoading2(false));
   }, [params]);
 
@@ -193,13 +209,13 @@ export function AtivoImobilizadoPage() {
     }
     if (formEntrada.formaPagto === 'Boleto' && !editingEntrada) {
       const validRows = formEntrada.parcelas.filter(
-        (p) => p.data?.trim() && parseValorFromInput(p.valor) > 0
+        p => p.data?.trim() && parseValorFromInput(p.valor) > 0,
       );
       if (validRows.length === 0) {
         toast.error('Adicione ao menos uma parcela com data e valor.');
         return;
       }
-      const parcelas = validRows.map((p) => ({
+      const parcelas = validRows.map(p => ({
         data: p.data.trim().slice(0, 10),
         valor: parseValorFromInput(p.valor),
       }));
@@ -209,11 +225,14 @@ export function AtivoImobilizadoPage() {
         descricaoFornecedor: descricao,
         formaPagto: 'Boleto' as const,
         parcelas,
-        comunicarAgenda: formEntrada.comunicarAgenda,
+        comunicarAgenda: true,
       };
       api
-        .post<AtivoImobilizadoRow[] | { data: AtivoImobilizadoRow | AtivoImobilizadoRow[]; meta?: { criados?: number } }>('financeiro/ativo-imobilizado', body)
-        .then((res) => {
+        .post<
+          | AtivoImobilizadoRow[]
+          | { data: AtivoImobilizadoRow | AtivoImobilizadoRow[]; meta?: { criados?: number } }
+        >('financeiro/ativo-imobilizado', body)
+        .then(res => {
           const raw = res.data;
           const meta = (raw as { meta?: { criados?: number } })?.meta?.criados;
           let created: AtivoImobilizadoRow[];
@@ -221,7 +240,7 @@ export function AtivoImobilizadoPage() {
             created = raw;
           } else if (raw && typeof raw === 'object' && 'data' in raw) {
             const d = (raw as { data: AtivoImobilizadoRow | AtivoImobilizadoRow[] }).data;
-            created = Array.isArray(d) ? d : (d ? [d] : []);
+            created = Array.isArray(d) ? d : d ? [d] : [];
           } else {
             created = [];
           }
@@ -232,7 +251,7 @@ export function AtivoImobilizadoPage() {
           setDialogEntrada(false);
           setEditingEntrada(null);
         })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao criar'));
+        .catch(err => toast.error(err?.message ?? 'Erro ao criar'));
       return;
     }
     if (editingEntrada) {
@@ -241,17 +260,20 @@ export function AtivoImobilizadoPage() {
         nf: formEntrada.nf.trim(),
         descricaoFornecedor: descricao,
         formaPagto: formEntrada.formaPagto,
-        comunicarAgenda: formEntrada.comunicarAgenda,
+        comunicarAgenda: formEntrada.formaPagto === 'Boleto' ? true : formEntrada.comunicarAgenda,
       };
       if (editingEntrada.recorrencia != null) baseBody.recorrencia = editingEntrada.recorrencia;
-      if (editingEntrada.recorrenciaFim != null) baseBody.recorrenciaFim = editingEntrada.recorrenciaFim;
+      if (editingEntrada.recorrenciaFim != null)
+        baseBody.recorrenciaFim = editingEntrada.recorrenciaFim;
 
       if (formEntrada.formaPagto === 'Boleto' && formEntrada.parcelas.length > 0) {
-        const parcelasPayload = formEntrada.parcelas.map((p) => ({
+        const parcelasPayload = formEntrada.parcelas.map(p => ({
           data: (p.data ?? '').trim().slice(0, 10),
           valor: parseValorFromInput(p.valor),
         }));
-        const validas = parcelasPayload.filter((p) => p.data && Number.isFinite(p.valor) && p.valor >= 0);
+        const validas = parcelasPayload.filter(
+          p => p.data && Number.isFinite(p.valor) && p.valor >= 0,
+        );
         if (validas.length === 0) {
           toast.error('Adicione ao menos uma parcela com data e valor.');
           return;
@@ -277,7 +299,7 @@ export function AtivoImobilizadoPage() {
           setDialogEntrada(false);
           setEditingEntrada(null);
         })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao atualizar'));
+        .catch(err => toast.error(err?.message ?? 'Erro ao atualizar'));
     } else {
       const valorNum = parseValorFromInput(formEntrada.valor);
       if (formEntrada.valor.trim() === '' || !Number.isFinite(valorNum)) {
@@ -295,14 +317,14 @@ export function AtivoImobilizadoPage() {
       };
       api
         .post<AtivoImobilizadoRow>('financeiro/ativo-imobilizado', body)
-        .then((res) => {
+        .then(res => {
           toast.success('Registro adicionado.');
-          setEntradas((prev) => [...prev, res.data]);
+          setEntradas(prev => [...prev, res.data]);
           fetchSaidas();
           setDialogEntrada(false);
           setEditingEntrada(null);
         })
-        .catch((err) => toast.error(err?.message ?? 'Erro ao criar'));
+        .catch(err => toast.error(err?.message ?? 'Erro ao criar'));
     }
   };
 
@@ -311,12 +333,12 @@ export function AtivoImobilizadoPage() {
     api
       .delete(`financeiro/ativo-imobilizado/${deleteEntradaId}`)
       .then(() => {
-        setEntradas((prev) => prev.filter((r) => r.id !== deleteEntradaId));
+        setEntradas(prev => prev.filter(r => r.id !== deleteEntradaId));
         setDeleteEntradaId(null);
         fetchSaidas();
         toast.success('Registro excluido.');
       })
-      .catch((err) => toast.error(err?.message ?? 'Erro ao excluir'));
+      .catch(err => toast.error(err?.message ?? 'Erro ao excluir'));
   };
 
   const columnsWithActions = useMemo<ColumnDef<AtivoImobilizadoRow>[]>(
@@ -326,7 +348,7 @@ export function AtivoImobilizadoPage() {
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Data <ArrowUpDown className="h-4 w-4" />
           </button>
@@ -357,17 +379,27 @@ export function AtivoImobilizadoPage() {
         header: () => <span className="sr-only">Acoes</span>,
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-1">
-            <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Editar" onClick={() => handleOpenDialogEntrada(row.original)}>
+            <button
+              type="button"
+              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              title="Editar"
+              onClick={() => handleOpenDialogEntrada(row.original)}
+            >
               <Pencil className="h-4 w-4" />
             </button>
-            <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Excluir" onClick={() => setDeleteEntradaId(row.original.id)}>
+            <button
+              type="button"
+              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+              title="Excluir"
+              onClick={() => setDeleteEntradaId(row.original.id)}
+            >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         ),
       },
     ],
-    []
+    [],
   );
 
   /** Colunas da tabela Saida sem acoes (editar/excluir): saida e derivada da entrada. */
@@ -378,7 +410,7 @@ export function AtivoImobilizadoPage() {
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Data <ArrowUpDown className="h-4 w-4" />
           </button>
@@ -405,7 +437,7 @@ export function AtivoImobilizadoPage() {
         },
       },
     ],
-    []
+    [],
   );
 
   const tableEntrada = useReactTable({
@@ -433,18 +465,18 @@ export function AtivoImobilizadoPage() {
     table: ReturnType<typeof useReactTable<AtivoImobilizadoRow>>,
     total: number,
     hasRows: boolean,
-    colCount: number
+    colCount: number,
   ) {
     return (
       <div className="overflow-x-auto">
         <table className="w-full min-w-[500px]">
           <thead className="border-b border-slate-200 bg-slate-50">
-            {table.getHeaderGroups().map((hg) => (
+            {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
-                {hg.headers.map((header) => (
+                {hg.headers.map(header => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                    className="px-4 py-3 text-left text-xs font-medium tracking-wider text-slate-500 uppercase"
                   >
                     {header.isPlaceholder
                       ? null
@@ -462,12 +494,12 @@ export function AtivoImobilizadoPage() {
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row) => (
+              table.getRowModel().rows.map(row => (
                 <tr key={row.id} className="hover:bg-slate-50">
-                  {row.getVisibleCells().map((cell) => (
+                  {row.getVisibleCells().map(cell => (
                     <td
                       key={cell.id}
-                      className="whitespace-nowrap px-4 py-3 text-sm text-slate-600"
+                      className="px-4 py-3 text-sm whitespace-nowrap text-slate-600"
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
@@ -479,7 +511,10 @@ export function AtivoImobilizadoPage() {
           {hasRows && (
             <tfoot className="border-t border-slate-200 bg-slate-50">
               <tr>
-                <td colSpan={colCount - 2} className="px-4 py-3 text-right text-sm font-medium text-slate-900">
+                <td
+                  colSpan={colCount - 2}
+                  className="px-4 py-3 text-right text-sm font-medium text-slate-900"
+                >
                   Total:
                 </td>
                 <td className="px-4 py-3 text-sm font-bold text-slate-900">
@@ -509,12 +544,12 @@ export function AtivoImobilizadoPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="border-b border-slate-200 bg-slate-100 px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2">
             <h2 className="text-sm font-semibold text-slate-800">Ativo Imobilizado - Entrada</h2>
             <div className="flex items-center gap-2">
               <ExportButtons
-                data={entradas.map((r) => ({
+                data={entradas.map(r => ({
                   data: formatDateStringToBR(r.data),
                   nf: r.nf,
                   descricaoFornecedor: r.descricaoFornecedor,
@@ -529,7 +564,11 @@ export function AtivoImobilizadoPage() {
                 filename="ativo-imobilizado-entrada"
                 title="Ativo Imobilizado - Entrada"
               />
-              <button type="button" onClick={() => handleOpenDialogEntrada()} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">
+              <button
+                type="button"
+                onClick={() => handleOpenDialogEntrada()}
+                className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+              >
                 <Plus className="h-3 w-3" />
                 Novo
               </button>
@@ -543,14 +582,16 @@ export function AtivoImobilizadoPage() {
             renderTable(tableEntrada, totalEntrada, entradas.length > 0, columnsWithActions.length)
           )}
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="border-b border-slate-200 bg-slate-100 px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2">
             <div>
               <h2 className="text-sm font-semibold text-slate-800">Ativo Imobilizado - Saida</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Preenchido automaticamente conforme Entrada e pagamentos na Agenda.</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Preenchido automaticamente conforme Entrada e pagamentos na Agenda.
+              </p>
             </div>
             <ExportButtons
-              data={saidas.map((r) => ({
+              data={saidas.map(r => ({
                 data: formatDateStringToBR(r.data),
                 nf: r.nf,
                 descricaoFornecedor: r.descricaoFornecedor,
@@ -582,115 +623,199 @@ export function AtivoImobilizadoPage() {
             <DialogTitle>{editingEntrada ? 'Editar Entrada' : 'Nova Entrada'}</DialogTitle>
             <DialogDescription>
               {formEntrada.formaPagto === 'Boleto'
-                ? 'Para Boleto: preencha N.F., descricao/fornecedor e as parcelas (vencimento e valor).'
-                : 'Preencha data, N.F., descricao/fornecedor, valor e forma de pagto.'}
+                ? 'Preencha as informações'
+                : 'Preencha as informações'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitEntrada} className="flex min-h-0 flex-1 flex-col">
             <DialogBody>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">N.F. <span className="text-red-500">*</span></label>
-                <input type="text" value={formEntrada.nf} onChange={(e) => setFormEntrada({ ...formEntrada, nf: e.target.value })} className={inputClass} required />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Forma de Pagto <span className="text-red-500">*</span></label>
-                <select
-                  value={formEntrada.formaPagto}
-                  onChange={(e) => {
-                    const novaForma = e.target.value as AtivoImobilizadoFormaPagto;
-                    if (novaForma === 'Boleto') {
-                      setFormEntrada((prev) => {
-                        const base = { data: prev.data, valor: prev.valor };
-                        const novasParcelas =
-                          prev.parcelas.length > 0
-                            ? prev.parcelas.map((p, i) => (i === 0 ? base : p))
-                            : [base];
-                        return { ...prev, formaPagto: novaForma, parcelas: novasParcelas };
-                      });
-                    } else {
-                      const first = formEntrada.parcelas[0];
-                      setFormEntrada((prev) => ({
-                        ...prev,
-                        formaPagto: novaForma,
-                        data: first?.data ?? prev.data,
-                        valor: first?.valor ?? prev.valor,
-                        parcelas: [],
-                      }));
+              <div className="mt-4 mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Data <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formEntrada.data}
+                    onChange={e => {
+                      const v = e.target.value;
+                      lastDataValorRef.current = { ...lastDataValorRef.current, data: v };
+                      setFormEntrada({ ...formEntrada, data: v });
+                    }}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Numero da nota <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formEntrada.nf}
+                    onChange={e => setFormEntrada({ ...formEntrada, nf: e.target.value })}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Descricao <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formEntrada.descricaoFornecedor}
+                    onChange={e =>
+                      setFormEntrada({
+                        ...formEntrada,
+                        descricaoFornecedor: e.target.value.toUpperCase(),
+                      })
                     }
-                  }}
-                  className={inputClass}
-                  required
-                >
-                  <option value="Dinheiro">Dinheiro</option>
-                  <option value="PIX">PIX</option>
-                  <option value="Boleto">Boleto</option>
-                </select>
+                    className={`${inputClass} uppercase`}
+                    placeholder="Descricao / Fornecedor"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Valor (R$) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={formEntrada.valor}
+                    onChange={e => {
+                      const v = e.target.value;
+                      lastDataValorRef.current = { ...lastDataValorRef.current, valor: v };
+                      setFormEntrada({ ...formEntrada, valor: v });
+                    }}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Forma de pagamento <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formEntrada.formaPagto}
+                    disabled={formEntrada.parcelas.some(p => p.disabled)}
+                    title={
+                      formEntrada.parcelas.some(p => p.disabled)
+                        ? 'Nao e possivel alterar a forma de pagamento quando ha parcela(s) ja paga(s)'
+                        : editingEntrada && formEntrada.formaPagto === 'Boleto'
+                          ? 'Nao e possivel trocar de Boleto para Dinheiro/PIX'
+                          : editingEntrada
+                            ? 'Nao e possivel trocar de Dinheiro/PIX para Boleto'
+                            : undefined
+                    }
+                    onChange={e => {
+                      const novaForma = e.target.value as AtivoImobilizadoFormaPagto;
+                      if (novaForma === 'Boleto') {
+                        setFormEntrada(prev => {
+                          const data = lastDataValorRef.current.data || prev.data;
+                          const valor = lastDataValorRef.current.valor || prev.valor;
+                          const base = { data, valor };
+                          const novasParcelas =
+                            prev.parcelas.length > 0
+                              ? prev.parcelas.map((p, i) => (i === 0 ? base : p))
+                              : [base];
+                          return { ...prev, formaPagto: novaForma, data, valor, parcelas: novasParcelas };
+                        });
+                      } else {
+                        setFormEntrada(prev => {
+                          const first = prev.parcelas[0];
+                          const data = lastDataValorRef.current.data || (first?.data ?? prev.data);
+                          const valor = lastDataValorRef.current.valor || (first?.valor ?? prev.valor);
+                          lastDataValorRef.current = { data, valor };
+                          return { ...prev, formaPagto: novaForma, data, valor, parcelas: [] };
+                        });
+                      }
+                    }}
+                    className={inputClass}
+                    required
+                  >
+                    {editingEntrada
+                      ? formEntrada.formaPagto === 'Boleto'
+                        ? <option value="Boleto">Boleto</option>
+                        : (
+                            <>
+                              <option value="Dinheiro">Dinheiro</option>
+                              <option value="PIX">PIX</option>
+                            </>
+                          )
+                      : (
+                          <>
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="PIX">PIX</option>
+                            <option value="Boleto">Boleto</option>
+                          </>
+                        )}
+                  </select>
+                </div>
+                {formEntrada.formaPagto === 'Boleto' && (
+                  <>
+                    <div className="space-y-2 sm:col-span-2">
+                      <DataValorList
+                        value={formEntrada.parcelas}
+                        onChange={parcelas => {
+                          if (parcelas[0]) {
+                            lastDataValorRef.current = {
+                              data: parcelas[0].data ?? lastDataValorRef.current.data,
+                              valor: parcelas[0].valor ?? lastDataValorRef.current.valor,
+                            };
+                          }
+                          setFormEntrada({ ...formEntrada, parcelas });
+                        }}
+                        label="Parcelas"
+                        addLabel="Adicionar parcela"
+                        showTotal
+                        countLabel="parcela"
+                        getNewItem={valores => {
+                          const ultima = valores[valores.length - 1];
+                          const dataBase = ultima?.data?.trim() || formEntrada.data;
+                          const proximaData = dataBase
+                            ? addOneMonth(dataBase)
+                            : new Date().toISOString().split('T')[0];
+                          const ultimoValor = ultima?.valor ?? formEntrada.valor;
+                          return { data: proximaData, valor: ultimoValor };
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <label className="text-sm font-medium text-slate-700">Descricao / Fornecedor <span className="text-red-500">*</span></label>
-                <input type="text" value={formEntrada.descricaoFornecedor} onChange={(e) => setFormEntrada({ ...formEntrada, descricaoFornecedor: e.target.value.toUpperCase() })} className={`${inputClass} uppercase`} required />
-              </div>
-              {formEntrada.formaPagto !== 'Boleto' && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Data <span className="text-red-500">*</span></label>
-                    <input type="date" value={formEntrada.data} onChange={(e) => setFormEntrada({ ...formEntrada, data: e.target.value })} className={inputClass} required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Valor (R$) <span className="text-red-500">*</span></label>
-                    <input type="text" inputMode="decimal" placeholder="0,00" value={formEntrada.valor} onChange={(e) => setFormEntrada({ ...formEntrada, valor: e.target.value })} className={inputClass} required />
-                  </div>
-                </>
-              )}
-              {formEntrada.formaPagto === 'Boleto' && (
-                <>
-                  <div className="space-y-2 sm:col-span-2">
-                    <DataValorList
-                      value={formEntrada.parcelas}
-                      onChange={(parcelas) => setFormEntrada({ ...formEntrada, parcelas })}
-                      label="Parcelas"
-                      addLabel="Adicionar parcela"
-                      showTotal
-                      countLabel="parcela"
-                      getNewItem={(valores) => {
-                        const ultima = valores[valores.length - 1];
-                        const dataBase = ultima?.data?.trim() || formEntrada.data;
-                        const proximaData = dataBase ? addOneMonth(dataBase) : new Date().toISOString().split('T')[0];
-                        const ultimoValor = ultima?.valor ?? formEntrada.valor;
-                        return { data: proximaData, valor: ultimoValor };
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 sm:col-span-2">
-                    <input
-                      id="comunicarAgendaEntrada"
-                      type="checkbox"
-                      checked={formEntrada.comunicarAgenda}
-                      onChange={(e) => setFormEntrada({ ...formEntrada, comunicarAgenda: e.target.checked })}
-                      className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <label htmlFor="comunicarAgendaEntrada" className="text-sm font-medium text-slate-700">
-                      Comunicar Agenda (registra saida ao marcar como pago na agenda)
-                    </label>
-                  </div>
-                </>
-              )}
-            </div>
             </DialogBody>
             <DialogFooter>
-              <button type="button" onClick={() => setDialogEntrada(false)} className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100">Cancelar</button>
-              <button type="submit" className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">{editingEntrada ? 'Salvar' : 'Adicionar'}</button>
+              <button
+                type="button"
+                onClick={() => setDialogEntrada(false)}
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              >
+                {editingEntrada ? 'Salvar' : 'Adicionar'}
+              </button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteEntradaId} onOpenChange={(open) => !open && setDeleteEntradaId(null)}>
+      <AlertDialog
+        open={!!deleteEntradaId}
+        onOpenChange={open => !open && setDeleteEntradaId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusao</AlertDialogTitle>
-            <AlertDialogDescription>Tem certeza que deseja excluir este registro?</AlertDialogDescription>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este registro?
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>

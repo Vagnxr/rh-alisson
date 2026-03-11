@@ -32,8 +32,10 @@ interface EntradaConfigDialogsProps {
   loadingFormas: boolean;
   novaForma: string;
   setNovaForma: (v: string) => void;
-  onAddForma: (nome: string) => Promise<void>;
-  onEditForma: (id: string, nome: string) => Promise<void>;
+  novaFormaComunicarAgenda: boolean;
+  setNovaFormaComunicarAgenda: (v: boolean) => void;
+  onAddForma: (nome: string, comunicarAgenda: boolean) => Promise<void>;
+  onEditForma: (id: string, nome: string, comunicarAgenda: boolean) => Promise<void>;
   onDeleteForma: (id: string) => Promise<void>;
   slugify: (s: string) => string;
 }
@@ -53,6 +55,8 @@ export function EntradaConfigDialogs({
   loadingFormas,
   novaForma,
   setNovaForma,
+  novaFormaComunicarAgenda,
+  setNovaFormaComunicarAgenda,
   onAddForma,
   onEditForma,
   onDeleteForma,
@@ -205,11 +209,12 @@ export function EntradaConfigDialogs({
             <DialogTitle>Formas de pagamento</DialogTitle>
             <DialogDescription>
               Formas padrao (Boleto, PIX, Dinheiro) nao podem ser editadas nem excluidas. Adicione
-              formas customizadas (ex.: Cartao).
+              formas customizadas (ex.: Cartao) e escolha se comunicam agenda (modo Boleto) ou geram
+              saida imediata (modo PIX/Dinheiro).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 type="text"
                 placeholder="Ex: Cartao"
@@ -217,6 +222,17 @@ export function EntradaConfigDialogs({
                 onChange={e => setNovaForma(e.target.value)}
                 className={INPUT_CLASS}
               />
+              <label className="flex items-center gap-2 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={novaFormaComunicarAgenda}
+                  onChange={e => setNovaFormaComunicarAgenda(e.target.checked)}
+                />
+                <span>
+                  Comunicar agenda{' '}
+                  <span className="text-slate-400">(modo Boleto: gera agenda, saida ao pagar)</span>
+                </span>
+              </label>
               <button
                 type="button"
                 disabled={loadingFormas}
@@ -227,8 +243,9 @@ export function EntradaConfigDialogs({
                     toast.error('Ja existe uma forma com esse nome.');
                     return;
                   }
-                  await onAddForma(t);
+                  await onAddForma(t, novaFormaComunicarAgenda);
                   setNovaForma('');
+                  setNovaFormaComunicarAgenda(false);
                 }}
                 className="h-10 shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
               >
@@ -265,7 +282,7 @@ export function EntradaConfigDialogs({
                               onClick={async () => {
                                 const nome = editingFormaNome.trim();
                                 if (!nome) return;
-                                await onEditForma(f.id, nome);
+                                await onEditForma(f.id, nome, f.comunicarAgenda);
                                 setEditingFormaId(null);
                                 setEditingFormaNome('');
                               }}
@@ -286,12 +303,19 @@ export function EntradaConfigDialogs({
                           </>
                         ) : (
                           <>
-                            <span className="text-sm">
-                              {f.nome}
-                              {isDefault && (
-                                <span className="ml-1.5 text-xs text-slate-400">(padrao)</span>
-                              )}
-                            </span>
+                            <div className="flex flex-col text-left">
+                              <span className="text-sm">
+                                {f.nome}
+                                {isDefault && (
+                                  <span className="ml-1.5 text-xs text-slate-400">(padrao)</span>
+                                )}
+                              </span>
+                              <span className="text-xs text-slate-500">
+                                {f.comunicarAgenda
+                                  ? 'Modo Boleto (gera agenda, saida ao marcar pago)'
+                                  : 'Modo PIX/Dinheiro (saida imediata)'}
+                              </span>
+                            </div>
                             <div className="flex shrink-0 items-center gap-1">
                               <button
                                 type="button"

@@ -21,6 +21,20 @@ const MONTHS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
+/** Interpreta YYYY-MM-DD como meia-noite no fuso local (evita deslocamento de 1 dia em toLocaleDateString). */
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** Retorna YYYY-MM-DD a partir da data local (para value do input type="date"). */
+function toLocalDateString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function getDefaultFilter(): DateFilterValue {
   const now = new Date();
   return {
@@ -194,9 +208,9 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                   <label className="mb-1 block text-xs text-slate-500">Inicio</label>
                   <input
                     type="date"
-                    value={filter.startDate.toISOString().split('T')[0]}
+                    value={toLocalDateString(filter.startDate)}
                     onChange={(e) => {
-                      const newStart = new Date(e.target.value);
+                      const newStart = parseLocalDate(e.target.value);
                       updateFilter({
                         period: 'custom',
                         startDate: newStart,
@@ -210,16 +224,16 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                   <label className="mb-1 block text-xs text-slate-500">Fim</label>
                   <input
                     type="date"
-                    value={filter.endDate.toISOString().split('T')[0]}
+                    value={toLocalDateString(filter.endDate)}
                     onChange={(e) => {
-                      const newEnd = new Date(e.target.value);
+                      const newEnd = parseLocalDate(e.target.value);
                       updateFilter({
                         period: 'custom',
                         startDate: filter.startDate,
                         endDate: newEnd,
                       });
                     }}
-                    min={filter.startDate.toISOString().split('T')[0]}
+                    min={toLocalDateString(filter.startDate)}
                     className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs"
                   />
                 </div>

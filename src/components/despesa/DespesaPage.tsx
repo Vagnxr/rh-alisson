@@ -28,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -41,8 +42,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-/** Ordem padrao quando a API nao envia columns. Nenhuma coluna e forçada; as colunas vêm do backend. */
-const DESPESA_TABLE_DEFAULT_ORDER = ['data', 'tipo', 'descricao', 'valor'];
+/** Ordem padrao quando a API nao envia columns. Inclui parcelas para que row.original.parcelas (com pago) esteja disponivel. */
+const DESPESA_TABLE_DEFAULT_ORDER = ['data', 'tipo', 'descricao', 'valor', 'parcelas'];
 
 interface DespesaPageProps {
   config: DespesaCategoriaConfig;
@@ -158,9 +159,11 @@ export function DespesaPage({
       const normData = (s: string) => (s ?? '').toString().split('T')[0] || (s ?? '').toString().slice(0, 10);
       let valoresInit: DataValorItem[] | undefined;
       if (useRecorrenciaDataValorList && parcelasFromBackend) {
+        console.log('parcelasFromBackend', item.parcelas);
         valoresInit = item.parcelas!.map((p) => ({
           data: normData(p.dataVencimento ?? ''),
           valor: formatValorForInput(Number(p.valor) || 0),
+          disabled: !!p.pago,
         }));
       } else if (useRecorrenciaDataValorList && rec !== 'unica') {
         valoresInit = [{ data: formatDateForInput(item.data), valor: formatValorForInput(item.valor) }];
@@ -250,7 +253,6 @@ export function DespesaPage({
               descricao: formData.descricao,
               valor: parseValorFromInput(row.valor),
               comunicarAgenda: formData.comunicarAgenda,
-              recorrencia: 'unica',
             });
           }
           toast.success(validRows.length > 1 ? `${validRows.length} registros adicionados.` : 'Registro adicionado com sucesso!');
@@ -277,8 +279,12 @@ export function DespesaPage({
         descricao: formData.descricao,
         valor: valorNum,
         comunicarAgenda: formData.comunicarAgenda,
-        recorrencia: formData.recorrente ? (formData.recorrencia || 'mensal') : 'unica',
-        recorrenciaFim: formData.recorrente ? formData.recorrenciaFim : undefined,
+        ...(formData.recorrente
+          ? {
+              recorrencia: formData.recorrencia || 'mensal',
+              recorrenciaFim: formData.recorrenciaFim,
+            }
+          : {}),
       };
       if (editingItem) {
         await updateItem(editingItem.id, payload);
@@ -312,6 +318,7 @@ export function DespesaPage({
         accessorKey: 'data',
         header: ({ column }) => (
           <button
+            type="button"
             className="flex items-center gap-1 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
@@ -325,6 +332,7 @@ export function DespesaPage({
         accessorKey: 'tipo',
         header: ({ column }) => (
           <button
+            type="button"
             className="flex items-center gap-1 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
@@ -349,6 +357,7 @@ export function DespesaPage({
         accessorKey: 'descricao',
         header: ({ column }) => (
           <button
+            type="button"
             className="flex items-center gap-1 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
@@ -361,6 +370,7 @@ export function DespesaPage({
         accessorKey: 'valor',
         header: ({ column }) => (
           <button
+            type="button"
             className="flex items-center gap-1 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
@@ -378,6 +388,7 @@ export function DespesaPage({
         accessorKey: 'recorrencia',
         header: ({ column }) => (
           <button
+            type="button"
             className="flex items-center gap-1 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
@@ -425,6 +436,22 @@ export function DespesaPage({
         accessorKey: 'observacao',
         header: 'Observacao',
         cell: ({ row }) => row.original.observacao ?? '-',
+      },
+      parcelas: {
+        accessorKey: 'parcelas',
+        header: 'Parcelas',
+        cell: ({ row }) => {
+          const parcelas = row.original.parcelas;
+          if (!parcelas?.length) return <span className="text-slate-400">-</span>;
+          const pagas = parcelas.filter((p) => p.pago).length;
+          const total = parcelas.length;
+          if (pagas === 0) return <span className="text-slate-700">{total} parcela{total !== 1 ? 's' : ''}</span>;
+          return (
+            <span className="text-slate-700" title={`${pagas} de ${total} pagas`}>
+              {pagas}/{total} pagas
+            </span>
+          );
+        },
       },
     }),
     [config.key]
@@ -691,7 +718,8 @@ export function DespesaPage({
                 : 'Preencha os dados do novo registro.'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <DialogBody>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -757,7 +785,7 @@ export function DespesaPage({
                   htmlFor="descricao"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Descricao
+                  Descrição
                 </label>
                 <input
                   id="descricao"
@@ -890,6 +918,7 @@ export function DespesaPage({
                 </div>
               )}
             </div>
+            </DialogBody>
             <DialogFooter>
               <button
                 type="button"
@@ -920,6 +949,7 @@ export function DespesaPage({
               Adicione ou remova tipos para {config.title}. Nao e possivel excluir um tipo que ja possua lancamentos.
             </DialogDescription>
           </DialogHeader>
+          <DialogBody>
           <div className="space-y-4 py-4">
             {tiposError && (
               <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -1014,6 +1044,7 @@ export function DespesaPage({
               )}
             </ul>
           </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
 

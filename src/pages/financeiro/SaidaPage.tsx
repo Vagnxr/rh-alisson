@@ -26,6 +26,7 @@ import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import type { SaidaRow, SaidaFormaPagamento } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR } from '@/lib/date';
+import { cn } from '@/lib/cn';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -78,6 +79,10 @@ const SAIDA_DEFAULT_ORDER = [
   'materialUsoCons',
   'mercadoriaUsoCons',
   'gas',
+  'bonifPreco',
+  'bonifTroca',
+  'bonifLoja',
+  'total',
 ];
 
 export function SaidaPage() {
@@ -183,56 +188,124 @@ export function SaidaPage() {
           <button
             type="button"
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Data <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
+        cell: ({ row }) => {
+          const val = String(row.getValue('data') ?? '');
+          const hasVal = !!val.trim();
+          return <span className={cn(hasVal && 'font-semibold')}>{formatDateStringToBR(val) || '-'}</span>;
+        },
       },
       fornecedor: {
         accessorKey: 'fornecedor',
         header: 'Fornecedor',
-        cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.fornecedor ?? '-'}</span>
-        ),
+        cell: ({ row }) => {
+          const val = row.original.fornecedor ?? '';
+          const hasVal = !!String(val).trim();
+          return <span className={cn('text-slate-600', hasVal && 'font-semibold')}>{val || '-'}</span>;
+        },
       },
       formaPagamento: {
         accessorKey: 'formaPagamento',
         header: 'Forma pag.',
-        cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.formaPagamento ?? '-'}</span>
-        ),
+        cell: ({ row }) => {
+          const val = row.original.formaPagamento ?? '';
+          const hasVal = !!String(val).trim();
+          return <span className={cn('text-slate-600', hasVal && 'font-semibold')}>{val || '-'}</span>;
+        },
       },
       industrializacao: {
         accessorKey: 'industrializacao',
         header: 'Industrialização',
-        cell: ({ row }) => formatCurrency(Number(row.original.industrializacao ?? 0)),
+        cell: ({ row }) => {
+          const n = Number(row.original.industrializacao ?? 0);
+          const hasVal = Number.isFinite(n) && n !== 0;
+          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
+        },
       },
       comercializacao: {
         accessorKey: 'comercializacao',
         header: 'Comercialização',
-        cell: ({ row }) => formatCurrency(Number(row.original.comercializacao ?? 0)),
+        cell: ({ row }) => {
+          const n = Number(row.original.comercializacao ?? 0);
+          const hasVal = Number.isFinite(n) && n !== 0;
+          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
+        },
       },
       embalagem: {
         accessorKey: 'embalagem',
         header: 'Embalagem',
-        cell: ({ row }) => formatCurrency(Number(row.original.embalagem ?? 0)),
+        cell: ({ row }) => {
+          const n = Number(row.original.embalagem ?? 0);
+          const hasVal = Number.isFinite(n) && n !== 0;
+          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
+        },
       },
       materialUsoCons: {
         accessorKey: 'materialUsoCons',
         header: 'Material uso/cons',
-        cell: ({ row }) => formatCurrency(Number(row.original.materialUsoCons ?? 0)),
+        cell: ({ row }) => {
+          const n = Number(row.original.materialUsoCons ?? 0);
+          const hasVal = Number.isFinite(n) && n !== 0;
+          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
+        },
       },
       mercadoriaUsoCons: {
         accessorKey: 'mercadoriaUsoCons',
         header: 'Mercadoria uso/cons',
-        cell: ({ row }) => formatCurrency(Number(row.original.mercadoriaUsoCons ?? 0)),
+        cell: ({ row }) => {
+          const n = Number(row.original.mercadoriaUsoCons ?? 0);
+          const hasVal = Number.isFinite(n) && n !== 0;
+          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
+        },
       },
       gas: {
         accessorKey: 'gas',
-        header: 'Gás',
-        cell: ({ row }) => formatCurrency(Number(row.original.gas ?? 0)),
+        header: 'GLP',
+        cell: ({ row }) => {
+          const n = Number(row.original.gas ?? 0);
+          const hasVal = Number.isFinite(n) && n !== 0;
+          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
+        },
+      },
+      bonifPreco: {
+        accessorKey: 'bonifPreco',
+        header: 'Bonif. preço',
+        cell: ({ row }) => {
+          const n = Number(row.original.bonifPreco ?? 0);
+          const hasVal = Number.isFinite(n) && n !== 0;
+          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
+        },
+      },
+      bonifTroca: {
+        accessorKey: 'bonifTroca',
+        header: 'Bonif. troca',
+        cell: ({ row }) => {
+          const n = Number(row.original.bonifTroca ?? 0);
+          const hasVal = Number.isFinite(n) && n !== 0;
+          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
+        },
+      },
+      bonifLoja: {
+        accessorKey: 'bonifLoja',
+        header: 'Bonif. loja',
+        cell: ({ row }) => {
+          const n = Number(row.original.bonifLoja ?? 0);
+          const hasVal = Number.isFinite(n) && n !== 0;
+          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
+        },
+      },
+      total: {
+        accessorKey: 'total',
+        header: 'Total',
+        cell: ({ row }) => {
+          const n = Number(row.original.total ?? 0);
+          const hasVal = Number.isFinite(n) && n !== 0;
+          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
+        },
       },
     }),
     [],
@@ -273,23 +346,31 @@ export function SaidaPage() {
               data: formatDateStringToBR(r.data),
               formaPagamento: r.formaPagamento ?? '',
               fornecedor: r.fornecedor,
-              comercializacao: formatCurrency(Number(r.comercializacao)),
               industrializacao: formatCurrency(Number(r.industrializacao)),
+              comercializacao: formatCurrency(Number(r.comercializacao)),
               embalagem: formatCurrency(Number(r.embalagem)),
               materialUsoCons: formatCurrency(Number(r.materialUsoCons)),
               mercadoriaUsoCons: formatCurrency(Number(r.mercadoriaUsoCons)),
               glp: formatCurrency(Number(r.gas)),
+              bonifPreco: formatCurrency(Number(r.bonifPreco ?? 0)),
+              bonifTroca: formatCurrency(Number(r.bonifTroca ?? 0)),
+              bonifLoja: formatCurrency(Number(r.bonifLoja ?? 0)),
+              total: formatCurrency(Number(r.total ?? 0)),
             }))}
             columns={[
               { key: 'data', label: 'Data' },
-              { key: 'formaPagamento', label: 'Forma pagamento' },
               { key: 'fornecedor', label: 'Fornecedor' },
-              { key: 'comercializacao', label: 'Comercializacao' },
-              { key: 'industrializacao', label: 'Industrializacao' },
+              { key: 'formaPagamento', label: 'Forma de pagamento' },
+              { key: 'industrializacao', label: 'Industrialização' },
+              { key: 'comercializacao', label: 'Comercialização' },
               { key: 'embalagem', label: 'Embalagem' },
               { key: 'materialUsoCons', label: 'Material uso/cons.' },
               { key: 'mercadoriaUsoCons', label: 'Mercadoria uso/cons.' },
               { key: 'glp', label: 'GLP' },
+              { key: 'bonifPreco', label: 'Bonif. preço' },
+              { key: 'bonifTroca', label: 'Bonif. troca' },
+              { key: 'bonifLoja', label: 'Bonif. loja' },
+              { key: 'total', label: 'Total' },
             ]}
             filename="saida"
             title="Saida"

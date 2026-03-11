@@ -98,7 +98,7 @@ export function LojasPage() {
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Apelido
             <ArrowUpDown className="h-4 w-4" />
@@ -126,7 +126,7 @@ export function LojasPage() {
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Razao Social
             <ArrowUpDown className="h-4 w-4" />
@@ -147,7 +147,7 @@ export function LojasPage() {
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             CNPJ
             <ArrowUpDown className="h-4 w-4" />

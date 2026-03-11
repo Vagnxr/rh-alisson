@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
 } from '@/components/ui/dialog';
 
 interface TipoItem {
@@ -54,6 +55,7 @@ export function DespesaBancoGerenciarTiposDialog({
             Adicione ou remova tipos de despesa bancaria. Tipos padrao nao podem ser excluidos.
           </DialogDescription>
         </DialogHeader>
+        <DialogBody>
         <div className="space-y-4 py-4">
           <div className="flex gap-2">
             <input
@@ -109,6 +111,7 @@ export function DespesaBancoGerenciarTiposDialog({
             )}
           </ul>
         </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

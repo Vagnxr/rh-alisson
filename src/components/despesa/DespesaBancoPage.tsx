@@ -81,6 +81,10 @@ export function DespesaBancoPageComponent({
   const [bancoFilter, setBancoFilter] = useState<string>('');
   const [selectedBanco, setSelectedBanco] = useState<Banco | null>(null);
   const bancos = useBancosList();
+  const bancosAtivos = useMemo(
+    () => bancos.filter((b) => b.isActive !== false),
+    [bancos]
+  );
   const fetchBancos = useBancoStore((s) => s.fetchBancos);
   const bancosFromApi = useBancoStore((s) => s.bancos);
   const addBanco = useBancoStore((s) => s.addBanco);
@@ -234,7 +238,7 @@ export function DespesaBancoPageComponent({
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Data
             <ArrowUpDown className="h-4 w-4" />
@@ -247,7 +251,7 @@ export function DespesaBancoPageComponent({
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Banco
             <ArrowUpDown className="h-4 w-4" />
@@ -265,7 +269,7 @@ export function DespesaBancoPageComponent({
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Tipo
             <ArrowUpDown className="h-4 w-4" />
@@ -282,7 +286,7 @@ export function DespesaBancoPageComponent({
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Descricao
             <ArrowUpDown className="h-4 w-4" />
@@ -294,7 +298,7 @@ export function DespesaBancoPageComponent({
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Valor
             <ArrowUpDown className="h-4 w-4" />
@@ -311,7 +315,7 @@ export function DespesaBancoPageComponent({
         header: ({ column }) => (
           <button
             className="flex items-center gap-1 font-medium"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            onClick={column.getToggleSortingHandler()}
           >
             Recorrencia
             <ArrowUpDown className="h-4 w-4" />
@@ -410,6 +414,11 @@ export function DespesaBancoPageComponent({
     [filteredItems]
   );
 
+  const totalGeral = useMemo(
+    () => (items ?? []).reduce((acc, d) => acc + d.valor, 0),
+    [items]
+  );
+
   const exportData = useMemo(() => {
     const list = filteredItems ?? [];
     if (columnsFromApi?.length) {
@@ -472,8 +481,9 @@ export function DespesaBancoPageComponent({
     return (
       <>
         <DespesaBancoListaView
-          bancos={bancos}
+          bancos={bancosAtivos}
           items={items}
+          totalGeral={totalGeral}
           onSelectBanco={setSelectedBanco}
           onOpenBancos={() => setIsBancosDialogOpen(true)}
           onEditBanco={(banco) => {
@@ -558,7 +568,7 @@ export function DespesaBancoPageComponent({
         formData={formData}
         setFormData={setFormData}
         selectedBanco={selectedBanco}
-        bancos={bancos}
+        bancos={bancosAtivos}
         tiposDisponiveis={tiposDisponiveis}
         onSubmit={handleSubmit}
         onClose={handleCloseDialog}

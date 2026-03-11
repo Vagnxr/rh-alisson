@@ -6,6 +6,8 @@ export interface Banco {
   codigo: string;
   cor: string; // Cor principal do banco para UI
   logo?: string; // URL do logo
+  /** Ativo na listagem e selecao; desativar oculta o banco sem excluir. */
+  isActive?: boolean;
 }
 
 // Icone fallback quando nao ha logo: iniciais do banco

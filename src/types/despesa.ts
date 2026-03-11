@@ -11,8 +11,8 @@ export interface DespesaBase {
   recorrenciaIndice?: string;
   /** Data limite da recorrencia (YYYY-MM-DD). Opcional */
   recorrenciaFim?: string;
-  /** Parcelas do grupo (quando retornado pela API). dataVencimento (YYYY-MM-DD) e valor. */
-  parcelas?: { dataVencimento: string; valor: number }[];
+  /** Parcelas do grupo (quando retornado pela API). dataVencimento (YYYY-MM-DD), valor e pago (se ja foi paga). */
+  parcelas?: { dataVencimento: string; valor: number; pago?: boolean }[];
   createdAt: string;
   updatedAt: string;
   /** Despesa banco: id do banco (UUID) */
@@ -52,7 +52,9 @@ export interface DespesaComParcelasInput {
 /** Payload do PATCH: campos classicos ou, quando alterando parcelas, mesmo formato do POST (tipo, descricao, comunicarAgenda, parcelas). */
 export type DespesaUpdatePayload =
   | Partial<DespesaInput>
-  | (Pick<DespesaComParcelasInput, 'tipo' | 'descricao' | 'comunicarAgenda'> & { parcelas: ParcelaDespesaInput[] });
+  | (Pick<DespesaComParcelasInput, 'tipo' | 'descricao' | 'comunicarAgenda'> & {
+      parcelas: ParcelaDespesaInput[];
+    });
 
 // Tipos padrao por categoria de despesa (conforme planilha)
 export const TIPOS_DESPESA: Record<DespesaCategoria, string[]> = {
@@ -72,9 +74,26 @@ export const TIPOS_DESPESA: Record<DespesaCategoria, string[]> = {
     '13º SALARIO',
   ],
   'despesa-imposto': ['CSLL', 'DAS', 'ICMS', 'IPI', 'IRPJ', 'ISS', 'PIS/COFINS'],
-  'despesa-veiculo': ['COMBUSTIVEL', 'MANUTENCAO', 'SEGURO', 'IPVA', 'LICENCIAMENTO', 'MULTAS', 'PEDAGIO', 'REVISAO'],
-  'despesa-banco': ['ENCARGOS', 'IOF', 'JUROS', 'MENSALIDADE', 'PIX', 'TARIFAS BANCARIAS', 'TED/DOC'],
-  'investimento': ['CDB', 'TESOURO DIRETO', 'FUNDOS', 'ACOES', 'IMOVEIS', 'OUTROS'],
+  'despesa-veiculo': [
+    'COMBUSTIVEL',
+    'MANUTENCAO',
+    'SEGURO',
+    'IPVA',
+    'LICENCIAMENTO',
+    'MULTAS',
+    'PEDAGIO',
+    'REVISAO',
+  ],
+  'despesa-banco': [
+    'ENCARGOS',
+    'IOF',
+    'JUROS',
+    'MENSALIDADE',
+    'PIX',
+    'TARIFAS BANCARIAS',
+    'TED/DOC',
+  ],
+  investimento: ['CDB', 'TESOURO DIRETO', 'FUNDOS', 'AÇÕES', 'IMOVEIS', 'OUTROS'],
   'renda-extra': ['CONSULTORIA', 'VENDA', 'COMISSAO', 'ALUGUEL', 'RENDIMENTOS', 'OUTROS'],
   socios: ['ADIANTAMENTO', 'DISTRIBUICAO DE LUCROS', 'PRO-LABORE', 'RETIRADA'],
 };
@@ -160,7 +179,7 @@ export const DESPESA_CATEGORIAS: Record<DespesaCategoria, DespesaCategoriaConfig
     subtitle: 'Gerencie tarifas e despesas bancarias',
     placeholder: 'Ex: Tarifa mensal, TED, DOC...',
   },
-  'investimento': {
+  investimento: {
     key: 'investimento',
     title: 'Investimentos',
     subtitle: 'Gerencie seus investimentos e aplicacoes financeiras',
@@ -172,7 +191,7 @@ export const DESPESA_CATEGORIAS: Record<DespesaCategoria, DespesaCategoriaConfig
     subtitle: 'Gerencie suas rendas extras e receitas eventuais',
     placeholder: 'Ex: Consultoria, Venda de equipamento, Comissao...',
   },
-  'socios': {
+  socios: {
     key: 'socios',
     title: 'Socios',
     subtitle: 'Gerencie pro-labore, distribuicao de lucros e pagamentos aos socios',
