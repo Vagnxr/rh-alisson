@@ -39,10 +39,10 @@ export function DespesaBancoGerenciarTiposDialog({
     addTipo('despesa-banco', label)
       .then(() => {
         setNovoTipoLabel('');
-        toast.success('Tipo adicionado.');
+        toast.success(<span data-testid="despesa-categoria-mensagem-sucesso">Tipo adicionado.</span>);
       })
       .catch((err) =>
-        toast.error(err instanceof Error ? err.message : 'Erro ao adicionar tipo')
+        toast.error(<span data-testid="despesa-categoria-mensagem-erro">{err instanceof Error ? err.message : 'Erro ao adicionar tipo'}</span>)
       );
   };
 
@@ -70,17 +70,19 @@ export function DespesaBancoGerenciarTiposDialog({
                 }
               }}
               className="flex flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm uppercase placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              data-testid="despesa-categoria-tipo-input-nome"
             />
             <button
               type="button"
               disabled={!novoTipoLabel.trim()}
               onClick={handleAdd}
               className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              data-testid="despesa-categoria-tipo-adicionar"
             >
               Adicionar
             </button>
           </div>
-          <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2">
+          <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2" data-testid="despesa-categoria-tipo-lista">
             {tiposParaListar.length === 0 ? (
               <li className="py-4 text-center text-sm text-slate-500">Nenhum tipo. Adicione acima.</li>
             ) : (
@@ -110,6 +112,16 @@ export function DespesaBancoGerenciarTiposDialog({
               ))
             )}
           </ul>
+          <div className="mt-4 flex justify-end">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              data-testid="despesa-categoria-tipo-cancelar"
+            >
+              Fechar
+            </button>
+          </div>
         </div>
         </DialogBody>
       </DialogContent>

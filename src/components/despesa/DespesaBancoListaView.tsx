@@ -69,6 +69,7 @@ export function DespesaBancoListaView({
                 onClick={() => onSelectBanco(banco)}
                 onKeyDown={(e) => e.key === 'Enter' && onSelectBanco(banco)}
                 className="cursor-pointer rounded-xl border border-slate-200 bg-white p-5 transition-all hover:border-emerald-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                data-testid="despesa-banco-card"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">

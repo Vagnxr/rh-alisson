@@ -11,11 +11,15 @@ interface DespesasListResponse {
   meta?: { total?: number; page?: number; perPage?: number; totalPages?: number };
 }
 
+type FetchParams = { dataInicio?: string; dataFim?: string } | undefined;
+
 interface DespesaState {
   items: DespesaBase[];
   columns: TableColumnConfigFromApi[] | null;
   isLoading: boolean;
   error: string | null;
+  /** Últimos params usados no GET; após add/update/delete refazemos o GET com estes params. */
+  lastFetchParams: FetchParams;
 }
 
 interface DespesaActions {
@@ -64,10 +68,11 @@ function createDespesaStore(categoria: DespesaCategoria) {
     columns: null,
     isLoading: false,
     error: null,
+    lastFetchParams: undefined,
 
     fetchItems: async (params?: { dataInicio?: string; dataFim?: string }) => {
       if (get().isLoading) return;
-      set({ isLoading: true, error: null });
+      set({ isLoading: true, error: null, lastFetchParams: params });
       try {
         const requestParams: Record<string, string> = { categoria };
         if (params?.dataInicio) requestParams.dataInicio = params.dataInicio;
@@ -91,9 +96,9 @@ function createDespesaStore(categoria: DespesaCategoria) {
     addItem: async (data: DespesaInput) => {
       set({ isLoading: true, error: null });
       try {
-        const res = await api.post<DespesaBase>('despesas', { ...data, categoria });
-        const newItem = normalizeDespesa(res.data as unknown as Record<string, unknown>);
-        set((state) => ({ items: [...state.items, newItem], isLoading: false }));
+        await api.post<DespesaBase>('despesas', { ...data, categoria });
+        set({ isLoading: false });
+        await get().fetchItems(get().lastFetchParams);
       } catch (err) {
         set({
           error: err instanceof Error ? err.message : 'Erro ao salvar',
@@ -114,6 +119,7 @@ function createDespesaStore(categoria: DespesaCategoria) {
           parcelas: data.parcelas,
         });
         set({ isLoading: false });
+        await get().fetchItems(get().lastFetchParams);
       } catch (err) {
         set({
           error: err instanceof Error ? err.message : 'Erro ao salvar',
@@ -126,12 +132,9 @@ function createDespesaStore(categoria: DespesaCategoria) {
     updateItem: async (id: string, data: DespesaUpdatePayload) => {
       set({ isLoading: true, error: null });
       try {
-        const res = await api.patch<DespesaBase>(`despesas/${id}`, data);
-        const updated = normalizeDespesa(res.data as unknown as Record<string, unknown>);
-        set((state) => ({
-          items: state.items.map((item) => (item.id === id ? updated : item)),
-          isLoading: false,
-        }));
+        await api.patch<DespesaBase>(`despesas/${id}`, data);
+        set({ isLoading: false });
+        await get().fetchItems(get().lastFetchParams);
       } catch (err) {
         set({
           error: err instanceof Error ? err.message : 'Erro ao atualizar',
@@ -145,7 +148,8 @@ function createDespesaStore(categoria: DespesaCategoria) {
       set({ isLoading: true, error: null });
       try {
         await api.delete(`despesas/${id}`);
-        set((state) => ({ items: state.items.filter((item) => item.id !== id), isLoading: false }));
+        set({ isLoading: false });
+        await get().fetchItems(get().lastFetchParams);
       } catch (err) {
         set({
           error: err instanceof Error ? err.message : 'Erro ao excluir',
@@ -155,7 +159,7 @@ function createDespesaStore(categoria: DespesaCategoria) {
       }
     },
 
-    reset: () => set({ items: [], columns: null, isLoading: false, error: null }),
+    reset: () => set({ items: [], columns: null, isLoading: false, error: null, lastFetchParams: undefined }),
   }));
 }
 
@@ -186,6 +190,7 @@ export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) =
   columns: null,
   isLoading: false,
   error: null,
+  lastFetchParams: undefined,
   categoria: null,
 
   setCategoria: (c) => set({ categoria: c }),
@@ -193,7 +198,7 @@ export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) =
   fetchItems: async (params?: { dataInicio?: string; dataFim?: string }) => {
     const categoria = get().categoria;
     if (!categoria) return;
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, lastFetchParams: params });
     try {
       const requestParams: Record<string, string> = { categoria };
       if (params?.dataInicio) requestParams.dataInicio = params.dataInicio;
@@ -217,9 +222,9 @@ export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) =
     if (!categoria) return;
     set({ isLoading: true, error: null });
     try {
-      const res = await api.post<DespesaBase>('despesas', { ...data, categoria });
-      const newItem = normalizeDespesa(res.data as unknown as Record<string, unknown>);
-      set((state) => ({ items: [...state.items, newItem], isLoading: false }));
+      await api.post<DespesaBase>('despesas', { ...data, categoria });
+      set({ isLoading: false });
+      await get().fetchItems(get().lastFetchParams);
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Erro ao salvar',
@@ -242,6 +247,7 @@ export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) =
         parcelas: data.parcelas,
       });
       set({ isLoading: false });
+      await get().fetchItems(get().lastFetchParams);
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Erro ao salvar',
@@ -254,12 +260,9 @@ export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) =
   updateItem: async (id: string, data: DespesaUpdatePayload) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await api.patch<DespesaBase>(`despesas/${id}`, data);
-      const updated = normalizeDespesa(res.data as unknown as Record<string, unknown>);
-      set((state) => ({
-        items: state.items.map((item) => (item.id === id ? updated : item)),
-        isLoading: false,
-      }));
+      await api.patch<DespesaBase>(`despesas/${id}`, data);
+      set({ isLoading: false });
+      await get().fetchItems(get().lastFetchParams);
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Erro ao atualizar',
@@ -273,7 +276,8 @@ export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) =
     set({ isLoading: true, error: null });
     try {
       await api.delete(`despesas/${id}`);
-      set((state) => ({ items: state.items.filter((item) => item.id !== id), isLoading: false }));
+      set({ isLoading: false });
+      await get().fetchItems(get().lastFetchParams);
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Erro ao excluir',
@@ -283,5 +287,5 @@ export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) =
     }
   },
 
-  reset: () => set({ items: [], columns: null, isLoading: false, error: null, categoria: null }),
+  reset: () => set({ items: [], columns: null, isLoading: false, error: null, lastFetchParams: undefined, categoria: null }),
 }));

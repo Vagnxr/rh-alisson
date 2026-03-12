@@ -31,6 +31,8 @@ export interface DataValorListProps {
   getNewItem?: (currentValue: DataValorItem[]) => DataValorItem;
   /** Rotulo no rodape para a contagem (ex.: "parcela" -> "1 parcela" / "3 parcelas"). Default: "recorrência". */
   countLabel?: string;
+  /** Prefixo dos data-testid (ex.: "agenda" -> agenda-recorrencia, agenda-adicionar-valor). Default: "despesa-categoria". */
+  testIdPrefix?: string;
 }
 
 function parseValor(v: string): number {
@@ -51,6 +53,7 @@ export function DataValorList({
   maxHeight = 'max-h-40',
   getNewItem,
   countLabel = 'recorrência',
+  testIdPrefix = 'despesa-categoria',
 }: DataValorListProps) {
   const addLine = () => {
     if (getNewItem) {
@@ -78,13 +81,14 @@ export function DataValorList({
   const total = value.reduce((acc, item) => acc + parseValor(item.valor), 0);
 
   return (
-    <div className={cn('space-y-2 min-w-0 pr-2', className)}>
+    <div className={cn('space-y-2 min-w-0 pr-2', className)} data-testid={`${testIdPrefix}-recorrencia`}>
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-slate-700">{label}</label>
         <button
           type="button"
           onClick={addLine}
           className="text-sm text-emerald-600 hover:underline shrink-0"
+          data-testid={`${testIdPrefix}-adicionar-valor`}
         >
           {addLabel}
         </button>
@@ -96,6 +100,7 @@ export function DataValorList({
             <div
               key={i}
               className="relative z-0 grid w-full grid-cols-1 items-center gap-2 min-w-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+              data-testid={`${testIdPrefix}-recorrencia-linha`}
             >
               <input
                 type="date"
@@ -103,6 +108,7 @@ export function DataValorList({
                 onChange={(e) => updateLine(i, 'data', e.target.value)}
                 disabled={isRowDisabled}
                 className={cn(inputBaseClass, 'w-full min-w-0')}
+                data-testid={`${testIdPrefix}-recorrencia-data`}
               />
               <input
                 type="text"
@@ -112,6 +118,7 @@ export function DataValorList({
                 onChange={(e) => updateLine(i, 'valor', e.target.value)}
                 disabled={isRowDisabled}
                 className={cn(inputBaseClass, 'w-full min-w-0')}
+                data-testid={`${testIdPrefix}-recorrencia-valor`}
               />
               <button
                 type="button"

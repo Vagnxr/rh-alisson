@@ -224,7 +224,7 @@ export function AgendaPage() {
     e.preventDefault();
     const descricao = formDirect.descricao?.trim() ?? '';
     if (!descricao) {
-      toast.error('Preencha Descricao e Valor.');
+      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Descricao e Valor.</span>);
       return;
     }
     if (formDirect.recorrente && formDirect.valores?.length) {
@@ -232,7 +232,7 @@ export function AgendaPage() {
         r => r.data.trim() && parseValorFromInput(r.valor) > 0,
       );
       if (validRows.length === 0) {
-        toast.error('Adicione ao menos uma data com valor maior que zero na tabela.');
+        toast.error(<span data-testid="agenda-mensagem-erro">Adicione ao menos uma data com valor maior que zero na tabela.</span>);
         return;
       }
       try {
@@ -244,27 +244,29 @@ export function AgendaPage() {
           })),
         });
         toast.success(
-          validRows.length > 1
-            ? `${validRows.length} lancamentos adicionados na agenda.`
-            : 'Lancamento adicionado na agenda.',
+          <span data-testid="agenda-mensagem-sucesso">
+            {validRows.length > 1
+              ? `${validRows.length} lancamentos adicionados na agenda.`
+              : 'Lancamento adicionado na agenda.'}
+          </span>,
         );
         setOpenLancarDirect(false);
         setFormDirect(initialFormDirect);
         fetchDias({ dataInicio, dataFim }).catch(() => {});
         if (validRows[0]?.data) fetchDia(validRows[0].data).catch(() => {});
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Erro ao lancar na agenda.');
+        toast.error(<span data-testid="agenda-mensagem-erro">{err instanceof Error ? err.message : 'Erro ao lancar na agenda.'}</span>);
       }
       return;
     }
     const data = formDirect.data?.trim().slice(0, 10) ?? '';
     const valorNum = parseValorFromInput(formDirect.valor);
     if (!data) {
-      toast.error('Preencha Data, Descricao e Valor.');
+      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Data, Descricao e Valor.</span>);
       return;
     }
     if (valorNum <= 0) {
-      toast.error('Valor deve ser maior que zero.');
+      toast.error(<span data-testid="agenda-mensagem-erro">Valor deve ser maior que zero.</span>);
       return;
     }
     try {
@@ -274,13 +276,13 @@ export function AgendaPage() {
         valor: valorNum,
       };
       await addItemDirect(payload);
-      toast.success('Lancamento adicionado na agenda.');
+      toast.success(<span data-testid="agenda-mensagem-sucesso">Lancamento adicionado na agenda.</span>);
       setOpenLancarDirect(false);
       setFormDirect(initialFormDirect);
       fetchDias({ dataInicio, dataFim }).catch(() => {});
       fetchDia(data).catch(() => {});
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao lancar na agenda.');
+      toast.error(<span data-testid="agenda-mensagem-erro">{err instanceof Error ? err.message : 'Erro ao lancar na agenda.'}</span>);
     }
   };
 
@@ -300,11 +302,11 @@ export function AgendaPage() {
     const descricao = formEditDirect.descricao.trim();
     const valorNum = parseValorFromInput(formEditDirect.valor);
     if (!descricao) {
-      toast.error('Preencha Data, Descricao e Valor.');
+      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Data, Descricao e Valor.</span>);
       return;
     }
     if (valorNum <= 0) {
-      toast.error('Preencha Data, Descricao e Valor.');
+      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Data, Descricao e Valor.</span>);
       return;
     }
     try {
@@ -313,12 +315,12 @@ export function AgendaPage() {
         descricao,
         valor: valorNum,
       });
-      toast.success('Item atualizado.');
+      toast.success(<span data-testid="agenda-mensagem-sucesso">Item atualizado.</span>);
       setEditingDirectItem(null);
       await fetchDias({ dataInicio, dataFim });
       if (diaSelecionado) await fetchDia(diaSelecionado.data);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar.');
+      toast.error(<span data-testid="agenda-mensagem-erro">{err instanceof Error ? err.message : 'Erro ao atualizar.'}</span>);
     }
   };
 
@@ -326,25 +328,25 @@ export function AgendaPage() {
     if (!excluirItemId) return;
     try {
       await deleteItemDirect(excluirItemId);
-      toast.success('Lancamento excluido da agenda.');
+      toast.success(<span data-testid="agenda-mensagem-sucesso">Lancamento excluido da agenda.</span>);
       setExcluirItemId(null);
       await fetchDias({ dataInicio, dataFim });
       if (diaSelecionado?.data) await fetchDia(diaSelecionado.data);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao excluir.');
+      toast.error(<span data-testid="agenda-mensagem-erro">{err instanceof Error ? err.message : 'Erro ao excluir.'}</span>);
     }
   };
 
   const handleDesmarcarPago = async (itemId: string) => {
     try {
       await desmarcarPago(itemId);
-      toast.success('Item desmarcado como pago.');
+      toast.success(<span data-testid="agenda-mensagem-sucesso">Item desmarcado como pago.</span>);
       if (diaSelecionado?.data) {
         await fetchDia(diaSelecionado.data);
         fetchDias({ dataInicio, dataFim }).catch(() => {});
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao desmarcar.');
+      toast.error(<span data-testid="agenda-mensagem-erro">{err instanceof Error ? err.message : 'Erro ao desmarcar.'}</span>);
     }
   };
 
@@ -356,14 +358,14 @@ export function AgendaPage() {
     try {
       if (confirmarPagoIds.length === 1) {
         await marcarPago(confirmarPagoIds[0]);
-        toast.success('Item marcado como pago.');
+        toast.success(<span data-testid="agenda-mensagem-sucesso">Item marcado como pago.</span>);
       } else {
         await marcarPagoLote(confirmarPagoIds);
-        toast.success(`${confirmarPagoIds.length} itens marcados como pagos.`);
+        toast.success(<span data-testid="agenda-mensagem-sucesso">{`${confirmarPagoIds.length} itens marcados como pagos.`}</span>);
       }
       setSelectedIds(new Set());
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Erro ao marcar como pago.');
+      toast.error(<span data-testid="agenda-mensagem-erro">{e instanceof Error ? e.message : 'Erro ao marcar como pago.'}</span>);
     }
     setConfirmarPagoIds(null);
   };
@@ -394,6 +396,7 @@ export function AgendaPage() {
           type="button"
           onClick={() => setOpenLancarDirect(true)}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+          data-testid="agenda-lancar"
         >
           <Plus className="h-4 w-4" />
           Lançar na agenda
@@ -401,7 +404,7 @@ export function AgendaPage() {
       </div>
 
       {error && (
-        <div className="flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" data-testid="agenda-mensagem-erro">
           <span>{error}</span>
           <button type="button" onClick={clearError} className="text-red-500 underline">
             Fechar
@@ -417,6 +420,7 @@ export function AgendaPage() {
                 type="button"
                 onClick={() => setOpenMonthYear(v => !v)}
                 className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-lg font-semibold text-slate-800 capitalize hover:bg-slate-50"
+                data-testid="agenda-filtro-periodo-mes"
               >
                 {monthTitle}
                 <ChevronDown
@@ -471,7 +475,7 @@ export function AgendaPage() {
                 </div>
               )}
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2" data-testid="agenda-total-mes">
               <span className="block text-xs font-medium text-slate-500">Total do mes</span>
               <span className="text-lg font-bold text-slate-900">{formatCurrency(totalMes)}</span>
             </div>
@@ -488,6 +492,7 @@ export function AgendaPage() {
                 }
               }}
               className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
+              data-testid="agenda-filtro-prev"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -502,6 +507,7 @@ export function AgendaPage() {
                 }
               }}
               className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
+              data-testid="agenda-filtro-next"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
@@ -515,7 +521,7 @@ export function AgendaPage() {
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-1" data-testid="agenda-calendario">
           {grid.map(({ date, dateStr, isCurrentMonth }) => {
             const dia = diasByDate.get(dateStr);
             const totalE = dia?.totalEntradas ?? 0;
@@ -527,6 +533,7 @@ export function AgendaPage() {
                 key={dateStr}
                 type="button"
                 onClick={() => (isCurrentMonth || temValor) && handleClickDia(dateStr)}
+                data-testid={`agenda-dia-${dateStr}`}
                 className={`flex min-h-[80px] flex-col items-stretch rounded-lg border p-2 text-left transition-colors ${
                   isCurrentMonth
                     ? temValor
@@ -567,7 +574,7 @@ export function AgendaPage() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent data-testid="agenda-dialog-dia" closeButtonDataTestId="agenda-dialog-dia-fechar">
           <DialogHeader>
             <DialogTitle>
               {diaSelecionado
@@ -595,7 +602,7 @@ export function AgendaPage() {
                     Total do dia (soma):{' '}
                     {formatCurrency(diaSelecionado.totalEntradas + diaSelecionado.totalSaidas)}
                   </div>
-                  <ul className="max-h-64 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2">
+                  <ul className="max-h-64 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2" data-testid="agenda-dia-itens">
                     {(diaSelecionado.itens ?? []).length === 0 ? (
                       <li className="py-4 text-center text-sm text-slate-500">
                         Nenhum item neste dia
@@ -623,6 +630,7 @@ export function AgendaPage() {
                         onClick={handleMarcarPagoClick}
                         disabled={selectedIds.size === 0}
                         className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                        data-testid="agenda-dia-marcar-pago"
                       >
                         <Check className="h-4 w-4" />
                         {selectedIds.size === 0
@@ -642,9 +650,9 @@ export function AgendaPage() {
 
       {/* Dialog lancar direto na agenda */}
       <Dialog open={openLancarDirect} onOpenChange={setOpenLancarDirect}>
-        <DialogContent>
+        <DialogContent data-testid="agenda-dialog-lancar">
           <DialogHeader>
-            <DialogTitle>Lançar<area shape="poly" coords="" href="" alt="" /> na agenda</DialogTitle>
+            <DialogTitle>Lançar na agenda</DialogTitle>
             <DialogDescription>
               O item ficará apenas na agenda (não vincula a despesa). Data, Descrição e Valor são
               obrigatórios.
@@ -662,6 +670,7 @@ export function AgendaPage() {
                 onChange={e => setFormDirect({ ...formDirect, data: e.target.value })}
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 required
+                data-testid="agenda-data"
               />
             </div>
             <div className="space-y-2">
@@ -677,6 +686,7 @@ export function AgendaPage() {
                 }
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 required
+                data-testid="agenda-descricao"
               />
             </div>
             <div className="space-y-2">
@@ -691,6 +701,7 @@ export function AgendaPage() {
                 onChange={e => setFormDirect({ ...formDirect, valor: e.target.value })}
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 required={!formDirect.recorrente}
+                data-testid="agenda-valor"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -698,6 +709,7 @@ export function AgendaPage() {
                 id="direct-recorrente"
                 type="checkbox"
                 checked={formDirect.recorrente}
+                data-testid="agenda-recorrente"
                 onChange={e => {
                   const checked = e.target.checked;
                   setFormDirect(prev => ({
@@ -723,6 +735,7 @@ export function AgendaPage() {
                 showTotal
                 maxHeight="max-h-48"
                 countLabel="parcela"
+                testIdPrefix="agenda"
                 getNewItem={current => {
                   const last = current[current.length - 1];
                   return {
@@ -737,12 +750,14 @@ export function AgendaPage() {
                 type="button"
                 onClick={() => setOpenLancarDirect(false)}
                 className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                data-testid="agenda-cancelar"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                data-testid="agenda-submit"
               >
                 Adicionar
               </button>
@@ -753,7 +768,7 @@ export function AgendaPage() {
 
       {/* Dialog editar item direto da agenda */}
       <Dialog open={!!editingDirectItem} onOpenChange={open => !open && setEditingDirectItem(null)}>
-        <DialogContent>
+        <DialogContent data-testid="agenda-dialog-editar">
           <DialogHeader>
             <DialogTitle>Editar item da agenda</DialogTitle>
             <DialogDescription>
@@ -772,6 +787,7 @@ export function AgendaPage() {
                 onChange={e => setFormEditDirect({ ...formEditDirect, data: e.target.value })}
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 required
+                data-testid="agenda-edit-data"
               />
             </div>
             <div className="space-y-2">
@@ -785,6 +801,7 @@ export function AgendaPage() {
                 onChange={e => setFormEditDirect({ ...formEditDirect, descricao: e.target.value })}
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 required
+                data-testid="agenda-edit-descricao"
               />
             </div>
             <div className="space-y-2">
@@ -802,6 +819,7 @@ export function AgendaPage() {
                 placeholder="0,00"
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 required
+                data-testid="agenda-edit-valor"
               />
             </div>
             <DialogFooter>
@@ -809,12 +827,14 @@ export function AgendaPage() {
                 type="button"
                 onClick={() => setEditingDirectItem(null)}
                 className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                data-testid="agenda-edit-cancelar"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                data-testid="agenda-edit-submit"
               >
                 Salvar
               </button>
@@ -839,7 +859,7 @@ export function AgendaPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmarMarcarPago}>Confirmar</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmarMarcarPago} data-testid="agenda-alert-marcar-pago-confirmar">Confirmar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -857,8 +877,8 @@ export function AgendaPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleExcluirItem}>Excluir</AlertDialogAction>
+            <AlertDialogCancel data-testid="agenda-alert-excluir-cancelar">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleExcluirItem} data-testid="agenda-alert-excluir-confirmar">Excluir</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -886,13 +906,14 @@ function ItemRow({
   onDesmarcarPago?: () => void;
 }) {
   return (
-    <li className="flex items-center gap-2 rounded bg-white px-3 py-2 text-sm">
+    <li className="flex items-center gap-2 rounded bg-white px-3 py-2 text-sm" data-testid="agenda-dia-item">
       {!item.pago ? (
         <input
           type="checkbox"
           checked={selected}
           onChange={onToggleSelect}
           className="h-4 w-4 rounded border-slate-300 text-emerald-600"
+          data-testid="agenda-dia-item-checkbox"
         />
       ) : (
         <span className="flex h-4 w-4 items-center justify-center rounded bg-emerald-100 text-emerald-600">
@@ -926,6 +947,7 @@ function ItemRow({
           onClick={onEdit}
           className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
           title="Editar"
+          data-testid="agenda-dia-item-editar"
         >
           <Pencil className="h-4 w-4" />
         </button>
@@ -936,6 +958,7 @@ function ItemRow({
           onClick={onExcluir}
           className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
           title="Excluir da agenda"
+          data-testid="agenda-dia-item-excluir"
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -946,6 +969,7 @@ function ItemRow({
           onClick={onDesmarcarPago}
           className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-200"
           title="Desmarcar como pago"
+          data-testid="agenda-dia-item-desmarcar-pago"
         >
           Pago · Desmarcar
         </button>

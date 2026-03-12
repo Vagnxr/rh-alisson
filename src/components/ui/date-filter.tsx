@@ -132,13 +132,14 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
 
   return (
     <div className={cn('relative', className)}>
-      <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">
+      <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1" data-testid="despesa-categoria-filtro-mes">
         {/* Navegacao */}
         <button
           type="button"
           onClick={() => navigate('prev')}
           disabled={filter.period === 'custom'}
           className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+          data-testid="despesa-categoria-filtro-prev"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -148,6 +149,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-2 rounded px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+          data-testid="despesa-categoria-filtro-periodo-mes"
         >
           <Calendar className="h-4 w-4" />
           <span>{displayText}</span>
@@ -158,6 +160,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
           onClick={() => navigate('next')}
           disabled={filter.period === 'custom'}
           className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+          data-testid="despesa-categoria-filtro-next"
         >
           <ChevronRight className="h-4 w-4" />
         </button>

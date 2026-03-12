@@ -1,4 +1,5 @@
 import { useState } from 'react';
+// @ts-expect-error - useForm existe em runtime; resolução de tipos falha com moduleResolution bundler (react-hook-form)
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';

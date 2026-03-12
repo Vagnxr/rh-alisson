@@ -88,6 +88,7 @@ export function DespesaBancoFormDialog({
                   onChange={(e) => setFormData({ ...formData, data: e.target.value })}
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                   required
+                  data-testid="despesa-categoria-data"
                 />
               </div>
               <div className="space-y-2">
@@ -101,6 +102,7 @@ export function DespesaBancoFormDialog({
                     onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
                     className="flex h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 uppercase"
                     required
+                    data-testid="despesa-categoria-tipo"
                   >
                     <option value="">Selecione...</option>
                     {tiposDisponiveis.map((tipo) => (
@@ -134,6 +136,7 @@ export function DespesaBancoFormDialog({
                   setFormData({ ...formData, descricao: e.target.value.toUpperCase() })
                 }
                 className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 uppercase"
+                data-testid="despesa-categoria-descricao"
               />
             </div>
 
@@ -150,6 +153,7 @@ export function DespesaBancoFormDialog({
                 onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
                 className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 required
+                data-testid="despesa-categoria-valor"
               />
             </div>
           </div>
@@ -160,6 +164,7 @@ export function DespesaBancoFormDialog({
               type="button"
               onClick={onClose}
               className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100"
+              data-testid="despesa-categoria-cancelar"
             >
               Cancelar
             </button>
@@ -167,6 +172,7 @@ export function DespesaBancoFormDialog({
               type="submit"
               disabled={isLoading}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              data-testid="despesa-categoria-submit"
             >
               {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               {editingItem ? 'Salvar' : 'Adicionar'}

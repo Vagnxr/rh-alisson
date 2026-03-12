@@ -1,4 +1,5 @@
 import { useState } from 'react';
+// @ts-expect-error - useForm existe em runtime; resolução de tipos falha com moduleResolution bundler (react-hook-form)
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -58,7 +59,7 @@ export function LoginPage() {
         />
         {/* Overlay sutil para dar contraste ao painel */}
         <div
-          className="absolute inset-0 md:bg-gradient-to-r md:from-black/50 md:via-transparent md:to-black/30"
+          className="absolute inset-0 md:bg-linear-to-r md:from-black/50 md:via-transparent md:to-black/30"
           aria-hidden
         />
       </div>
@@ -83,12 +84,12 @@ export function LoginPage() {
               <input
                 {...register('email')}
                 type="email"
-                id="email"
                 placeholder="seu@email.com"
                 className="w-full rounded-xl border border-white/25 bg-white/15 px-4 py-3 text-white placeholder-white/50 shadow-inner transition-colors focus:border-[#199c61] focus:ring-2 focus:ring-[#199c61]/40 focus:outline-none"
+                data-testid="login-email"
               />
               {errors.email && (
-                <p className="mt-1.5 text-sm text-red-300">{errors.email.message}</p>
+                <p className="mt-1.5 text-sm text-red-300" data-testid="login-mensagem-erro">{errors.email.message}</p>
               )}
             </div>
 
@@ -103,6 +104,7 @@ export function LoginPage() {
                   id="password"
                   placeholder="******"
                   className="w-full rounded-xl border border-white/25 bg-white/15 px-4 py-3 pr-12 text-white placeholder-white/50 shadow-inner transition-colors focus:border-[#199c61] focus:ring-2 focus:ring-[#199c61]/40 focus:outline-none"
+                  data-testid="login-password"
                 />
                 <button
                   type="button"
@@ -113,12 +115,12 @@ export function LoginPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1.5 text-sm text-red-300">{errors.password.message}</p>
+                <p className="mt-1.5 text-sm text-red-300" data-testid="login-mensagem-erro">{errors.password.message}</p>
               )}
             </div>
 
             {error && (
-              <div className="rounded-xl bg-red-500/25 backdrop-blur-sm p-3 text-center text-sm text-red-200">
+              <div className="rounded-xl bg-red-500/25 backdrop-blur-sm p-3 text-center text-sm text-red-200" data-testid="login-mensagem-erro">
                 {error}
               </div>
             )}
@@ -128,6 +130,7 @@ export function LoginPage() {
               disabled={isLoading}
               className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold text-white shadow-lg transition-all hover:opacity-95 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
               style={{ backgroundColor: CORES.verde }}
+              data-testid="login-submit"
             >
               {isLoading ? (
                 <>
@@ -146,6 +149,7 @@ export function LoginPage() {
               to="/cadastro"
               className="font-medium hover:underline"
               style={{ color: CORES.verde }}
+              data-testid="login-link-criar-conta"
             >
               Criar conta
             </Link>

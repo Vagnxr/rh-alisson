@@ -210,7 +210,7 @@ export function DespesaPage({
     e.preventDefault();
 
     if (!formData.tipo) {
-      toast.error('Tipo e obrigatorio');
+      toast.error(<span data-testid="despesa-categoria-mensagem-erro">Tipo e obrigatorio</span>);
       return;
     }
 
@@ -219,7 +219,7 @@ export function DespesaPage({
         (r) => r.data.trim() && parseValorFromInput(r.valor) > 0
       );
       if (validRows.length === 0) {
-        toast.error('Adicione ao menos uma data com valor maior que zero na tabela.');
+        toast.error(<span data-testid="despesa-categoria-mensagem-erro">Adicione ao menos uma data com valor maior que zero na tabela.</span>);
         return;
       }
       try {
@@ -233,7 +233,7 @@ export function DespesaPage({
               valor: parseValorFromInput(r.valor),
             })),
           });
-          toast.success('Registro atualizado com sucesso!');
+          toast.success(<span data-testid="despesa-categoria-mensagem-sucesso">Registro atualizado com sucesso!</span>);
         } else if (addItemComParcelas && validRows.length > 0) {
           await addItemComParcelas({
             tipo: formData.tipo,
@@ -244,7 +244,7 @@ export function DespesaPage({
               valor: parseValorFromInput(r.valor),
             })),
           });
-          toast.success(validRows.length > 1 ? `${validRows.length} registros adicionados.` : 'Registro adicionado com sucesso!');
+          toast.success(<span data-testid="despesa-categoria-mensagem-sucesso">{validRows.length > 1 ? `${validRows.length} registros adicionados.` : 'Registro adicionado com sucesso!'}</span>);
         } else {
           for (const row of validRows) {
             await addItem({
@@ -255,20 +255,20 @@ export function DespesaPage({
               comunicarAgenda: formData.comunicarAgenda,
             });
           }
-          toast.success(validRows.length > 1 ? `${validRows.length} registros adicionados.` : 'Registro adicionado com sucesso!');
+          toast.success(<span data-testid="despesa-categoria-mensagem-sucesso">{validRows.length > 1 ? `${validRows.length} registros adicionados.` : 'Registro adicionado com sucesso!'}</span>);
         }
         handleCloseDialog();
         await fetchItems(dateParams);
         fetchAgendaDias(dateParams).catch(() => {});
       } catch {
-        toast.error('Erro ao salvar registro');
+        toast.error(<span data-testid="despesa-categoria-mensagem-erro">Erro ao salvar registro</span>);
       }
       return;
     }
 
     const valorNum = parseValorFromInput(formData.valor);
     if (valorNum <= 0) {
-      toast.error('Valor deve ser maior que zero');
+      toast.error(<span data-testid="despesa-categoria-mensagem-erro">Valor deve ser maior que zero</span>);
       return;
     }
 
@@ -288,15 +288,15 @@ export function DespesaPage({
       };
       if (editingItem) {
         await updateItem(editingItem.id, payload);
-        toast.success('Registro atualizado com sucesso!');
+        toast.success(<span data-testid="despesa-categoria-mensagem-sucesso">Registro atualizado com sucesso!</span>);
       } else {
         await addItem(payload);
-        toast.success('Registro adicionado com sucesso!');
+        toast.success(<span data-testid="despesa-categoria-mensagem-sucesso">Registro adicionado com sucesso!</span>);
       }
       handleCloseDialog();
       fetchAgendaDias(dateParams).catch(() => {});
     } catch {
-      toast.error('Erro ao salvar registro');
+      toast.error(<span data-testid="despesa-categoria-mensagem-erro">Erro ao salvar registro</span>);
     }
   };
 
@@ -305,10 +305,10 @@ export function DespesaPage({
 
     try {
       await deleteItem(deleteItemId);
-      toast.success('Registro excluido com sucesso!');
+      toast.success(<span data-testid="despesa-categoria-mensagem-sucesso">Registro excluido com sucesso!</span>);
       setDeleteItemId(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao excluir registro');
+      toast.error(<span data-testid="despesa-categoria-mensagem-erro">{err instanceof Error ? err.message : 'Erro ao excluir registro'}</span>);
     }
   };
 
@@ -467,6 +467,7 @@ export function DespesaPage({
             className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
             title="Editar"
             onClick={() => handleOpenDialog(row.original)}
+            data-testid="despesa-categoria-linha-editar"
           >
             <Pencil className="h-4 w-4" />
           </button>
@@ -474,6 +475,7 @@ export function DespesaPage({
             className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
             title="Excluir"
             onClick={() => setDeleteItemId(row.original.id)}
+            data-testid="despesa-categoria-linha-excluir"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -572,6 +574,7 @@ export function DespesaPage({
           <button
             onClick={() => handleOpenDialog()}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+            data-testid="despesa-categoria-novo-registro"
           >
             <Plus className="h-4 w-4" />
             <span>Novo Registro</span>
@@ -583,14 +586,18 @@ export function DespesaPage({
       <div className="rounded-xl border border-slate-200 bg-white">
         {/* Tabela Desktop */}
         <div className="hidden overflow-x-auto sm:block">
-          <table className="w-full">
+          <table className="w-full" data-testid="despesa-categoria-tabela">
             <thead className="border-b border-slate-200 bg-slate-50">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
+                  {headerGroup.headers.map((header) => {
+                    const colId = header.column.id;
+                    const slug = colId === 'comunicarAgenda' ? 'comunicar-agenda' : colId === 'actions' ? 'acoes' : colId;
+                    return (
                     <th
                       key={header.id}
                       className="px-6 py-3 text-left text-xs uppercase tracking-wider text-slate-500"
+                      data-testid={`despesa-categoria-tabela-header-${slug}`}
                     >
                       {header.isPlaceholder
                         ? null
@@ -599,7 +606,8 @@ export function DespesaPage({
                             header.getContext()
                           )}
                     </th>
-                  ))}
+                  );
+                  })}
                 </tr>
               ))}
             </thead>
@@ -615,11 +623,12 @@ export function DespesaPage({
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50">
+                  <tr key={row.id} className="hover:bg-slate-50" data-testid="despesa-categoria-tabela-linha">
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
                         className="whitespace-nowrap px-6 py-4 text-sm text-slate-600"
+                        data-testid={`despesa-categoria-celula-${cell.column.id === 'comunicarAgenda' ? 'comunicar-agenda' : cell.column.id === 'actions' ? 'acoes' : cell.column.id}`}
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
@@ -678,6 +687,7 @@ export function DespesaPage({
                           className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                           title="Editar"
                           onClick={() => handleOpenDialog(item)}
+                          data-testid="despesa-categoria-linha-editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
@@ -685,6 +695,7 @@ export function DespesaPage({
                           className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                           title="Excluir"
                           onClick={() => setDeleteItemId(item.id)}
+                          data-testid="despesa-categoria-linha-excluir"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -707,9 +718,9 @@ export function DespesaPage({
 
       {/* Dialog Adicionar/Editar */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent data-testid="despesa-categoria-dialog">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle data-testid="despesa-categoria-dialog-titulo">
               {editingItem ? 'Editar Registro' : 'Novo Registro'}
             </DialogTitle>
             <DialogDescription>
@@ -738,6 +749,7 @@ export function DespesaPage({
                     }
                     className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
                     required
+                    data-testid="despesa-categoria-data"
                   />
                 </div>
                 <div className="space-y-2">
@@ -756,6 +768,7 @@ export function DespesaPage({
                       }
                       className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
                       required
+                      data-testid="despesa-categoria-tipo"
                     >
                       <option value="">Selecione...</option>
                       {tiposDisponiveis.map((tipo) => (
@@ -774,6 +787,7 @@ export function DespesaPage({
                       }}
                       className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-emerald-600"
                       title="Adicionar ou gerenciar tipos"
+                      data-testid="despesa-categoria-btn-tipos"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
@@ -796,6 +810,7 @@ export function DespesaPage({
                     setFormData({ ...formData, descricao: e.target.value.toUpperCase() })
                   }
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
+                  data-testid="despesa-categoria-descricao"
                 />
               </div>
               <div className="space-y-2">
@@ -819,6 +834,7 @@ export function DespesaPage({
                   }
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   required
+                  data-testid="despesa-categoria-valor"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -826,6 +842,7 @@ export function DespesaPage({
                   id="recorrente"
                   type="checkbox"
                   checked={formData.recorrente || false}
+                  data-testid="despesa-categoria-recorrente"
                   onChange={(e) => {
                     const checked = e.target.checked;
                     setFormData((prev) => ({
@@ -891,6 +908,7 @@ export function DespesaPage({
                         })
                       }
                       className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                      data-testid="despesa-categoria-recorrencia-fim"
                     />
                     <p className="text-xs text-slate-500">
                       Última data de vencimento da série. A data informada acima conta como a primeira ocorrência (ex.: 6 meses a partir de 13/02 = 13/02, 13/03, …, 13/07). Deixe em branco para gerar até 12 meses.
@@ -908,6 +926,7 @@ export function DespesaPage({
                       setFormData({ ...formData, comunicarAgenda: e.target.checked })
                     }
                     className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    data-testid="despesa-categoria-comunicar-agenda"
                   />
                   <label
                     htmlFor="comunicarAgenda"
@@ -924,6 +943,7 @@ export function DespesaPage({
                 type="button"
                 onClick={handleCloseDialog}
                 className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 ring-offset-white transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                data-testid="despesa-categoria-cancelar"
               >
                 Cancelar
               </button>
@@ -931,6 +951,7 @@ export function DespesaPage({
                 type="submit"
                 disabled={isLoading}
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white ring-offset-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                data-testid="despesa-categoria-submit"
               >
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {editingItem ? 'Salvar' : 'Adicionar'}
@@ -964,6 +985,7 @@ export function DespesaPage({
                 onChange={(e) =>
                   setNovoTipoLabel(e.target.value.trim().toUpperCase())
                 }
+                data-testid="despesa-categoria-tipo-input-nome"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -971,11 +993,11 @@ export function DespesaPage({
                       addTipo(config.key, novoTipoLabel.trim().toUpperCase())
                         .then(() => {
                           setNovoTipoLabel('');
-                          toast.success('Tipo adicionado.');
+                          toast.success(<span data-testid="despesa-categoria-mensagem-sucesso">Tipo adicionado.</span>);
                         })
                         .catch((err) => {
                           toast.error(
-                            err instanceof Error ? err.message : 'Erro ao adicionar tipo'
+                            <span data-testid="despesa-categoria-mensagem-erro">{err instanceof Error ? err.message : 'Erro ao adicionar tipo'}</span>
                           );
                         });
                     }
@@ -992,21 +1014,22 @@ export function DespesaPage({
                   addTipo(config.key, label)
                     .then(() => {
                       setNovoTipoLabel('');
-                      toast.success('Tipo adicionado.');
+                      toast.success(<span data-testid="despesa-categoria-mensagem-sucesso">Tipo adicionado.</span>);
                     })
                     .catch((err) => {
                       toast.error(
-                        err instanceof Error ? err.message : 'Erro ao adicionar tipo'
+                        <span data-testid="despesa-categoria-mensagem-erro">{err instanceof Error ? err.message : 'Erro ao adicionar tipo'}</span>
                       );
                     });
                 }}
                 className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                data-testid="despesa-categoria-tipo-adicionar"
               >
                 {isLoadingTipos ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Adicionar
               </button>
             </div>
-            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2">
+            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2" data-testid="despesa-categoria-tipo-lista">
               {tiposParaListar.length === 0 ? (
                 <li className="py-4 text-center text-sm text-slate-500">
                   Nenhum tipo. Adicione acima.
@@ -1024,9 +1047,11 @@ export function DespesaPage({
                         onClick={() => {
                           deleteTipo(t.id!).catch((err) => {
                             toast.error(
-                              err instanceof Error
-                                ? err.message
-                                : 'Nao foi possivel excluir. O tipo pode estar em uso.'
+                              <span data-testid="despesa-categoria-mensagem-erro">
+                                {err instanceof Error
+                                  ? err.message
+                                  : 'Nao foi possivel excluir. O tipo pode estar em uso.'}
+                              </span>
                             );
                           });
                         }}
@@ -1043,6 +1068,16 @@ export function DespesaPage({
                 ))
               )}
             </ul>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsTiposDialogOpen(false)}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                data-testid="despesa-categoria-tipo-cancelar"
+              >
+                Fechar
+              </button>
+            </div>
           </div>
           </DialogBody>
         </DialogContent>
@@ -1063,7 +1098,7 @@ export function DespesaPage({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>
+            <AlertDialogAction onClick={handleDelete} data-testid="despesa-categoria-confirmar-excluir">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
