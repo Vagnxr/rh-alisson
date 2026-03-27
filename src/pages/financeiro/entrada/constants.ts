@@ -13,7 +13,7 @@ export const CATEGORIAS_INICIAIS = [
 
 export const MODELOS_NOTA_INICIAIS = ['NF-e', 'NFC-e', 'NFS-e', 'ENT SN', 'BONIFICAÇÃO'];
 
-export const TIPOS_ENTRADA = ['Compra', 'Outros'];
+export const TIPOS_ENTRADA = ['Compra', 'Outros', 'Bonificação'];
 
 /** Forma de pagamento retornada pela API GET /financeiro/entrada/formas-pagamento */
 export interface FormaPagamentoFromApi {

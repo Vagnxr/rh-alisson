@@ -16,6 +16,7 @@ import {
 } from './constants';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { cn } from '@/lib/cn';
+import { CurrencyInput } from '@/components/ui/currency-input';
 
 export interface EntradaFormData {
   data: string;
@@ -45,6 +46,11 @@ export interface EntradaFormDialogProps {
   totalValores: number;
   valorTotalNotaNum: number;
   formaBoleto: boolean;
+  isBonificacao: boolean;
+  fornecedorDocumentoValido: boolean;
+  totalContasAPagar: number;
+  somaContasAPagarDiverge: boolean;
+  contasAPagarValidasCount: number;
   onFornecedorChange: (value: string) => void;
   onFornecedorBlur: () => void;
   onFornecedorPaste: (e: React.ClipboardEvent<HTMLInputElement>) => void;
@@ -59,7 +65,7 @@ export interface EntradaFormDialogProps {
   onClose: () => void;
 }
 
-const TIPOS_ENTRADA = ['Compra', 'Outros'];
+const TIPOS_ENTRADA = ['Compra', 'Outros', 'Bonificação'];
 
 export function EntradaFormDialog({
   open,
@@ -76,6 +82,11 @@ export function EntradaFormDialog({
   totalValores,
   valorTotalNotaNum,
   formaBoleto,
+  isBonificacao,
+  fornecedorDocumentoValido,
+  totalContasAPagar,
+  somaContasAPagarDiverge,
+  contasAPagarValidasCount,
   onFornecedorChange,
   onFornecedorBlur,
   onFornecedorPaste,
@@ -89,6 +100,8 @@ export function EntradaFormDialog({
   onSubmit,
   onClose,
 }: EntradaFormDialogProps) {
+  const restDisabled = !fornecedorDocumentoValido;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] flex-col overflow-x-hidden">
@@ -106,6 +119,7 @@ export function EntradaFormDialog({
                     value={formData.modeloNotaId}
                     onChange={e => setFormData(prev => ({ ...prev, modeloNotaId: e.target.value }))}
                     className={INPUT_CLASS}
+                    disabled={restDisabled}
                   >
                     {[...modelosNota]
                       .sort((a, b) => a.localeCompare(b, 'pt-BR'))
@@ -121,9 +135,16 @@ export function EntradaFormDialog({
                   <select
                     value={formData.tipoEntradaId}
                     onChange={e =>
-                      setFormData(prev => ({ ...prev, tipoEntradaId: e.target.value }))
+                      setFormData(prev => ({
+                        ...prev,
+                        tipoEntradaId: e.target.value,
+                        ...(e.target.value === 'Bonificação'
+                          ? { formaPagamentoId: '', contasAPagar: [] }
+                          : {}),
+                      }))
                     }
                     className={INPUT_CLASS}
+                    disabled={restDisabled}
                   >
                     {[...TIPOS_ENTRADA]
                       .sort((a, b) => a.localeCompare(b, 'pt-BR'))
@@ -162,6 +183,11 @@ export function EntradaFormDialog({
                       </button>
                     </div>
                   )}
+                  {!fornecedorDocumentoValido && (
+                    <p className="text-xs text-amber-700">
+                      Informe um CPF/CNPJ válido e cadastrado para liberar os demais campos.
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Data entrada</label>
@@ -171,6 +197,7 @@ export function EntradaFormDialog({
                     onChange={e => setFormData(prev => ({ ...prev, data: e.target.value }))}
                     className={INPUT_CLASS}
                     required
+                    disabled={restDisabled}
                   />
                 </div>
                 <div className="space-y-2">
@@ -182,6 +209,7 @@ export function EntradaFormDialog({
                       setFormData(prev => ({ ...prev, dataEmissao: e.target.value }))
                     }
                     className={INPUT_CLASS}
+                    disabled={restDisabled}
                   />
                 </div>
                 <div className="space-y-2">
@@ -191,20 +219,20 @@ export function EntradaFormDialog({
                     value={formData.numeroNota}
                     onChange={e => setFormData(prev => ({ ...prev, numeroNota: e.target.value }))}
                     className={INPUT_CLASS}
+                    disabled={restDisabled}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Valor total da nota</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
+                <label className="text-sm font-medium text-slate-700">Valor total da entrada</label>
+                <CurrencyInput
                   placeholder="0,00"
                   value={formData.valorTotalNota}
-                  onChange={e =>
-                    setFormData(prev => ({ ...prev, valorTotalNota: e.target.value }))
+                  onChange={(valorTotalNota) =>
+                    setFormData(prev => ({ ...prev, valorTotalNota }))
                   }
                   className={cn(INPUT_CLASS, somaCategoriasDiverge && 'border-amber-500')}
+                  disabled={restDisabled}
                 />
               </div>
               <div className="space-y-2">
@@ -216,6 +244,7 @@ export function EntradaFormDialog({
                     type="button"
                     onClick={addValorLine}
                     className="text-sm text-emerald-600 hover:underline"
+                    disabled={restDisabled}
                   >
                     Adicionar linha
                   </button>
@@ -231,6 +260,7 @@ export function EntradaFormDialog({
                         onChange={e => updateValorLine(i, 'categoriaId', e.target.value)}
                         className={cn(INPUT_CLASS, 'min-w-[180px] flex-1 shrink-0')}
                         title={categorias.find(c => c.id === v.categoriaId)?.nome}
+                        disabled={restDisabled}
                       >
                         {[...categorias]
                           .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
@@ -240,19 +270,19 @@ export function EntradaFormDialog({
                             </option>
                           ))}
                       </select>
-                      <input
-                        type="text"
-                        inputMode="decimal"
+                      <CurrencyInput
                         placeholder="0,00"
                         value={v.valor}
-                        onChange={e => updateValorLine(i, 'valor', e.target.value)}
+                        onChange={(valor) => updateValorLine(i, 'valor', valor)}
                         className={cn(INPUT_CLASS, 'w-fit')}
+                        disabled={restDisabled}
                       />
                       <button
                         type="button"
                         onClick={() => removeValorLine(i)}
                         className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600"
                         title="Remover"
+                        disabled={restDisabled}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -276,38 +306,41 @@ export function EntradaFormDialog({
                   )}
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Forma de pagamento</label>
-                <select
-                  value={formData.formaPagamentoId}
-                  onChange={e =>
-                    setFormData(prev => ({ ...prev, formaPagamentoId: e.target.value }))
-                  }
-                  className={INPUT_CLASS}
-                  title={
-                    editingItem
-                      ? 'Ao editar, nao e possivel trocar entre formas que comunicam agenda e formas que nao comunicam agenda.'
-                      : undefined
-                  }
-                >
-                  {(() => {
-                    const lista = [...formasPagamento];
-                    if (editingItem) {
-                      const atual = lista.find(f => f.nome === formData.formaPagamentoId);
-                      const atualAgenda = atual?.comunicarAgenda === true;
-                      return lista.filter(f => f.comunicarAgenda === atualAgenda);
+              {!isBonificacao && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Forma de pagamento</label>
+                  <select
+                    value={formData.formaPagamentoId}
+                    onChange={e =>
+                      setFormData(prev => ({ ...prev, formaPagamentoId: e.target.value }))
                     }
-                    return lista;
-                  })()
-                    .sort((a, b) => (a.nome ?? '').localeCompare(b.nome ?? '', 'pt-BR'))
-                    .map(f => (
-                      <option key={f.id} value={f.nome}>
-                        {f.nome}
-                      </option>
-                    ))}
-                </select>
-              </div>
-              {formaBoleto && (
+                    className={INPUT_CLASS}
+                    title={
+                      editingItem
+                        ? 'Ao editar, nao e possivel trocar entre formas que comunicam agenda e formas que nao comunicam agenda.'
+                        : undefined
+                    }
+                    disabled={restDisabled}
+                  >
+                    {(() => {
+                      const lista = [...formasPagamento];
+                      if (editingItem) {
+                        const atual = lista.find(f => f.nome === formData.formaPagamentoId);
+                        const atualAgenda = atual?.comunicarAgenda === true;
+                        return lista.filter(f => f.comunicarAgenda === atualAgenda);
+                      }
+                      return lista;
+                    })()
+                      .sort((a, b) => (a.nome ?? '').localeCompare(b.nome ?? '', 'pt-BR'))
+                      .map(f => (
+                        <option key={f.id} value={f.nome}>
+                          {f.nome}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+              {!isBonificacao && formaBoleto && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-slate-700">Contas a pagar</label>
@@ -315,6 +348,7 @@ export function EntradaFormDialog({
                       type="button"
                       onClick={addContaAPagar}
                       className="text-sm text-emerald-600 hover:underline"
+                      disabled={restDisabled}
                     >
                       Adicionar parcela
                     </button>
@@ -341,16 +375,14 @@ export function EntradaFormDialog({
                             value={p.vencimento}
                             onChange={e => updateContaAPagar(i, 'vencimento', e.target.value)}
                             className={cn(INPUT_CLASS, 'min-w-0')}
-                            disabled={isDisabled}
+                            disabled={isDisabled || restDisabled}
                           />
-                          <input
-                            type="text"
-                            inputMode="decimal"
+                          <CurrencyInput
                             placeholder="0,00"
                             value={p.valor}
-                            onChange={e => updateContaAPagar(i, 'valor', e.target.value)}
+                            onChange={(valor) => updateContaAPagar(i, 'valor', valor)}
                             className={cn(INPUT_CLASS, 'min-w-0')}
-                            disabled={isDisabled}
+                            disabled={isDisabled || restDisabled}
                           />
                           <button
                             type="button"
@@ -361,7 +393,7 @@ export function EntradaFormDialog({
                                 ? 'Parcela já paga não pode ser removida'
                                 : 'Remover'
                             }
-                            disabled={isDisabled}
+                            disabled={isDisabled || restDisabled}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -369,6 +401,20 @@ export function EntradaFormDialog({
                       );
                     })}
                   </div>
+                  <p
+                    className={cn(
+                      'text-xs',
+                      somaContasAPagarDiverge ? 'font-medium text-red-600' : 'text-slate-500',
+                    )}
+                  >
+                    {somaContasAPagarDiverge ? 'Ajuste: ' : ''}
+                    Total contas a pagar: {formatCurrency(totalContasAPagar)}
+                    <span className="ml-1.5">
+                      ({contasAPagarValidasCount}{' '}
+                      {contasAPagarValidasCount === 1 ? 'parcela' : 'parcelas'})
+                    </span>
+                    <span className="ml-2">Nota: {formatCurrency(valorTotalNotaNum)}</span>
+                  </p>
                 </div>
               )}
             </div>
@@ -383,6 +429,7 @@ export function EntradaFormDialog({
             </button>
             <button
               type="submit"
+              disabled={restDisabled}
               className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
             >
               {editingItem ? 'Salvar' : 'Adicionar'}

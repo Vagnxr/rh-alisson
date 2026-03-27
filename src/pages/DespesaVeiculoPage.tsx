@@ -24,6 +24,7 @@ export function DespesaVeiculoPage() {
       updateItem={updateItem}
       deleteItem={deleteItem}
       useRecorrenciaDataValorList
+      useCurrencyMaskOnValor
     />
   );
 }

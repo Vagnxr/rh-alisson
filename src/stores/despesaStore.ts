@@ -198,6 +198,7 @@ export const useDespesaDinamicaStore = create<DespesaDinamicaStore>((set, get) =
   fetchItems: async (params?: { dataInicio?: string; dataFim?: string }) => {
     const categoria = get().categoria;
     if (!categoria) return;
+    if (get().isLoading) return;
     set({ isLoading: true, error: null, lastFetchParams: params });
     try {
       const requestParams: Record<string, string> = { categoria };

@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { CurrencyInput } from '@/components/ui/currency-input';
 
 export interface DataValorItem {
   data: string;
@@ -33,6 +34,8 @@ export interface DataValorListProps {
   countLabel?: string;
   /** Prefixo dos data-testid (ex.: "agenda" -> agenda-recorrencia, agenda-adicionar-valor). Default: "despesa-categoria". */
   testIdPrefix?: string;
+  /** Aplica mascara de moeda BR no input de valor. */
+  useCurrencyMaskOnValor?: boolean;
 }
 
 function parseValor(v: string): number {
@@ -54,6 +57,7 @@ export function DataValorList({
   getNewItem,
   countLabel = 'recorrência',
   testIdPrefix = 'despesa-categoria',
+  useCurrencyMaskOnValor = false,
 }: DataValorListProps) {
   const addLine = () => {
     if (getNewItem) {
@@ -110,16 +114,26 @@ export function DataValorList({
                 className={cn(inputBaseClass, 'w-full min-w-0')}
                 data-testid={`${testIdPrefix}-recorrencia-data`}
               />
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="0,00"
-                value={item.valor}
-                onChange={(e) => updateLine(i, 'valor', e.target.value)}
-                disabled={isRowDisabled}
-                className={cn(inputBaseClass, 'w-full min-w-0')}
-                data-testid={`${testIdPrefix}-recorrencia-valor`}
-              />
+              {useCurrencyMaskOnValor ? (
+                <CurrencyInput
+                  value={item.valor}
+                  onChange={(valor) => updateLine(i, 'valor', valor)}
+                  disabled={isRowDisabled}
+                  className={cn(inputBaseClass, 'w-full min-w-0')}
+                  testId={`${testIdPrefix}-recorrencia-valor`}
+                />
+              ) : (
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={item.valor}
+                  onChange={(e) => updateLine(i, 'valor', e.target.value)}
+                  disabled={isRowDisabled}
+                  className={cn(inputBaseClass, 'w-full min-w-0')}
+                  data-testid={`${testIdPrefix}-recorrencia-valor`}
+                />
+              )}
               <button
                 type="button"
                 onClick={() => removeLine(i)}

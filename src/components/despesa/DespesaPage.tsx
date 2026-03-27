@@ -14,6 +14,7 @@ import { TIPOS_DESPESA, ABREVIACOES_TIPO_FUNCIONARIO } from '@/types/despesa';
 import type { TipoRecorrencia } from '@/types/recorrencia';
 import { SelectRecorrencia, RecorrenciaBadge } from '@/components/ui/select-recorrencia';
 import { DataValorList, type DataValorItem } from '@/components/ui/data-valor-list';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { useDespesaTiposStore } from '@/stores/despesaTiposStore';
 import { useAgendaStore } from '@/stores/agendaStore';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
@@ -60,6 +61,8 @@ interface DespesaPageProps {
   showComunicarAgenda?: boolean;
   /** Usar lista Data/Valor (recorrencia como multiplas linhas com data) em vez de campo unico + checkbox recorrente. */
   useRecorrenciaDataValorList?: boolean;
+  /** Aplica mascara de moeda BR no campo Valor. */
+  useCurrencyMaskOnValor?: boolean;
 }
 
 function formatCurrency(value: number) {
@@ -89,6 +92,7 @@ export function DespesaPage({
   addItemComParcelas,
   showComunicarAgenda = true,
   useRecorrenciaDataValorList = false,
+  useCurrencyMaskOnValor = false,
 }: DespesaPageProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -820,22 +824,38 @@ export function DespesaPage({
                 >
                   Valor (R$) <span className="text-red-500">*</span>
                 </label>
-                <input
-                  id="valor"
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  value={formData.valor}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      valor: e.target.value,
-                    })
-                  }
-                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  required
-                  data-testid="despesa-categoria-valor"
-                />
+                {useCurrencyMaskOnValor ? (
+                  <CurrencyInput
+                    id="valor"
+                    value={formData.valor}
+                    onChange={(valor) =>
+                      setFormData({
+                        ...formData,
+                        valor,
+                      })
+                    }
+                    className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    required
+                    testId="despesa-categoria-valor"
+                  />
+                ) : (
+                  <input
+                    id="valor"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={formData.valor}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        valor: e.target.value,
+                      })
+                    }
+                    className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    required
+                    data-testid="despesa-categoria-valor"
+                  />
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -873,6 +893,7 @@ export function DespesaPage({
                   label="Datas da recorrencia"
                   addLabel="Adicionar valor"
                   showTotal
+                  useCurrencyMaskOnValor={useCurrencyMaskOnValor}
                   getNewItem={(valores) => {
                     const ultima = valores[valores.length - 1];
                     const dataBase = ultima?.data?.trim() || formData.data;

@@ -36,9 +36,14 @@ import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR, addOneMonth } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { DataValorList, type DataValorItem } from '@/components/ui/data-valor-list';
+import { CurrencyInput } from '@/components/ui/currency-input';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+function toCentavos(value: number) {
+  return Math.round(value * 100);
 }
 
 const inputClass =
@@ -165,6 +170,26 @@ export function AtivoImobilizadoPage() {
   }
 
   const params = useMemo(() => dateFilterToParams(dateFilter), [dateFilter]);
+  const totalNotaBoleto = useMemo(() => parseValorFromInput(formEntrada.valor), [formEntrada.valor]);
+  const parcelasBoletoValidas = useMemo(
+    () =>
+      formEntrada.parcelas.filter(
+        p => p.data?.trim() && Number.isFinite(parseValorFromInput(p.valor)) && parseValorFromInput(p.valor) > 0,
+      ),
+    [formEntrada.parcelas],
+  );
+  const somaParcelasBoleto = useMemo(
+    () => parcelasBoletoValidas.reduce((acc, p) => acc + parseValorFromInput(p.valor), 0),
+    [parcelasBoletoValidas],
+  );
+  const boletoTotaisConferem = useMemo(
+    () => toCentavos(somaParcelasBoleto) === toCentavos(totalNotaBoleto),
+    [somaParcelasBoleto, totalNotaBoleto],
+  );
+  const exibirErroBoletoTempoReal =
+    formEntrada.formaPagto === 'Boleto' &&
+    formEntrada.valor.trim() !== '' &&
+    (parcelasBoletoValidas.length === 0 || !boletoTotaisConferem);
 
   const fetchEntradas = useCallback(() => {
     setLoading1(true);
@@ -199,6 +224,7 @@ export function AtivoImobilizadoPage() {
   const handleSubmitEntrada = (e: React.FormEvent) => {
     e.preventDefault();
     const descricao = formEntrada.descricaoFornecedor.trim().toUpperCase();
+    const valorTotalNota = parseValorFromInput(formEntrada.valor);
     if (!formEntrada.nf.trim()) {
       toast.error('Preencha N.F. e Descricao/Fornecedor.');
       return;
@@ -207,12 +233,18 @@ export function AtivoImobilizadoPage() {
       toast.error('Preencha N.F. e Descricao/Fornecedor.');
       return;
     }
+    if (formEntrada.valor.trim() === '' || !Number.isFinite(valorTotalNota)) {
+      toast.error('Preencha Data, N.F., Descricao/Fornecedor e Valor.');
+      return;
+    }
     if (formEntrada.formaPagto === 'Boleto' && !editingEntrada) {
-      const validRows = formEntrada.parcelas.filter(
-        p => p.data?.trim() && parseValorFromInput(p.valor) > 0,
-      );
+      const validRows = parcelasBoletoValidas;
       if (validRows.length === 0) {
         toast.error('Adicione ao menos uma parcela com data e valor.');
+        return;
+      }
+      if (!boletoTotaisConferem) {
+        toast.error('A soma das parcelas deve ser igual ao valor total da nota.');
         return;
       }
       const parcelas = validRows.map(p => ({
@@ -266,28 +298,24 @@ export function AtivoImobilizadoPage() {
       if (editingEntrada.recorrenciaFim != null)
         baseBody.recorrenciaFim = editingEntrada.recorrenciaFim;
 
-      if (formEntrada.formaPagto === 'Boleto' && formEntrada.parcelas.length > 0) {
-        const parcelasPayload = formEntrada.parcelas.map(p => ({
+      if (formEntrada.formaPagto === 'Boleto') {
+        const parcelasPayload = parcelasBoletoValidas.map(p => ({
           data: (p.data ?? '').trim().slice(0, 10),
           valor: parseValorFromInput(p.valor),
         }));
-        const validas = parcelasPayload.filter(
-          p => p.data && Number.isFinite(p.valor) && p.valor >= 0,
-        );
-        if (validas.length === 0) {
+        if (parcelasPayload.length === 0) {
           toast.error('Adicione ao menos uma parcela com data e valor.');
           return;
         }
-        baseBody.parcelas = validas;
-      } else {
-        const data = formEntrada.data.slice(0, 10);
-        const valorNum = parseValorFromInput(formEntrada.valor);
-        if (formEntrada.valor.trim() === '' || !Number.isFinite(valorNum)) {
-          toast.error('Preencha Data, N.F., Descricao/Fornecedor e Valor.');
+        if (!boletoTotaisConferem) {
+          toast.error('A soma das parcelas deve ser igual ao valor total da nota.');
           return;
         }
+        baseBody.parcelas = parcelasPayload;
+      } else {
+        const data = formEntrada.data.slice(0, 10);
         baseBody.data = data;
-        baseBody.valor = valorNum;
+        baseBody.valor = valorTotalNota;
       }
 
       api
@@ -301,18 +329,13 @@ export function AtivoImobilizadoPage() {
         })
         .catch(err => toast.error(err?.message ?? 'Erro ao atualizar'));
     } else {
-      const valorNum = parseValorFromInput(formEntrada.valor);
-      if (formEntrada.valor.trim() === '' || !Number.isFinite(valorNum)) {
-        toast.error('Preencha Data, N.F., Descricao/Fornecedor e Valor.');
-        return;
-      }
       const data = formEntrada.data.slice(0, 10);
       const body = {
         tipo: 'entrada' as const,
         data,
         nf: formEntrada.nf.trim(),
         descricaoFornecedor: descricao,
-        valor: valorNum,
+        valor: valorTotalNota,
         formaPagto: formEntrada.formaPagto,
       };
       api
@@ -680,15 +703,12 @@ export function AtivoImobilizadoPage() {
                   <label className="text-sm font-medium text-slate-700">
                     Valor (R$) <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    inputMode="decimal"
+                  <CurrencyInput
                     placeholder="0,00"
                     value={formEntrada.valor}
-                    onChange={e => {
-                      const v = e.target.value;
-                      lastDataValorRef.current = { ...lastDataValorRef.current, valor: v };
-                      setFormEntrada({ ...formEntrada, valor: v });
+                    onChange={(valor) => {
+                      lastDataValorRef.current = { ...lastDataValorRef.current, valor };
+                      setFormEntrada({ ...formEntrada, valor });
                     }}
                     className={inputClass}
                     required
@@ -770,7 +790,8 @@ export function AtivoImobilizadoPage() {
                         }}
                         label="Parcelas"
                         addLabel="Adicionar parcela"
-                        showTotal
+                        showTotal={false}
+                        useCurrencyMaskOnValor
                         countLabel="parcela"
                         getNewItem={valores => {
                           const ultima = valores[valores.length - 1];
@@ -782,6 +803,16 @@ export function AtivoImobilizadoPage() {
                           return { data: proximaData, valor: ultimoValor };
                         }}
                       />
+                      <p
+                        className={`text-xs ${exibirErroBoletoTempoReal ? 'text-red-600 font-medium' : 'text-slate-500'}`}
+                      >
+                        {exibirErroBoletoTempoReal ? 'Ajuste: ' : ''}
+                        Total parcelas: {formatCurrency(somaParcelasBoleto)}
+                        <span className="ml-1.5">
+                          ({parcelasBoletoValidas.length} {parcelasBoletoValidas.length === 1 ? 'parcela' : 'parcelas'})
+                        </span>
+                        <span className="ml-2">Nota: {formatCurrency(totalNotaBoleto)}</span>
+                      </p>
                     </div>
                   </>
                 )}

@@ -87,9 +87,14 @@ export function EntradaPage() {
       const raw = (docValue ?? formData.fornecedor).trim();
       const digits = onlyNumbers(raw);
       if (digits.length === 11) {
+        if (!isValidCPF(raw)) {
+          setFornecedorNome(null);
+          setFornecedorError('CPF inválido.');
+          return;
+        }
         const found = fornecedores.find(f => f.tipo === 'cpf' && onlyNumbers(f.cpf) === digits);
         if (found && found.tipo === 'cpf') {
-          setFornecedorNome(found.nomeCompleto || found.nomeComercial || '');
+          setFornecedorNome(found.nomeComercial || found.nomeCompleto || '');
           setFornecedorError(null);
         } else {
           setFornecedorNome(null);
@@ -100,6 +105,11 @@ export function EntradaPage() {
         return;
       }
       if (digits.length === 14) {
+        if (!isValidCNPJ(raw)) {
+          setFornecedorNome(null);
+          setFornecedorError('CNPJ inválido.');
+          return;
+        }
         const found = fornecedores.find(f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
         if (found && found.tipo === 'cnpj') {
           setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');
@@ -159,10 +169,43 @@ export function EntradaPage() {
   }, [formasPagamento, formData.formaPagamentoId]);
 
   const valorTotalNotaNum = parseValorFromInput(formData.valorTotalNota);
+  const isBonificacao = formData.tipoEntradaId === 'Bonificação';
+  const fornecedorDigits = onlyNumbers(formData.fornecedor);
+  const fornecedorDocEstruturalValido =
+    (fornecedorDigits.length === 11 && isValidCPF(formData.fornecedor)) ||
+    (fornecedorDigits.length === 14 && isValidCNPJ(formData.fornecedor));
+  const fornecedorCadastrado =
+    (fornecedorDigits.length === 11 &&
+      fornecedores.some(
+        f => f.tipo === 'cpf' && onlyNumbers(f.cpf) === fornecedorDigits,
+      )) ||
+    (fornecedorDigits.length === 14 &&
+      fornecedores.some(
+        f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === fornecedorDigits,
+      ));
+  // UX: libera campos quando o fornecedor já foi resolvido com sucesso no estado da tela.
+  const fornecedorDocumentoValido =
+    Boolean(fornecedorNome) && !fornecedorError && fornecedorDocEstruturalValido && fornecedorCadastrado;
   const somaCategoriasDiverge =
     valorTotalNotaNum > 0 &&
     totalValores > 0 &&
     Math.abs(totalValores - valorTotalNotaNum) > 0.005;
+  const contasAPagarValidas = useMemo(
+    () =>
+      (formData.contasAPagar ?? []).filter(
+        p => p.vencimento.trim() && parseValorFromInput(p.valor) > 0,
+      ),
+    [formData.contasAPagar],
+  );
+  const totalContasAPagar = useMemo(
+    () => contasAPagarValidas.reduce((acc, p) => acc + parseValorFromInput(p.valor), 0),
+    [contasAPagarValidas],
+  );
+  const somaContasAPagarDiverge =
+    formaBoleto &&
+    valorTotalNotaNum > 0 &&
+    (contasAPagarValidas.length === 0 ||
+      Math.abs(totalContasAPagar - valorTotalNotaNum) > 0.005);
 
   const fetchList = useCallback(() => {
     setLoading(true);
@@ -218,9 +261,14 @@ export function EntradaPage() {
     if (!isDialogOpen || !editingItem) return;
     const digits = onlyNumbers((editingItem.cnpjCpf ?? editingItem.fornecedor) ?? '');
     if (digits.length === 11) {
+      if (!isValidCPF(digits)) {
+        setFornecedorNome(null);
+        setFornecedorError('CPF inválido.');
+        return;
+      }
       const found = fornecedores.find(f => f.tipo === 'cpf' && onlyNumbers(f.cpf) === digits);
       if (found && found.tipo === 'cpf') {
-        setFornecedorNome(found.nomeCompleto || found.nomeComercial || '');
+        setFornecedorNome(found.nomeComercial || found.nomeCompleto || '');
         setFornecedorError(null);
       } else {
         setFornecedorNome(null);
@@ -231,6 +279,11 @@ export function EntradaPage() {
       return;
     }
     if (digits.length === 14) {
+      if (!isValidCNPJ(digits)) {
+        setFornecedorNome(null);
+        setFornecedorError('CNPJ inválido.');
+        return;
+      }
       const found = fornecedores.find(f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
       if (found && found.tipo === 'cnpj') {
         setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');
@@ -485,6 +538,16 @@ export function EntradaPage() {
       );
       return;
     }
+    if (!isBonificacao && formaBoleto) {
+      if (contasAPagarValidas.length === 0) {
+        toast.error('Adicione ao menos uma conta a pagar com vencimento e valor.');
+        return;
+      }
+      if (Math.abs(totalContasAPagar - valorTotalNotaNumSubmit) > 0.005) {
+        toast.error('A soma de contas a pagar deve ser igual ao valor total da nota.');
+        return;
+      }
+    }
     const body: Record<string, unknown> = {
       data: formData.data.slice(0, 10),
       dataEmissao: formData.dataEmissao?.slice(0, 10) || undefined,
@@ -492,19 +555,17 @@ export function EntradaPage() {
       tipoEntrada: formData.tipoEntradaId || undefined,
       fornecedor: fornecedorNumeros,
       modeloNota: formData.modeloNotaId,
-      formaPagamento: formData.formaPagamentoId,
+      formaPagamento: isBonificacao ? undefined : formData.formaPagamentoId,
       valores: valoresBody,
       total,
     };
     // Formas que comunicam agenda (modo Boleto) devem enviar contasAPagar
-    if (formaBoleto && formData.contasAPagar?.length) {
-      const parcelas = formData.contasAPagar
-        .filter(p => p.vencimento.trim() && parseValorFromInput(p.valor) > 0)
-        .map(p => ({
+    if (!isBonificacao && formaBoleto) {
+      const parcelas = contasAPagarValidas.map(p => ({
           vencimento: p.vencimento.slice(0, 10),
           valor: parseValorFromInput(p.valor),
         }));
-      if (parcelas.length) body.contasAPagar = parcelas;
+      body.contasAPagar = parcelas;
     }
     if (editingItem) {
       api
@@ -518,9 +579,9 @@ export function EntradaPage() {
     } else {
       api
         .post<EntradaRow>('financeiro/entrada', body)
-        .then(res => {
+        .then(() => {
           toast.success('Registro adicionado.');
-          setItems(prev => [...prev, res.data]);
+          fetchList();
           handleCloseDialog();
         })
         .catch(err => toast.error(err instanceof Error ? err.message : 'Erro ao criar'));
@@ -647,6 +708,11 @@ export function EntradaPage() {
         totalValores={totalValores}
         valorTotalNotaNum={valorTotalNotaNum}
         formaBoleto={formaBoleto}
+        isBonificacao={isBonificacao}
+        fornecedorDocumentoValido={fornecedorDocumentoValido}
+        totalContasAPagar={totalContasAPagar}
+        somaContasAPagarDiverge={somaContasAPagarDiverge}
+        contasAPagarValidasCount={contasAPagarValidas.length}
         onFornecedorChange={handleFornecedorChange}
         onFornecedorBlur={handleFornecedorBlur}
         onFornecedorPaste={handleFornecedorPaste}
@@ -691,6 +757,14 @@ export function EntradaPage() {
         initialCpf={onlyNumbers(formData.fornecedor).length === 11 ? formData.fornecedor.trim() : undefined}
         existingFornecedores={fornecedores}
         onSubmit={async data => {
+          if (data.tipo === 'cpf' && !isValidCPF(data.cpf ?? '')) {
+            toast.error('CPF inválido para cadastro de fornecedor.');
+            throw new Error('CPF inválido');
+          }
+          if (data.tipo === 'cnpj' && !isValidCNPJ(data.cnpj ?? '')) {
+            toast.error('CNPJ inválido para cadastro de fornecedor.');
+            throw new Error('CNPJ inválido');
+          }
           await addFornecedor(data as CreateFornecedorDto);
           toast.success('Fornecedor cadastrado.');
           setCadastroFornecedorOpen(false);
@@ -698,12 +772,22 @@ export function EntradaPage() {
           const digits = onlyNumbers(formData.fornecedor);
           const list = useFornecedorStore.getState().fornecedores;
           if (digits.length === 11) {
+            if (!isValidCPF(digits)) {
+              setFornecedorNome(null);
+              setFornecedorError('CPF inválido.');
+              return;
+            }
             const found = list.find(f => f.tipo === 'cpf' && onlyNumbers(f.cpf) === digits);
             if (found && found.tipo === 'cpf') {
-              setFornecedorNome(found.nomeCompleto || found.nomeComercial || '');
+              setFornecedorNome(found.nomeComercial || found.nomeCompleto || '');
               setFornecedorError(null);
             }
           } else if (digits.length === 14) {
+            if (!isValidCNPJ(digits)) {
+              setFornecedorNome(null);
+              setFornecedorError('CNPJ inválido.');
+              return;
+            }
             const found = list.find(f => f.tipo === 'cnpj' && onlyNumbers(f.cnpj) === digits);
             if (found && found.tipo === 'cnpj') {
               setFornecedorNome(found.razaoSocial || found.nomeFantasia || '');

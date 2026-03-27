@@ -22,6 +22,7 @@ import type {
   ContatoVendedor,
 } from '@/types/fornecedor';
 import { fetchCNPJReceitaWS, onlyDigitsCnpj } from '@/lib/receitaws';
+import { isValidCPF } from '@/lib/masks';
 
 interface FornecedorFormProps {
   open: boolean;
@@ -299,6 +300,8 @@ export function FornecedorForm({
     } else {
       if (!formData.cpf?.trim()) newErrors.cpf = 'CPF é obrigatório';
       else if (!fornecedor && cpfJaCadastrado()) newErrors.cpf = 'Este CPF já está cadastrado.';
+      else if (onlyDigitsCnpj(formData.cpf).length === 11 && !isValidCPF(formData.cpf))
+        newErrors.cpf = 'CPF inválido.';
       if (!formData.nomeCompleto?.trim()) newErrors.nomeCompleto = 'Nome Completo é obrigatório';
       if (!formData.nomeComercial?.trim()) newErrors.nomeComercial = 'Nome Comercial é obrigatório';
     }
@@ -456,12 +459,20 @@ export function FornecedorForm({
                 onValueChange={(value) => {
                   setErrors((e) => ({ ...e, cpf: '' }));
                   setFormData({ ...formData, cpf: value });
-                  if (!fornecedor && onlyDigitsCnpj(value).length === 11 && isCpfDuplicado(onlyDigitsCnpj(value))) {
+                  const digits = onlyDigitsCnpj(value);
+                  if (!fornecedor && digits.length === 11 && isCpfDuplicado(digits)) {
                     setErrors((e) => ({ ...e, cpf: 'Este CPF já está cadastrado.' }));
+                  } else if (digits.length === 11 && !isValidCPF(value)) {
+                    setErrors((e) => ({ ...e, cpf: 'CPF inválido.' }));
                   }
                 }}
                 onBlur={() => {
-                  if (onlyDigitsCnpj(formData.cpf).length === 11 && cpfJaCadastrado()) {
+                  const digits = onlyDigitsCnpj(formData.cpf);
+                  if (digits.length === 11 && !isValidCPF(formData.cpf)) {
+                    setErrors((e) => ({ ...e, cpf: 'CPF inválido.' }));
+                    return;
+                  }
+                  if (digits.length === 11 && cpfJaCadastrado()) {
                     setErrors((e) => ({ ...e, cpf: 'Este CPF já está cadastrado.' }));
                   }
                 }}

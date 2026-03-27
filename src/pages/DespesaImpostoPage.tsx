@@ -24,6 +24,7 @@ export function DespesaImpostoPage() {
       updateItem={updateItem}
       deleteItem={deleteItem}
       useRecorrenciaDataValorList
+      useCurrencyMaskOnValor
     />
   );
 }

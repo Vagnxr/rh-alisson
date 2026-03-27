@@ -9,6 +9,7 @@ import {
   DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { BancoSelector } from './banco';
 
 export interface DespesaBancoFormData {
@@ -144,16 +145,14 @@ export function DespesaBancoFormDialog({
               <label htmlFor="valor" className="text-sm font-medium text-slate-700">
                 Valor (R$) <span className="text-red-500">*</span>
               </label>
-              <input
+              <CurrencyInput
                 id="valor"
-                type="text"
-                inputMode="decimal"
                 placeholder="0,00"
                 value={formData.valor ?? ''}
-                onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                onChange={(valor) => setFormData({ ...formData, valor })}
                 className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 required
-                data-testid="despesa-categoria-valor"
+                testId="despesa-categoria-valor"
               />
             </div>
           </div>

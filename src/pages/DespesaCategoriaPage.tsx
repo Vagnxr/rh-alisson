@@ -64,10 +64,6 @@ export function DespesaCategoriaPage({ categoriaFromPath }: DespesaCategoriaPage
     setCategoria(categoriaSlug);
   }, [categoriaSlug, isFixed, setCategoria, navigate]);
 
-  useEffect(() => {
-    if (categoria) fetchItems();
-  }, [categoria, fetchItems]);
-
   if (!categoriaSlug || isFixed) return null;
   if (!categoria) return null;
 

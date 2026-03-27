@@ -24,6 +24,7 @@ export function DespesaExtraPage() {
       updateItem={updateItem}
       deleteItem={deleteItem}
       useRecorrenciaDataValorList
+      useCurrencyMaskOnValor
     />
   );
 }
