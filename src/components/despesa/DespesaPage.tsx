@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { ArrowsDownUp, CalendarBlank, Plus, PencilSimple, Trash, SpinnerGap } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import type { DespesaBase, DespesaInput, DespesaComParcelasInput, DespesaUpdatePayload, DespesaCategoriaConfig, DespesaCategoria } from '@/types/despesa';
 import { TIPOS_DESPESA, ABREVIACOES_TIPO_FUNCIONARIO } from '@/types/despesa';
@@ -23,6 +23,20 @@ import { ExportButtons } from '@/components/ui/export-buttons';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { formatDateToLocalYYYYMMDD, formatDateStringToBR, addOneMonth } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -78,6 +92,13 @@ function formatDate(date: string) {
 
 function formatDateForInput(date: string) {
   return date.split('T')[0];
+}
+
+function parseDateInput(value?: string) {
+  if (!value) return undefined;
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return undefined;
+  return new Date(year, month - 1, day);
 }
 
 export function DespesaPage({
@@ -213,6 +234,11 @@ export function DespesaPage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!formData.data) {
+      toast.error(<span data-testid="despesa-categoria-mensagem-erro">Data e obrigatoria</span>);
+      return;
+    }
+
     if (!formData.tipo) {
       toast.error(<span data-testid="despesa-categoria-mensagem-erro">Tipo e obrigatorio</span>);
       return;
@@ -321,28 +347,32 @@ export function DespesaPage({
       data: {
         accessorKey: 'data',
         header: ({ column }) => (
-          <button
+          <Button
             type="button"
-            className="flex items-center gap-1 font-medium"
+            variant="ghost"
+            size="sm"
+            className="-ml-3 h-8 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
             Data
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
+            <ArrowsDownUp className="h-4 w-4" />
+          </Button>
         ),
         cell: ({ row }) => formatDate(row.getValue('data')),
       },
       tipo: {
         accessorKey: 'tipo',
         header: ({ column }) => (
-          <button
+          <Button
             type="button"
-            className="flex items-center gap-1 font-medium"
+            variant="ghost"
+            size="sm"
+            className="-ml-3 h-8 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
             Tipo
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
+            <ArrowsDownUp className="h-4 w-4" />
+          </Button>
         ),
         cell: ({ row }) => {
           const tipo = (row.getValue('tipo') as string) || '';
@@ -351,39 +381,43 @@ export function DespesaPage({
               ? ABREVIACOES_TIPO_FUNCIONARIO[tipo]
               : tipo;
           return (
-            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+            <Badge variant="secondary">
               {label || '-'}
-            </span>
+            </Badge>
           );
         },
       },
       descricao: {
         accessorKey: 'descricao',
         header: ({ column }) => (
-          <button
+          <Button
             type="button"
-            className="flex items-center gap-1 font-medium"
+            variant="ghost"
+            size="sm"
+            className="-ml-3 h-8 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
             Descricao
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
+            <ArrowsDownUp className="h-4 w-4" />
+          </Button>
         ),
       },
       valor: {
         accessorKey: 'valor',
         header: ({ column }) => (
-          <button
+          <Button
             type="button"
-            className="flex items-center gap-1 font-medium"
+            variant="ghost"
+            size="sm"
+            className="-ml-3 h-8 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
             Valor
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
+            <ArrowsDownUp className="h-4 w-4" />
+          </Button>
         ),
         cell: ({ row }) => (
-          <span className="font-medium text-slate-900">
+          <span className="font-medium text-foreground">
             {formatCurrency(row.getValue('valor'))}
           </span>
         ),
@@ -391,14 +425,16 @@ export function DespesaPage({
       recorrencia: {
         accessorKey: 'recorrencia',
         header: ({ column }) => (
-          <button
+          <Button
             type="button"
-            className="flex items-center gap-1 font-medium"
+            variant="ghost"
+            size="sm"
+            className="-ml-3 h-8 font-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
             Recorrencia
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
+            <ArrowsDownUp className="h-4 w-4" />
+          </Button>
         ),
         cell: ({ row }) => {
           const value = (row.getValue('recorrencia') as string) || 'unica';
@@ -406,18 +442,18 @@ export function DespesaPage({
           if (value === 'unica') {
             if (indice) {
               return (
-                <span className="text-sm font-medium text-slate-600" title="Parcela da série">
+                <span className="text-sm font-medium text-muted-foreground" title="Parcela da série">
                   {indice}
                 </span>
               );
             }
-            return <span className="text-slate-400">-</span>;
+            return <span className="text-muted-foreground">-</span>;
           }
           return (
             <span className="inline-flex items-center gap-1.5">
               <RecorrenciaBadge value={value as TipoRecorrencia} />
               {indice ? (
-                <span className="text-xs text-slate-500">{indice}</span>
+                <span className="text-xs text-muted-foreground">{indice}</span>
               ) : null}
             </span>
           );
@@ -428,7 +464,7 @@ export function DespesaPage({
         header: 'Comunicar agenda',
         cell: ({ row }) => {
           const v = row.original.comunicarAgenda;
-          return v ? <span className="text-slate-900">Sim</span> : <span className="text-slate-900">Nao</span>;
+          return v ? <span className="text-foreground">Sim</span> : <span className="text-foreground">Nao</span>;
         },
       },
       categoria: {
@@ -446,12 +482,12 @@ export function DespesaPage({
         header: 'Parcelas',
         cell: ({ row }) => {
           const parcelas = row.original.parcelas;
-          if (!parcelas?.length) return <span className="text-slate-400">-</span>;
+          if (!parcelas?.length) return <span className="text-muted-foreground">-</span>;
           const pagas = parcelas.filter((p) => p.pago).length;
           const total = parcelas.length;
-          if (pagas === 0) return <span className="text-slate-700">{total} parcela{total !== 1 ? 's' : ''}</span>;
+          if (pagas === 0) return <span className="text-foreground">{total} parcela{total !== 1 ? 's' : ''}</span>;
           return (
-            <span className="text-slate-700" title={`${pagas} de ${total} pagas`}>
+            <span className="text-foreground" title={`${pagas} de ${total} pagas`}>
               {pagas}/{total} pagas
             </span>
           );
@@ -467,22 +503,25 @@ export function DespesaPage({
       header: () => <span className="sr-only">Acoes</span>,
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
-          <button
-            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          <Button
+            variant="ghost"
+            size="icon"
             title="Editar"
             onClick={() => handleOpenDialog(row.original)}
             data-testid="despesa-categoria-linha-editar"
           >
-            <Pencil className="h-4 w-4" />
-          </button>
-          <button
-            className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+            <PencilSimple className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             title="Excluir"
+            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
             onClick={() => setDeleteItemId(row.original.id)}
             data-testid="despesa-categoria-linha-excluir"
           >
-            <Trash2 className="h-4 w-4" />
-          </button>
+            <Trash className="h-4 w-4" />
+          </Button>
         </div>
       ),
     }),
@@ -519,7 +558,7 @@ export function DespesaPage({
   if (isLoading && items.length === 0) {
     return (
       <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+        <SpinnerGap className="h-8 w-8 animate-spin text-primary" weight="bold" />
       </div>
     );
   }
@@ -529,10 +568,10 @@ export function DespesaPage({
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+          <h1 className="text-xl font-bold text-foreground sm:text-2xl">
             {config.title}
           </h1>
-          <p className="mt-1 text-sm text-slate-500">{config.subtitle}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{config.subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
@@ -575,23 +614,22 @@ export function DespesaPage({
             filename={config.key}
             title={config.title}
           />
-          <button
+          <Button
             onClick={() => handleOpenDialog()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
             data-testid="despesa-categoria-novo-registro"
           >
             <Plus className="h-4 w-4" />
-            <span>Novo Registro</span>
-          </button>
+            Novo Registro
+          </Button>
         </div>
       </div>
 
       {/* Tabela */}
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <div className="rounded-2xl border border-border bg-card">
         {/* Tabela Desktop */}
         <div className="hidden overflow-x-auto sm:block">
           <table className="w-full" data-testid="despesa-categoria-tabela">
-            <thead className="border-b border-slate-200 bg-slate-50">
+            <thead className="border-b border-border bg-muted/40">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -600,7 +638,7 @@ export function DespesaPage({
                     return (
                     <th
                       key={header.id}
-                      className="px-6 py-3 text-left text-xs uppercase tracking-wider text-slate-500"
+                      className="px-6 py-3 text-left text-xs uppercase tracking-wider text-muted-foreground"
                       data-testid={`despesa-categoria-tabela-header-${slug}`}
                     >
                       {header.isPlaceholder
@@ -615,23 +653,23 @@ export function DespesaPage({
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-border">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
                   <td
                     colSpan={columns.length}
-                    className="px-6 py-12 text-center text-sm text-slate-500"
+                    className="px-6 py-12 text-center text-sm text-muted-foreground"
                   >
                     Nenhum registro cadastrado
                   </td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50" data-testid="despesa-categoria-tabela-linha">
+                  <tr key={row.id} className="hover:bg-muted/30 transition-colors" data-testid="despesa-categoria-tabela-linha">
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="whitespace-nowrap px-6 py-4 text-sm text-slate-600"
+                        className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground"
                         data-testid={`despesa-categoria-celula-${cell.column.id === 'comunicarAgenda' ? 'comunicar-agenda' : cell.column.id === 'actions' ? 'acoes' : cell.column.id}`}
                       >
                         {flexRender(
@@ -645,15 +683,15 @@ export function DespesaPage({
               )}
             </tbody>
             {filteredItems.length > 0 && (
-              <tfoot className="border-t border-slate-200 bg-slate-50">
+              <tfoot className="border-t border-border bg-muted/40">
                 <tr>
                   <td
                     colSpan={Math.max(1, columns.length - 2)}
-                    className="px-6 py-3 text-right text-sm font-medium text-slate-900"
+                    className="px-6 py-3 text-right text-sm font-medium text-foreground"
                   >
                     Total:
                   </td>
-                  <td className="px-6 py-3 text-sm font-bold text-slate-900">
+                  <td className="px-6 py-3 text-sm font-bold text-foreground">
                     {formatCurrency(total)}
                   </td>
                   <td></td>
@@ -664,9 +702,9 @@ export function DespesaPage({
         </div>
 
         {/* Lista Mobile */}
-        <div className="divide-y divide-slate-200 sm:hidden">
+        <div className="divide-y divide-border sm:hidden">
           {filteredItems.length === 0 ? (
-            <div className="px-4 py-12 text-center text-sm text-slate-500">
+            <div className="px-4 py-12 text-center text-sm text-muted-foreground">
               Nenhum registro encontrado
             </div>
           ) : (
@@ -675,43 +713,46 @@ export function DespesaPage({
                 <div key={item.id} className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-900">
+                      <p className="font-medium text-foreground">
                         {item.descricao}
                       </p>
-                      <p className="mt-0.5 text-xs text-slate-500">
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         {formatDate(item.data)}
                       </p>
                     </div>
                     <div className="ml-4 flex items-center gap-2">
-                      <span className="font-semibold text-slate-900">
+                      <span className="font-semibold text-foreground">
                         {formatCurrency(item.valor)}
                       </span>
                       <div className="flex gap-1">
-                        <button
-                          className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           title="Editar"
                           onClick={() => handleOpenDialog(item)}
                           data-testid="despesa-categoria-linha-editar"
                         >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          <PencilSimple className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           title="Excluir"
+                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           onClick={() => setDeleteItemId(item.id)}
                           data-testid="despesa-categoria-linha-excluir"
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                          <Trash className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
                 </div>
               ))}
               {/* Total Mobile */}
-              <div className="flex items-center justify-between bg-slate-50 p-4">
-                <span className="font-medium text-slate-700">Total</span>
-                <span className="font-bold text-slate-900">
+              <div className="flex items-center justify-between bg-muted/40 p-4">
+                <span className="font-medium text-muted-foreground">Total</span>
+                <span className="font-bold text-foreground">
                   {formatCurrency(total)}
                 </span>
               </div>
@@ -738,74 +779,81 @@ export function DespesaPage({
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label
-                    htmlFor="data"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Data <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="data"
-                    type="date"
-                    value={formData.data}
-                    onChange={(e) =>
-                      setFormData({ ...formData, data: e.target.value })
-                    }
-                    className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
-                    required
-                    data-testid="despesa-categoria-data"
-                  />
+                  <Label htmlFor="data">
+                    Data <span className="text-destructive">*</span>
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-between rounded-xl px-4 font-normal"
+                        data-testid="despesa-categoria-data"
+                      >
+                        {formData.data ? formatDate(formData.data) : 'Selecione uma data'}
+                        <CalendarBlank className="h-4 w-4 opacity-60" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={parseDateInput(formData.data)}
+                        onSelect={(date) => {
+                          if (!date) return;
+                          setFormData({ ...formData, data: formatDateToLocalYYYYMMDD(date) });
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
-                  <label
-                    htmlFor="tipo"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Tipo <span className="text-red-500">*</span>
-                  </label>
+                  <Label htmlFor="tipo">
+                    Tipo <span className="text-destructive">*</span>
+                  </Label>
                   <div className="flex min-w-0 gap-1">
-                    <select
-                      id="tipo"
-                      value={formData.tipo}
-                      onChange={(e) =>
-                        setFormData({ ...formData, tipo: e.target.value })
+                    <Select
+                      value={formData.tipo || undefined}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, tipo: value })
                       }
-                      className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
-                      required
-                      data-testid="despesa-categoria-tipo"
                     >
-                      <option value="">Selecione...</option>
-                      {tiposDisponiveis.map((tipo) => (
-                        <option key={tipo} value={tipo}>
-                          {config.key === 'despesa-funcionario' && ABREVIACOES_TIPO_FUNCIONARIO[tipo]
-                            ? ABREVIACOES_TIPO_FUNCIONARIO[tipo]
-                            : tipo}
-                        </option>
-                      ))}
-                    </select>
-                    <button
+                      <SelectTrigger
+                        id="tipo"
+                        className="min-w-0 flex-1 uppercase"
+                        data-testid="despesa-categoria-tipo"
+                      >
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tiposDisponiveis.map((tipo) => (
+                          <SelectItem key={tipo} value={tipo} className="uppercase">
+                            {config.key === 'despesa-funcionario' && ABREVIACOES_TIPO_FUNCIONARIO[tipo]
+                              ? ABREVIACOES_TIPO_FUNCIONARIO[tipo]
+                              : tipo}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="icon"
                       onClick={() => {
                         setNovoTipoLabel('');
                         setIsTiposDialogOpen(true);
                       }}
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-emerald-600"
                       title="Adicionar ou gerenciar tipos"
                       data-testid="despesa-categoria-btn-tipos"
                     >
                       <Plus className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
               <div className="space-y-2">
-                <label
-                  htmlFor="descricao"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Descrição
-                </label>
-                <input
+                <Label htmlFor="descricao">Descrição</Label>
+                <Input
                   id="descricao"
                   type="text"
                   placeholder={config.placeholder}
@@ -813,17 +861,14 @@ export function DespesaPage({
                   onChange={(e) =>
                     setFormData({ ...formData, descricao: e.target.value.toUpperCase() })
                   }
-                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
+                  className="uppercase"
                   data-testid="despesa-categoria-descricao"
                 />
               </div>
               <div className="space-y-2">
-                <label
-                  htmlFor="valor"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Valor (R$) <span className="text-red-500">*</span>
-                </label>
+                <Label htmlFor="valor">
+                  Valor (R$) <span className="text-destructive">*</span>
+                </Label>
                 {useCurrencyMaskOnValor ? (
                   <CurrencyInput
                     id="valor"
@@ -834,12 +879,12 @@ export function DespesaPage({
                         valor,
                       })
                     }
-                    className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-10 w-full rounded-xl border border-input bg-transparent px-4 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     required
                     testId="despesa-categoria-valor"
                   />
                 ) : (
-                  <input
+                  <Input
                     id="valor"
                     type="text"
                     inputMode="decimal"
@@ -851,24 +896,22 @@ export function DespesaPage({
                         valor: e.target.value,
                       })
                     }
-                    className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     required
                     data-testid="despesa-categoria-valor"
                   />
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <input
+                <Checkbox
                   id="recorrente"
-                  type="checkbox"
                   checked={formData.recorrente || false}
                   data-testid="despesa-categoria-recorrente"
-                  onChange={(e) => {
-                    const checked = e.target.checked;
+                  onCheckedChange={(checked) => {
+                    const isChecked = !!checked;
                     setFormData((prev) => ({
                       ...prev,
-                      recorrente: checked,
-                        ...(useRecorrenciaDataValorList && checked
+                      recorrente: isChecked,
+                        ...(useRecorrenciaDataValorList && isChecked
                           ? {
                               valores: prev.valores?.length
                                 ? [{ data: prev.data, valor: prev.valor }, ...prev.valores.slice(1)]
@@ -877,14 +920,8 @@ export function DespesaPage({
                           : {}),
                     }));
                   }}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                <label
-                  htmlFor="recorrente"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Recorrente
-                </label>
+                <Label htmlFor="recorrente">Recorrente</Label>
               </div>
               {formData.recorrente && useRecorrenciaDataValorList && formData.valores && (
                 <DataValorList
@@ -912,26 +949,34 @@ export function DespesaPage({
                     label="Periodicidade"
                   />
                   <div className="space-y-2">
-                    <label
-                      htmlFor="recorrenciaFim"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      Data fim (opcional)
-                    </label>
-                    <input
-                      id="recorrenciaFim"
-                      type="date"
-                      value={formData.recorrenciaFim || ''}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          recorrenciaFim: e.target.value || undefined,
-                        })
-                      }
-                      className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
-                      data-testid="despesa-categoria-recorrencia-fim"
-                    />
-                    <p className="text-xs text-slate-500">
+                    <Label htmlFor="recorrenciaFim">Data fim (opcional)</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full justify-between rounded-xl px-4 font-normal"
+                          data-testid="despesa-categoria-recorrencia-fim"
+                        >
+                          {formData.recorrenciaFim ? formatDate(formData.recorrenciaFim) : 'Selecionar data fim'}
+                          <CalendarBlank className="h-4 w-4 opacity-60" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={parseDateInput(formData.recorrenciaFim)}
+                          onSelect={(date) =>
+                            setFormData({
+                              ...formData,
+                              recorrenciaFim: date ? formatDateToLocalYYYYMMDD(date) : undefined,
+                            })
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs text-muted-foreground">
                       Última data de vencimento da série. A data informada acima conta como a primeira ocorrência (ex.: 6 meses a partir de 13/02 = 13/02, 13/03, …, 13/07). Deixe em branco para gerar até 12 meses.
                     </p>
                   </div>
@@ -939,44 +984,36 @@ export function DespesaPage({
               )}
               {showComunicarAgenda && (
                 <div className="flex items-center gap-2">
-                  <input
+                  <Checkbox
                     id="comunicarAgenda"
-                    type="checkbox"
                     checked={formData.comunicarAgenda || false}
-                    onChange={(e) =>
-                      setFormData({ ...formData, comunicarAgenda: e.target.checked })
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, comunicarAgenda: !!checked })
                     }
-                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                     data-testid="despesa-categoria-comunicar-agenda"
                   />
-                  <label
-                    htmlFor="comunicarAgenda"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Comunicar Agenda
-                  </label>
+                  <Label htmlFor="comunicarAgenda">Comunicar Agenda</Label>
                 </div>
               )}
             </div>
             </DialogBody>
             <DialogFooter>
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={handleCloseDialog}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 ring-offset-white transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                 data-testid="despesa-categoria-cancelar"
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white ring-offset-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                 data-testid="despesa-categoria-submit"
               >
-                {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isLoading && <SpinnerGap className="h-4 w-4 animate-spin" />}
                 {editingItem ? 'Salvar' : 'Adicionar'}
-              </button>
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -994,18 +1031,19 @@ export function DespesaPage({
           <DialogBody>
           <div className="space-y-4 py-4">
             {tiposError && (
-              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              <p className="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {tiposError}
               </p>
             )}
             <div className="flex gap-2">
-              <input
+              <Input
                 type="text"
                 placeholder="Nome do tipo"
                 value={novoTipoLabel}
                 onChange={(e) =>
                   setNovoTipoLabel(e.target.value.trim().toUpperCase())
                 }
+                className="uppercase"
                 data-testid="despesa-categoria-tipo-input-nome"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -1024,9 +1062,8 @@ export function DespesaPage({
                     }
                   }
                 }}
-                className="flex flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm uppercase placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               />
-              <button
+              <Button
                 type="button"
                 disabled={!novoTipoLabel.trim() || isLoadingTipos}
                 onClick={() => {
@@ -1043,28 +1080,29 @@ export function DespesaPage({
                       );
                     });
                 }}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
                 data-testid="despesa-categoria-tipo-adicionar"
               >
-                {isLoadingTipos ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {isLoadingTipos ? <SpinnerGap className="h-4 w-4 animate-spin" /> : null}
                 Adicionar
-              </button>
+              </Button>
             </div>
-            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2" data-testid="despesa-categoria-tipo-lista">
+            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-border bg-muted/30 p-2" data-testid="despesa-categoria-tipo-lista">
               {tiposParaListar.length === 0 ? (
-                <li className="py-4 text-center text-sm text-slate-500">
+                <li className="py-4 text-center text-sm text-muted-foreground">
                   Nenhum tipo. Adicione acima.
                 </li>
               ) : (
                 tiposParaListar.map((t) => (
                   <li
                     key={t.id ?? t.label}
-                    className="flex items-center justify-between rounded bg-white px-3 py-2 text-sm text-slate-800"
+                    className="flex items-center justify-between rounded-lg bg-card px-3 py-2 text-sm text-foreground"
                   >
                     <span>{t.label}</span>
                     {t.id ? (
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => {
                           deleteTipo(t.id!).catch((err) => {
                             toast.error(
@@ -1077,27 +1115,27 @@ export function DespesaPage({
                           });
                         }}
                         disabled={isLoadingTipos}
-                        className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         title="Excluir tipo"
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                        <Trash className="h-4 w-4" />
+                      </Button>
                     ) : (
-                      <span className="text-xs text-slate-400">padrao</span>
+                      <span className="text-xs text-muted-foreground">padrao</span>
                     )}
                   </li>
                 ))
               )}
             </ul>
             <div className="mt-4 flex justify-end">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setIsTiposDialogOpen(false)}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 data-testid="despesa-categoria-tipo-cancelar"
               >
                 Fechar
-              </button>
+              </Button>
             </div>
           </div>
           </DialogBody>

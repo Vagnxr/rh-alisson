@@ -586,8 +586,7 @@ export function AgendaPage() {
                 : ''}
             </DialogTitle>
             <DialogDescription>
-              Entradas e saídas do dia. Marque itens como pagos. Para corrigir na origem (despesa,
-              entrada ou agenda), use &quot;Pago · Desmarcar&quot; antes.
+              Entradas e saídas do dia.
             </DialogDescription>
           </DialogHeader>
           {isLoadingDetalhe ? (

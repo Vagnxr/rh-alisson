@@ -1,5 +1,10 @@
 import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { CalendarBlank } from '@phosphor-icons/react';
+import { formatDateStringToBR, formatDateToLocalYYYYMMDD } from '@/lib/date';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CurrencyInput } from '@/components/ui/currency-input';
 
 export interface DataValorItem {
@@ -10,7 +15,7 @@ export interface DataValorItem {
 }
 
 const inputBaseClass =
-  'relative flex h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+  'relative flex h-10 rounded-xl border border-input bg-transparent px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:z-10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50';
 
 export interface DataValorListProps {
   /** Lista controlada: cada item tem data (YYYY-MM-DD) e valor (string para input). */
@@ -42,6 +47,13 @@ function parseValor(v: string): number {
   const s = String(v || '').trim().replace(/\./g, '').replace(',', '.');
   const n = parseFloat(s);
   return Number.isFinite(n) ? n : 0;
+}
+
+function parseDateInput(value?: string): Date | undefined {
+  if (!value) return undefined;
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return undefined;
+  return new Date(year, month - 1, day);
 }
 
 export function DataValorList({
@@ -87,11 +99,11 @@ export function DataValorList({
   return (
     <div className={cn('space-y-2 min-w-0 pr-2', className)} data-testid={`${testIdPrefix}-recorrencia`}>
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-slate-700">{label}</label>
+        <label className="text-sm font-medium text-foreground">{label}</label>
         <button
           type="button"
           onClick={addLine}
-          className="text-sm text-emerald-600 hover:underline shrink-0"
+          className="text-sm text-primary hover:underline shrink-0"
           data-testid={`${testIdPrefix}-adicionar-valor`}
         >
           {addLabel}
@@ -106,14 +118,31 @@ export function DataValorList({
               className="relative z-0 grid w-full grid-cols-1 items-center gap-2 min-w-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
               data-testid={`${testIdPrefix}-recorrencia-linha`}
             >
-              <input
-                type="date"
-                value={item.data}
-                onChange={(e) => updateLine(i, 'data', e.target.value)}
-                disabled={isRowDisabled}
-                className={cn(inputBaseClass, 'w-full min-w-0')}
-                data-testid={`${testIdPrefix}-recorrencia-data`}
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isRowDisabled}
+                    className={cn(inputBaseClass, 'w-full min-w-0 justify-between px-3 font-normal')}
+                    data-testid={`${testIdPrefix}-recorrencia-data`}
+                  >
+                    {item.data ? formatDateStringToBR(item.data) : 'Selecionar data'}
+                    <CalendarBlank className="h-4 w-4 opacity-60" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={parseDateInput(item.data)}
+                    onSelect={(date) => {
+                      if (!date) return;
+                      updateLine(i, 'data', formatDateToLocalYYYYMMDD(date));
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               {useCurrencyMaskOnValor ? (
                 <CurrencyInput
                   value={item.valor}
@@ -138,7 +167,7 @@ export function DataValorList({
                 type="button"
                 onClick={() => removeLine(i)}
                 disabled={value.length <= 1 || isRowDisabled}
-                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-400 shrink-0"
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground shrink-0"
                 title={isRowDisabled ? 'Parcela paga não pode ser removida' : 'Remover'}
               >
                 <Trash2 className="h-4 w-4" />
@@ -148,10 +177,10 @@ export function DataValorList({
         })}
       </div>
       {showTotal && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           Total: {formatTotal(total)}
           {value.length > 0 && (
-            <span className="ml-1.5 text-slate-400">
+            <span className="ml-1.5 text-muted-foreground/60">
               ({value.length} {value.length === 1 ? countLabel : `${countLabel}s`})
             </span>
           )}

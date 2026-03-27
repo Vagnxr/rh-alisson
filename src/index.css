@@ -13,7 +13,7 @@
   --radius-xl: calc(var(--radius) + 8px);
   --radius-2xl: calc(var(--radius) + 12px);
 
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, monospace;
 
   /* shadcn/ui compatibility */
@@ -43,7 +43,7 @@
    =================================== */
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 
   /* Backgrounds */
   --background: oklch(0.985 0.002 247);
@@ -127,7 +127,7 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
