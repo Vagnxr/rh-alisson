@@ -97,6 +97,46 @@ async function request<T>(
   return json as ApiResponse<T>;
 }
 
+async function requestForm<T>(
+  path: string,
+  formData: FormData,
+  options?: { tenantId?: string | null },
+): Promise<ApiResponse<T>> {
+  const url = path.startsWith('http') ? path : `${BASE_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+  const token = getToken();
+  const tenantId = options?.tenantId ?? getTenantId();
+
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (tenantId) headers['X-Tenant-Id'] = tenantId;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (res.status === 401) {
+    clearStorageAndRedirectToLogin();
+    throw new Error('Sessao expirada. Redirecionando para o login.');
+  }
+
+  const json = (await res.json().catch(() => ({}))) as ApiResponse<T> | ApiErrorResponse;
+
+  if (!res.ok) {
+    const err = (json as ApiErrorResponse).error;
+    const message = err?.message ?? `Erro ${res.status}`;
+    throw new Error(message);
+  }
+
+  if ((json as ApiErrorResponse).success === false) {
+    const err = (json as ApiErrorResponse).error;
+    throw new Error(err?.message ?? 'Erro na resposta da API');
+  }
+
+  return json as ApiResponse<T>;
+}
+
 export const api = {
   get: <T>(path: string, options?: { tenantId?: string | null; params?: Record<string, string> }) => {
     let p = path;
@@ -109,6 +149,9 @@ export const api = {
 
   post: <T>(path: string, body?: unknown, options?: { tenantId?: string | null }) =>
     request<T>('POST', path, body, options),
+
+  postForm: <T>(path: string, formData: FormData, options?: { tenantId?: string | null }) =>
+    requestForm<T>(path, formData, options),
 
   patch: <T>(path: string, body?: unknown, options?: { tenantId?: string | null }) =>
     request<T>('PATCH', path, body, options),

@@ -86,7 +86,7 @@ export function EntradaTable({
             className="flex items-center gap-1 font-medium"
             onClick={column.getToggleSortingHandler()}
           >
-            Data entrada <ArrowUpDown className="h-4 w-4" />
+            DATA ENTRADA <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
         cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),

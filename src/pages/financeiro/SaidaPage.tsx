@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Loader2 } from 'lucide-react';
+import { ArrowUpDown, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import {
@@ -42,7 +42,6 @@ const inputClass =
 
 const CAMPOS_NUMERICOS_ORDEM = [
   'comercializacao',
-  'industrializacao',
   'embalagem',
   'materialUsoCons',
   'mercadoriaUsoCons',
@@ -61,7 +60,6 @@ const defaultForm = () => ({
   data: new Date().toISOString().split('T')[0],
   formaPagamento: 'BOLETO' as SaidaFormaPagamento,
   fornecedor: '',
-  industrializacao: '',
   comercializacao: '',
   embalagem: '',
   materialUsoCons: '',
@@ -71,17 +69,16 @@ const defaultForm = () => ({
 
 const SAIDA_DEFAULT_ORDER = [
   'data',
+  'modeloNota',
+  'cnpjCpf',
   'fornecedor',
+  'dataEntrada',
   'formaPagamento',
-  'industrializacao',
   'comercializacao',
   'embalagem',
   'materialUsoCons',
   'mercadoriaUsoCons',
   'gas',
-  'bonifPreco',
-  'bonifTroca',
-  'bonifLoja',
   'total',
 ];
 
@@ -101,13 +98,13 @@ export function SaidaPage() {
       .get<SaidaRow[]>('financeiro/saida', {
         params: dateFilterToParams(dateFilter),
       })
-      .then(res => {
+      .then((res) => {
         const list = Array.isArray(res.data) ? res.data : [];
         const cols = res.columns ?? null;
         setItems(list);
         setColumnsFromApi(cols);
       })
-      .catch(err => toast.error(err?.message ?? 'Erro ao carregar'))
+      .catch((err) => toast.error(err?.message ?? 'Erro ao carregar'))
       .finally(() => setLoading(false));
   }, [dateFilter]);
 
@@ -125,8 +122,7 @@ export function SaidaPage() {
           (item.formaPagamento === 'BOLETO' || item.formaPagamento === 'CARTAO')
             ? item.formaPagamento
             : 'BOLETO',
-        fornecedor: item.fornecedor,
-        industrializacao: String(item.industrializacao),
+        fornecedor: item.fornecedor ?? '',
         comercializacao: String(item.comercializacao),
         embalagem: String(item.embalagem),
         materialUsoCons: String(item.materialUsoCons),
@@ -152,7 +148,7 @@ export function SaidaPage() {
       data,
       formaPagamento: formData.formaPagamento,
       fornecedor: formData.fornecedor,
-      industrializacao: parseNum(formData.industrializacao),
+      industrializacao: 0,
       comercializacao: parseNum(formData.comercializacao),
       embalagem: parseNum(formData.embalagem),
       materialUsoCons: parseNum(formData.materialUsoCons),
@@ -167,16 +163,16 @@ export function SaidaPage() {
           fetchList();
           handleCloseDialog();
         })
-        .catch(err => toast.error(err?.message ?? 'Erro ao atualizar'));
+        .catch((err) => toast.error(err?.message ?? 'Erro ao atualizar'));
     } else {
       api
         .post<SaidaRow>('financeiro/saida', body)
-        .then(res => {
+        .then((res) => {
           toast.success('Registro adicionado.');
-          setItems(prev => [...prev, res.data]);
+          setItems((prev) => [...prev, res.data]);
           handleCloseDialog();
         })
-        .catch(err => toast.error(err?.message ?? 'Erro ao criar'));
+        .catch((err) => toast.error(err?.message ?? 'Erro ao criar'));
     }
   };
 
@@ -190,7 +186,7 @@ export function SaidaPage() {
             className="flex items-center gap-1 font-medium"
             onClick={column.getToggleSortingHandler()}
           >
-            Data <ArrowUpDown className="h-4 w-4" />
+            DATA PAGAMENTO <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
         cell: ({ row }) => {
@@ -199,36 +195,58 @@ export function SaidaPage() {
           return <span className={cn(hasVal && 'font-semibold')}>{formatDateStringToBR(val) || '-'}</span>;
         },
       },
+      modeloNota: {
+        accessorKey: 'modeloNota',
+        header: 'MODELO',
+        cell: ({ row }) => {
+          const val = row.original.modeloNota ?? '';
+          const hasVal = !!String(val).trim();
+          return <span className={cn('text-slate-600', hasVal && 'font-semibold')}>{val || '-'}</span>;
+        },
+      },
+      cnpjCpf: {
+        accessorKey: 'cnpjCpf',
+        header: 'CNPJ/CPF',
+        cell: ({ row }) => {
+          const val = row.original.cnpjCpf ?? '';
+          const hasVal = !!String(val).trim();
+          return <span className={cn('text-slate-600', hasVal && 'font-semibold')}>{val || '-'}</span>;
+        },
+      },
       fornecedor: {
         accessorKey: 'fornecedor',
-        header: 'Fornecedor',
+        header: 'FORNECEDOR',
         cell: ({ row }) => {
           const val = row.original.fornecedor ?? '';
           const hasVal = !!String(val).trim();
           return <span className={cn('text-slate-600', hasVal && 'font-semibold')}>{val || '-'}</span>;
         },
       },
+      dataEntrada: {
+        accessorKey: 'dataEntrada',
+        header: 'DATA ENTRADA',
+        cell: ({ row }) => {
+          const val = row.original.dataEntrada ?? '';
+          const hasVal = !!String(val).trim();
+          return (
+            <span className={cn('text-slate-600', hasVal && 'font-semibold')}>
+              {formatDateStringToBR(val) || '-'}
+            </span>
+          );
+        },
+      },
       formaPagamento: {
         accessorKey: 'formaPagamento',
-        header: 'Forma pag.',
+        header: 'FORMA DE PAGTO',
         cell: ({ row }) => {
           const val = row.original.formaPagamento ?? '';
           const hasVal = !!String(val).trim();
           return <span className={cn('text-slate-600', hasVal && 'font-semibold')}>{val || '-'}</span>;
         },
       },
-      industrializacao: {
-        accessorKey: 'industrializacao',
-        header: 'Industrialização',
-        cell: ({ row }) => {
-          const n = Number(row.original.industrializacao ?? 0);
-          const hasVal = Number.isFinite(n) && n !== 0;
-          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
-        },
-      },
       comercializacao: {
         accessorKey: 'comercializacao',
-        header: 'Comercialização',
+        header: 'COMERCIALIZAÇÃO',
         cell: ({ row }) => {
           const n = Number(row.original.comercializacao ?? 0);
           const hasVal = Number.isFinite(n) && n !== 0;
@@ -237,7 +255,7 @@ export function SaidaPage() {
       },
       embalagem: {
         accessorKey: 'embalagem',
-        header: 'Embalagem',
+        header: 'EMBALAGEM',
         cell: ({ row }) => {
           const n = Number(row.original.embalagem ?? 0);
           const hasVal = Number.isFinite(n) && n !== 0;
@@ -246,7 +264,7 @@ export function SaidaPage() {
       },
       materialUsoCons: {
         accessorKey: 'materialUsoCons',
-        header: 'Material uso/cons',
+        header: 'MATERIAL USO/CONS',
         cell: ({ row }) => {
           const n = Number(row.original.materialUsoCons ?? 0);
           const hasVal = Number.isFinite(n) && n !== 0;
@@ -255,7 +273,7 @@ export function SaidaPage() {
       },
       mercadoriaUsoCons: {
         accessorKey: 'mercadoriaUsoCons',
-        header: 'Mercadoria uso/cons',
+        header: 'MERCADORIA USO/CONS',
         cell: ({ row }) => {
           const n = Number(row.original.mercadoriaUsoCons ?? 0);
           const hasVal = Number.isFinite(n) && n !== 0;
@@ -271,36 +289,9 @@ export function SaidaPage() {
           return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
         },
       },
-      bonifPreco: {
-        accessorKey: 'bonifPreco',
-        header: 'Bonif. preço',
-        cell: ({ row }) => {
-          const n = Number(row.original.bonifPreco ?? 0);
-          const hasVal = Number.isFinite(n) && n !== 0;
-          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
-        },
-      },
-      bonifTroca: {
-        accessorKey: 'bonifTroca',
-        header: 'Bonif. troca',
-        cell: ({ row }) => {
-          const n = Number(row.original.bonifTroca ?? 0);
-          const hasVal = Number.isFinite(n) && n !== 0;
-          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
-        },
-      },
-      bonifLoja: {
-        accessorKey: 'bonifLoja',
-        header: 'Bonif. loja',
-        cell: ({ row }) => {
-          const n = Number(row.original.bonifLoja ?? 0);
-          const hasVal = Number.isFinite(n) && n !== 0;
-          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
-        },
-      },
       total: {
         accessorKey: 'total',
-        header: 'Total',
+        header: 'TOTAL',
         cell: ({ row }) => {
           const n = Number(row.original.total ?? 0);
           const hasVal = Number.isFinite(n) && n !== 0;
@@ -313,11 +304,7 @@ export function SaidaPage() {
 
   const columns = useMemo(
     () =>
-      buildTableColumns<SaidaRow>(
-        columnDefsByKey,
-        columnsFromApi ?? null,
-        SAIDA_DEFAULT_ORDER,
-      ),
+      buildTableColumns<SaidaRow>(columnDefsByKey, columnsFromApi ?? null, SAIDA_DEFAULT_ORDER),
     [columnDefsByKey, columnsFromApi],
   );
 
@@ -341,36 +328,42 @@ export function SaidaPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
+          <button
+            type="button"
+            onClick={() => handleOpenDialog()}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 sm:px-4 sm:py-2.5"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="whitespace-nowrap">Novo</span>
+          </button>
           <ExportButtons
-            data={items.map(r => ({
-              data: formatDateStringToBR(r.data),
+            data={items.map((r) => ({
+              dataPagamento: formatDateStringToBR(r.data),
+              modeloNota: r.modeloNota ?? '',
+              cnpjCpf: r.cnpjCpf ?? '',
+              fornecedor: r.fornecedor ?? '',
+              dataEntrada: formatDateStringToBR(r.dataEntrada ?? ''),
               formaPagamento: r.formaPagamento ?? '',
-              fornecedor: r.fornecedor,
-              industrializacao: formatCurrency(Number(r.industrializacao)),
               comercializacao: formatCurrency(Number(r.comercializacao)),
               embalagem: formatCurrency(Number(r.embalagem)),
               materialUsoCons: formatCurrency(Number(r.materialUsoCons)),
               mercadoriaUsoCons: formatCurrency(Number(r.mercadoriaUsoCons)),
               glp: formatCurrency(Number(r.gas)),
-              bonifPreco: formatCurrency(Number(r.bonifPreco ?? 0)),
-              bonifTroca: formatCurrency(Number(r.bonifTroca ?? 0)),
-              bonifLoja: formatCurrency(Number(r.bonifLoja ?? 0)),
               total: formatCurrency(Number(r.total ?? 0)),
             }))}
             columns={[
-              { key: 'data', label: 'Data' },
-              { key: 'fornecedor', label: 'Fornecedor' },
-              { key: 'formaPagamento', label: 'Forma de pagamento' },
-              { key: 'industrializacao', label: 'Industrialização' },
-              { key: 'comercializacao', label: 'Comercialização' },
-              { key: 'embalagem', label: 'Embalagem' },
-              { key: 'materialUsoCons', label: 'Material uso/cons.' },
-              { key: 'mercadoriaUsoCons', label: 'Mercadoria uso/cons.' },
+              { key: 'dataPagamento', label: 'DATA PAGAMENTO' },
+              { key: 'modeloNota', label: 'MODELO' },
+              { key: 'cnpjCpf', label: 'CNPJ/CPF' },
+              { key: 'fornecedor', label: 'FORNECEDOR' },
+              { key: 'dataEntrada', label: 'DATA ENTRADA' },
+              { key: 'formaPagamento', label: 'FORMA DE PAGTO' },
+              { key: 'comercializacao', label: 'COMERCIALIZAÇÃO' },
+              { key: 'embalagem', label: 'EMBALAGEM' },
+              { key: 'materialUsoCons', label: 'MATERIAL USO/CONS.' },
+              { key: 'mercadoriaUsoCons', label: 'MERCADORIA USO/CONS.' },
               { key: 'glp', label: 'GLP' },
-              { key: 'bonifPreco', label: 'Bonif. preço' },
-              { key: 'bonifTroca', label: 'Bonif. troca' },
-              { key: 'bonifLoja', label: 'Bonif. loja' },
-              { key: 'total', label: 'Total' },
+              { key: 'total', label: 'TOTAL' },
             ]}
             filename="saida"
             title="Saida"
@@ -387,9 +380,9 @@ export function SaidaPage() {
           ) : (
             <table className="w-full min-w-[800px]">
               <thead className="border-b border-slate-200 bg-slate-50">
-                {table.getHeaderGroups().map(hg => (
+                {table.getHeaderGroups().map((hg) => (
                   <tr key={hg.id}>
-                    {hg.headers.map(header => (
+                    {hg.headers.map((header) => (
                       <th
                         key={header.id}
                         className="px-4 py-3 text-left text-xs font-medium tracking-wider text-slate-500 uppercase"
@@ -413,9 +406,9 @@ export function SaidaPage() {
                     </td>
                   </tr>
                 ) : (
-                  table.getRowModel().rows.map(row => (
+                  table.getRowModel().rows.map((row) => (
                     <tr key={row.id} className="hover:bg-slate-50">
-                      {row.getVisibleCells().map(cell => (
+                      {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
                           className="px-4 py-3 text-sm whitespace-nowrap text-slate-600"
@@ -432,7 +425,13 @@ export function SaidaPage() {
         </div>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) setEditingItem(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Editar Saida' : 'Nova Saida'}</DialogTitle>
@@ -442,11 +441,11 @@ export function SaidaPage() {
             <DialogBody>
               <div className="mt-4 mb-4 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Data</label>
+                  <label className="text-sm font-medium text-slate-700">Data pagamento</label>
                   <input
                     type="date"
                     value={formData.data}
-                    onChange={e => setFormData({ ...formData, data: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, data: e.target.value })}
                     className={inputClass}
                     required
                   />
@@ -455,7 +454,7 @@ export function SaidaPage() {
                   <label className="text-sm font-medium text-slate-700">Forma de pagamento</label>
                   <select
                     value={formData.formaPagamento}
-                    onChange={e =>
+                    onChange={(e) =>
                       setFormData({
                         ...formData,
                         formaPagamento: e.target.value as SaidaFormaPagamento,
@@ -464,7 +463,7 @@ export function SaidaPage() {
                     className={inputClass}
                     required
                   >
-                    {FORMAS_SAIDA.map(fp => (
+                    {FORMAS_SAIDA.map((fp) => (
                       <option key={fp} value={fp}>
                         {fp}
                       </option>
@@ -479,11 +478,11 @@ export function SaidaPage() {
                   <input
                     type="text"
                     value={formData.fornecedor}
-                    onChange={e => setFormData({ ...formData, fornecedor: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, fornecedor: e.target.value })}
                     className={inputClass}
                   />
                 </div>
-                {CAMPOS_NUMERICOS_ORDEM.map(key => (
+                {CAMPOS_NUMERICOS_ORDEM.map((key) => (
                   <div key={key} className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">
                       {LABEL_CAMPO[key] ?? `${key.charAt(0).toUpperCase() + key.slice(1)}`} (R$)
@@ -493,7 +492,7 @@ export function SaidaPage() {
                       inputMode="decimal"
                       placeholder="0,00"
                       value={formData[key]}
-                      onChange={e => setFormData({ ...formData, [key]: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
                       className={inputClass}
                     />
                   </div>
@@ -518,7 +517,6 @@ export function SaidaPage() {
           </form>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

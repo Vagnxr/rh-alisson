@@ -183,7 +183,11 @@ export interface SaidaRow {
   data: string;
   /** Forma de pagamento: apenas BOLETO ou CARTAO sobem para saida. Opcional para compatibilidade com API. */
   formaPagamento?: SaidaFormaPagamento;
-  fornecedor: string;
+  fornecedor?: string;
+  /** Dados da entrada vinculada (quando saida veio de uma entrada). */
+  dataEntrada?: string;
+  modeloNota?: string;
+  cnpjCpf?: string;
   industrializacao: number;
   comercializacao: number;
   embalagem: number;

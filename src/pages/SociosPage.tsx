@@ -826,7 +826,7 @@ export function SociosPage() {
           <DateFilter value={dateFilter} onChange={setDateFilter} />
           <Button onClick={() => handleOpenDialog()} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
-            Nova Movimenta??o
+            Nova Movimentação
           </Button>
         </div>
       </div>

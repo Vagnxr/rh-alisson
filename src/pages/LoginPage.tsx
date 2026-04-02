@@ -69,7 +69,11 @@ export function LoginPage() {
         style={{ boxShadow: '-8px 0 32px rgba(0,0,0,0.18)' }}
       >
         <div className="mx-auto w-full max-w-sm">
-          {/* <img src={LogotipoColorido} className="mx-auto" aria-hidden alt="" /> */}
+          <img
+            src={LogotipoColorido}
+            className="mx-auto h-auto w-40 max-w-full object-contain"
+            alt="Logotipo"
+          />
 
           <h2 className="mt-8 text-center text-xl font-semibold text-white drop-shadow-sm">
             Entrar na conta

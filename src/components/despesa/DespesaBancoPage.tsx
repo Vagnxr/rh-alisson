@@ -89,6 +89,7 @@ export function DespesaBancoPageComponent({
   const bancosFromApi = useBancoStore((s) => s.bancos);
   const addBanco = useBancoStore((s) => s.addBanco);
   const updateBanco = useBancoStore((s) => s.updateBanco);
+  const uploadBancoLogo = useBancoStore((s) => s.uploadBancoLogo);
   const deleteBanco = useBancoStore((s) => s.deleteBanco);
 
   const { fetchTipos, getTipos, addTipo, deleteTipo } = useDespesaTiposStore();
@@ -101,7 +102,6 @@ export function DespesaBancoPageComponent({
     nome: '',
     codigo: '',
     cor: '#64748B',
-    logo: '' as string,
   });
   const [deleteBancoId, setDeleteBancoId] = useState<string | null>(null);
   const [isBancoSaving, setIsBancoSaving] = useState(false);
@@ -492,7 +492,6 @@ export function DespesaBancoPageComponent({
               nome: banco.nome,
               codigo: banco.codigo || '',
               cor: banco.cor || '#64748B',
-              logo: banco.logo || '',
             });
             setIsBancosDialogOpen(true);
           }}
@@ -509,6 +508,7 @@ export function DespesaBancoPageComponent({
           bancosFromApi={bancosFromApi}
           addBanco={addBanco}
           updateBanco={updateBanco}
+          uploadBancoLogo={uploadBancoLogo}
           deleteBanco={deleteBanco}
           isBancoSaving={isBancoSaving}
           setIsBancoSaving={setIsBancoSaving}
@@ -557,6 +557,7 @@ export function DespesaBancoPageComponent({
         bancosFromApi={bancosFromApi}
         addBanco={addBanco}
         updateBanco={updateBanco}
+        uploadBancoLogo={uploadBancoLogo}
         deleteBanco={deleteBanco}
         isBancoSaving={isBancoSaving}
         setIsBancoSaving={setIsBancoSaving}
