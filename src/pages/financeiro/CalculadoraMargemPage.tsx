@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { parseValorFromInput } from '@/lib/formatValor';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
@@ -13,8 +15,8 @@ export function CalculadoraMargemPage() {
   const [precoVenda, setPrecoVenda] = useState<string>('');
   const [margemDesejada, setMargemDesejada] = useState<string>('');
 
-  const custo = parseFloat(precoCusto.replace(',', '.')) || 0;
-  const venda = parseFloat(precoVenda.replace(',', '.')) || 0;
+  const custo = parseValorFromInput(precoCusto) || 0;
+  const venda = parseValorFromInput(precoVenda) || 0;
   const margemDesejadaPct = parseFloat(margemDesejada.replace(',', '.')) || 0;
 
   const lucro = useMemo(() => (venda > 0 && custo >= 0 ? venda - custo : 0), [venda, custo]);
@@ -50,21 +52,15 @@ export function CalculadoraMargemPage() {
           <div className="p-4 space-y-4">
             <div className="grid grid-cols-[1fr_1fr] gap-2 text-sm">
               <label className="text-slate-600">Preco de custo (R$)</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="0,00"
+              <CurrencyInput
                 value={precoCusto}
-                onChange={(e) => setPrecoCusto(e.target.value)}
+                onChange={setPrecoCusto}
                 className="rounded-lg border border-slate-200 px-3 py-2 text-slate-900"
               />
               <label className="text-slate-600">Preco de venda (R$)</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="0,00"
+              <CurrencyInput
                 value={precoVenda}
-                onChange={(e) => setPrecoVenda(e.target.value)}
+                onChange={setPrecoVenda}
                 className="rounded-lg border border-slate-200 px-3 py-2 text-slate-900"
               />
             </div>
@@ -101,12 +97,9 @@ export function CalculadoraMargemPage() {
           <div className="p-4 space-y-4">
             <div className="grid grid-cols-[1fr_1fr] gap-2 text-sm">
               <label className="text-slate-600">Preco de custo (R$)</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="0,00"
+              <CurrencyInput
                 value={precoCusto}
-                onChange={(e) => setPrecoCusto(e.target.value)}
+                onChange={setPrecoCusto}
                 className="rounded-lg border border-slate-200 px-3 py-2 text-slate-900"
               />
               <label className="text-slate-600">Margem desejada (%)</label>

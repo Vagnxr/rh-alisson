@@ -1,5 +1,6 @@
 import { Plus, Loader2 } from 'lucide-react';
 import type { Banco } from '@/types/banco';
+import { DateInput } from '@/components/ui/date-input';
 import {
   Dialog,
   DialogContent,
@@ -82,14 +83,11 @@ export function DespesaBancoFormDialog({
                 <label htmlFor="data" className="text-sm font-medium text-slate-700">
                   Data <span className="text-red-500">*</span>
                 </label>
-                <input
-                  id="data"
-                  type="date"
+                <DateInput
                   value={formData.data}
-                  onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+                  onChange={(v) => setFormData({ ...formData, data: v })}
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                   required
-                  data-testid="despesa-categoria-data"
                 />
               </div>
               <div className="space-y-2">

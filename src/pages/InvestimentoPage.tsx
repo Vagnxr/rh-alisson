@@ -31,6 +31,7 @@ export function InvestimentoPage() {
       deleteItem={deleteItem}
       showComunicarAgenda={false}
       useRecorrenciaDataValorList
+      useCurrencyMaskOnValor
     />
   );
 }

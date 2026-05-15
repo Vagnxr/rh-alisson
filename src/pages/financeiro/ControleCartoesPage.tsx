@@ -36,6 +36,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR } from '@/lib/date';
+import { DateInput } from '@/components/ui/date-input';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -554,10 +555,9 @@ export function ControleCartoesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Data</label>
-                <input
-                  type="date"
+                <DateInput
                   value={formData.data}
-                  onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+                  onChange={(v) => setFormData({ ...formData, data: v })}
                   className={inputClass}
                   required
                 />
@@ -618,10 +618,9 @@ export function ControleCartoesPage() {
               )}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Data a receber</label>
-                <input
-                  type="date"
+                <DateInput
                   value={formData.dataAReceber}
-                  onChange={(e) => setFormData({ ...formData, dataAReceber: e.target.value })}
+                  onChange={(v) => setFormData({ ...formData, dataAReceber: v })}
                   className={inputClass}
                   required
                 />

@@ -16,6 +16,7 @@ import { buildTableColumns } from '@/lib/buildTableColumns';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { formatDateToLocalYYYYMMDD, formatDateStringToBR } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -37,6 +38,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
+import { DateInput } from '@/components/ui/date-input';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -860,10 +862,9 @@ export function SociosPage() {
                 <label className="mb-1 block text-sm font-medium text-slate-700">
                   Data <span className="text-slate-500">*</span>
                 </label>
-                <input
-                  type="date"
+                <DateInput
                   value={formData.data}
-                  onChange={e => setFormData({ ...formData, data: e.target.value })}
+                  onChange={v => setFormData({ ...formData, data: v })}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                   required
                 />
@@ -922,11 +923,9 @@ export function SociosPage() {
               <label className="mb-1 block text-sm font-medium text-slate-700">
                 Valor <span className="text-slate-500">*</span>
               </label>
-              <input
-                type="text"
+              <CurrencyInput
                 value={formData.valor}
-                onChange={e => setFormData({ ...formData, valor: e.target.value })}
-                placeholder="0,00"
+                onChange={(v) => setFormData({ ...formData, valor: v })}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                 required
               />

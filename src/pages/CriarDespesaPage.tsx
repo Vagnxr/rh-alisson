@@ -8,6 +8,7 @@ import { DESPESA_CATEGORIAS, TIPOS_DESPESA, ABREVIACOES_TIPO_FUNCIONARIO } from 
 import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { useDespesaTiposStore } from '@/stores/despesaTiposStore';
 import { SelectRecorrencia } from '@/components/ui/select-recorrencia';
+import { DateInput } from '@/components/ui/date-input';
 import type { TipoRecorrencia } from '@/types/recorrencia';
 
 const CATEGORIAS_KEYS: DespesaCategoria[] = [
@@ -114,10 +115,9 @@ export function CriarDespesaPage() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Data</label>
-            <input
-              type="date"
+            <DateInput
               value={form.data}
-              onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))}
+              onChange={(v) => setForm((f) => ({ ...f, data: v }))}
               className={inputClass}
               required
             />
@@ -186,10 +186,9 @@ export function CriarDespesaPage() {
             />
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Data fim (opcional)</label>
-              <input
-                type="date"
+              <DateInput
                 value={form.recorrenciaFim}
-                onChange={(e) => setForm((f) => ({ ...f, recorrenciaFim: e.target.value }))}
+                onChange={(v) => setForm((f) => ({ ...f, recorrenciaFim: v }))}
                 className={inputClass}
               />
               <p className="text-xs text-slate-500">

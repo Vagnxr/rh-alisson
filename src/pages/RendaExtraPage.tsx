@@ -31,6 +31,7 @@ export function RendaExtraPage() {
       deleteItem={deleteItem}
       showComunicarAgenda={false}
       useRecorrenciaDataValorList
+      useCurrencyMaskOnValor
     />
   );
 }

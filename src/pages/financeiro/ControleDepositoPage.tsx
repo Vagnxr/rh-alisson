@@ -35,6 +35,8 @@ import type { ControleDepositoRow, ValorDepositadoRow } from '@/types/financeiro
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { DateInput } from '@/components/ui/date-input';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -543,7 +545,7 @@ export function ControleDepositoPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Data</label>
-                <input type="date" value={formDeposito.data} onChange={(e) => setFormDeposito((prev) => ({ ...prev, data: e.target.value, dia: diaSemanaFromDate(e.target.value).toUpperCase() }))} className={inputClass} required />
+                <DateInput value={formDeposito.data} onChange={(v) => setFormDeposito((prev) => ({ ...prev, data: v, dia: diaSemanaFromDate(v).toUpperCase() }))} className={inputClass} required />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Dia</label>
@@ -551,7 +553,7 @@ export function ControleDepositoPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Dinheiro (R$)</label>
-                <input type="text" inputMode="decimal" placeholder="0,00" value={formDeposito.dinheiro} onChange={(e) => setFormDeposito({ ...formDeposito, dinheiro: sanitizeDecimal(e.target.value) })} className={inputClass} required />
+                <CurrencyInput value={formDeposito.dinheiro} onChange={(v) => setFormDeposito({ ...formDeposito, dinheiro: v })} className={inputClass} required />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Responsável pelo Depósito</label>
@@ -578,7 +580,7 @@ export function ControleDepositoPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Data</label>
-                <input type="date" value={formValor.data} onChange={(e) => setFormValor((prev) => ({ ...prev, data: e.target.value, dia: diaSemanaFromDate(e.target.value).toUpperCase() }))} className={inputClass} required />
+                <DateInput value={formValor.data} onChange={(v) => setFormValor((prev) => ({ ...prev, data: v, dia: diaSemanaFromDate(v).toUpperCase() }))} className={inputClass} required />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Dia</label>
@@ -586,7 +588,7 @@ export function ControleDepositoPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Dinheiro (R$)</label>
-                <input type="text" inputMode="decimal" placeholder="0,00" value={formValor.dinheiro} onChange={(e) => setFormValor({ ...formValor, dinheiro: sanitizeDecimal(e.target.value) })} className={inputClass} />
+                <CurrencyInput value={formValor.dinheiro} onChange={(v) => setFormValor({ ...formValor, dinheiro: v })} className={inputClass} />
               </div>
             </div>
             </DialogBody>

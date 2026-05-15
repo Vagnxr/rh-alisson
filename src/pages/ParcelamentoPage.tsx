@@ -14,6 +14,7 @@ import { useParcelamentoStore } from '@/stores/parcelamentoStore';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { formatDateToLocalYYYYMMDD, formatDateStringToBR } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { buildTableColumns } from '@/lib/buildTableColumns';
+import { DateInput } from '@/components/ui/date-input';
 
 const PARCELAMENTO_TABLE_DEFAULT_ORDER = ['data', 'descricao', 'parcela', 'valor'];
 
@@ -481,12 +483,10 @@ export function ParcelamentoPage() {
                 >
                   Data <span className="text-red-500">*</span>
                 </label>
-                <input
-                  id="data"
-                  type="date"
+                <DateInput
                   value={formData.data}
-                  onChange={(e) =>
-                    setFormData({ ...formData, data: e.target.value })
+                  onChange={(v) =>
+                    setFormData({ ...formData, data: v })
                   }
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   required
@@ -548,13 +548,10 @@ export function ParcelamentoPage() {
                 >
                   Valor (R$) <span className="text-red-500">*</span>
                 </label>
-                <input
+                <CurrencyInput
                   id="valor"
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0,00"
                   value={formData.valor ?? ''}
-                  onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                  onChange={(v) => setFormData({ ...formData, valor: v })}
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   required
                 />
@@ -610,11 +607,9 @@ export function ParcelamentoPage() {
                 <label htmlFor="ajustarData" className="text-sm font-medium text-slate-700">
                   Data
                 </label>
-                <input
-                  id="ajustarData"
-                  type="date"
+                <DateInput
                   value={ajustarData}
-                  onChange={(e) => setAjustarData(e.target.value)}
+                  onChange={(v) => setAjustarData(v)}
                   className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>

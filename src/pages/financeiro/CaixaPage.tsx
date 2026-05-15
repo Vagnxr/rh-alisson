@@ -39,6 +39,8 @@ import { useConfiguracaoStore } from '@/stores/configuracaoStore';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { formatDateStringToBR } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { DateInput } from '@/components/ui/date-input';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -499,24 +501,18 @@ export function CaixaPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Dia</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={formData.dia}
-                    onChange={(e) => setFormData({ ...formData, dia: e.target.value })}
+                    onChange={(v) => setFormData({ ...formData, dia: v })}
                     className={inputClass}
                   />
                 </div>
                 {colunasValor.map((col) => (
                   <div key={col.id} className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">{col.label}</label>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="0,00"
+                    <CurrencyInput
                       value={formData[col.id] ?? ''}
-                      onChange={(e) =>
-                        setFormData({ ...formData, [col.id]: e.target.value })
-                      }
+                      onChange={(v) => setFormData({ ...formData, [col.id]: v })}
                       className={inputClass}
                     />
                   </div>

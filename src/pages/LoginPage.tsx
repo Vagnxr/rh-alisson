@@ -6,7 +6,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { getFirstAllowedPath } from '@/lib/paginasPermissao';
-import LogotipoColorido from '@/assets/logotipo-novo.png';
 
 const loginSchema = z.object({
   email: z.string().email('Email invalido'),
@@ -51,9 +50,12 @@ export function LoginPage() {
     <div className="relative flex min-h-screen">
       {/* Fundo: capa em tela cheia (2/3 visivel no desktop; atras do painel) */}
       <div className="absolute inset-0">
+        {/* Troque public/login.jpeg por export ~3840px de largura e qualidade ~85-92% para fundo nitido em 4K */}
         <img
-          src="/CAPA.jpeg"
+          src="/login.jpg"
           alt=""
+          decoding="async"
+          fetchPriority="high"
           className="h-full w-full object-cover object-center"
         />
         {/* Overlay sutil para dar contraste ao painel */}
@@ -65,18 +67,18 @@ export function LoginPage() {
 
       {/* Painel de login: efeito glass (Apple-style) - ocupa 1/3 à direita no desktop */}
       <div
-        className="relative z-10 flex w-full flex-col justify-center px-6 py-12 md:ml-auto md:w-1/3 md:max-w-md md:px-12 bg-[#1d3853]/25 backdrop-blur-md backdrop-saturate-150"
-        style={{ boxShadow: '-8px 0 32px rgba(0,0,0,0.18)' }}
+        className="relative z-10 flex w-full flex-col justify-center px-6 py-12 md:ml-auto md:w-1/3 md:max-w-md md:px-12 bg-[#1d3853]/60 backdrop-blur-sm backdrop-saturate-100"
+        style={{ boxShadow: '-8px 0 32px rgba(0,0,0,0.16)' }}
       >
         <div className="mx-auto w-full max-w-sm">
           <img
-            src={LogotipoColorido}
-            className="mx-auto h-auto w-40 max-w-full object-contain"
-            alt="Logotipo"
+            src="/logo.svg"
+            className="mx-auto block h-40 w-40 max-w-full object-contain sm:h-48 sm:w-48"
+            alt=""
           />
 
-          <h2 className="mt-8 text-center text-xl font-semibold text-white drop-shadow-sm">
-            Entrar na conta
+          <h2 className="mt-5 text-center text-xl font-semibold text-white drop-shadow-sm">
+            Login
           </h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-5">

@@ -37,6 +37,7 @@ import { formatDateStringToBR, addOneMonth } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { DataValorList, type DataValorItem } from '@/components/ui/data-valor-list';
 import { CurrencyInput } from '@/components/ui/currency-input';
+import { DateInput } from '@/components/ui/date-input';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -253,6 +254,7 @@ export function AtivoImobilizadoPage() {
       }));
       const body = {
         tipo: 'entrada' as const,
+        data: formEntrada.data,
         nf: formEntrada.nf.trim(),
         descricaoFornecedor: descricao,
         formaPagto: 'Boleto' as const,
@@ -657,11 +659,9 @@ export function AtivoImobilizadoPage() {
                   <label className="text-sm font-medium text-slate-700">
                     Data <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={formEntrada.data}
-                    onChange={e => {
-                      const v = e.target.value;
+                    onChange={v => {
                       lastDataValorRef.current = { ...lastDataValorRef.current, data: v };
                       setFormEntrada({ ...formEntrada, data: v });
                     }}

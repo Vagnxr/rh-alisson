@@ -27,6 +27,7 @@ import type { SaidaRow, SaidaFormaPagamento } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR } from '@/lib/date';
 import { cn } from '@/lib/cn';
+import { DateInput } from '@/components/ui/date-input';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -442,10 +443,9 @@ export function SaidaPage() {
               <div className="mt-4 mb-4 space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Data pagamento</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={formData.data}
-                    onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+                    onChange={(v) => setFormData({ ...formData, data: v })}
                     className={inputClass}
                     required
                   />

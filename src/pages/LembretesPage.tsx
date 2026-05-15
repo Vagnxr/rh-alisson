@@ -33,6 +33,7 @@ import {
 import { cn } from '@/lib/cn';
 import { formatDateStringToBR } from '@/lib/date';
 import { useLembretesStore, type Lembrete } from '@/stores/lembretesStore';
+import { DateInput } from '@/components/ui/date-input';
 
 type FiltroStatus = 'todos' | 'pendente' | 'concluido' | 'cancelado';
 
@@ -438,10 +439,9 @@ export function LembretesPage() {
                   <label className="text-sm font-medium text-slate-700">
                     Data <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={formData.data}
-                    onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+                    onChange={(v) => setFormData({ ...formData, data: v })}
                     className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     required
                   />

@@ -5,6 +5,8 @@ import type { DiaAgenda, AgendaItem, AgendaItemDirectInput } from '@/types/agend
 import { useAgendaStore } from '@/stores/agendaStore';
 import { formatDateToLocalYYYYMMDD, addOneMonth } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { DateInput } from '@/components/ui/date-input';
 import { DataValorList } from '@/components/ui/data-valor-list';
 import {
   Dialog,
@@ -662,14 +664,11 @@ export function AgendaPage() {
               <label htmlFor="direct-data" className="text-sm font-medium text-slate-700">
                 Data <span className="text-red-500">*</span>
               </label>
-              <input
-                id="direct-data"
-                type="date"
+              <DateInput
                 value={formDirect.data}
-                onChange={e => setFormDirect({ ...formDirect, data: e.target.value })}
+                onChange={v => setFormDirect({ ...formDirect, data: v })}
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 required
-                data-testid="agenda-data"
               />
             </div>
             <div className="space-y-2">
@@ -692,15 +691,13 @@ export function AgendaPage() {
               <label htmlFor="direct-valor" className="text-sm font-medium text-slate-700">
                 Valor (R$) <span className="text-red-500">*</span>
               </label>
-              <input
+              <CurrencyInput
                 id="direct-valor"
-                type="text"
-                inputMode="decimal"
                 value={formDirect.valor}
-                onChange={e => setFormDirect({ ...formDirect, valor: e.target.value })}
+                onChange={(v) => setFormDirect({ ...formDirect, valor: v })}
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 required={!formDirect.recorrente}
-                data-testid="agenda-valor"
+                testId="agenda-valor"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -779,14 +776,11 @@ export function AgendaPage() {
               <label htmlFor="edit-direct-data" className="text-sm font-medium text-slate-700">
                 Data <span className="text-red-500">*</span>
               </label>
-              <input
-                id="edit-direct-data"
-                type="date"
+              <DateInput
                 value={formEditDirect.data}
-                onChange={e => setFormEditDirect({ ...formEditDirect, data: e.target.value })}
+                onChange={v => setFormEditDirect({ ...formEditDirect, data: v })}
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 required
-                data-testid="agenda-edit-data"
               />
             </div>
             <div className="space-y-2">
@@ -807,18 +801,13 @@ export function AgendaPage() {
               <label htmlFor="edit-direct-valor" className="text-sm font-medium text-slate-700">
                 Valor (R$) <span className="text-red-500">*</span>
               </label>
-              <input
+              <CurrencyInput
                 id="edit-direct-valor"
-                type="text"
-                inputMode="decimal"
                 value={formEditDirect.valor}
-                onChange={e =>
-                  setFormEditDirect({ ...formEditDirect, valor: e.target.value })
-                }
-                placeholder="0,00"
+                onChange={(v) => setFormEditDirect({ ...formEditDirect, valor: v })}
                 className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                 required
-                data-testid="agenda-edit-valor"
+                testId="agenda-edit-valor"
               />
             </div>
             <DialogFooter>

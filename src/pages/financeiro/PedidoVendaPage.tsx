@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api';
+import { DateInput } from '@/components/ui/date-input';
 
 export interface ItemPedido {
   id: string;
@@ -260,10 +261,9 @@ export function PedidoVendaPage() {
               </div>
               <div>
                 <label className="block text-xs text-slate-500">Data do Pedido</label>
-                <input
-                  type="date"
+                <DateInput
                   value={form.dataPedido}
-                  onChange={(e) => updateForm({ dataPedido: e.target.value })}
+                  onChange={(v) => updateForm({ dataPedido: v })}
                   className={inputClass}
                 />
               </div>

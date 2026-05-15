@@ -1,10 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { CalendarBlank } from '@phosphor-icons/react';
-import { formatDateStringToBR, formatDateToLocalYYYYMMDD } from '@/lib/date';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DateInput } from '@/components/ui/date-input';
 import { CurrencyInput } from '@/components/ui/currency-input';
 
 export interface DataValorItem {
@@ -47,13 +43,6 @@ function parseValor(v: string): number {
   const s = String(v || '').trim().replace(/\./g, '').replace(',', '.');
   const n = parseFloat(s);
   return Number.isFinite(n) ? n : 0;
-}
-
-function parseDateInput(value?: string): Date | undefined {
-  if (!value) return undefined;
-  const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) return undefined;
-  return new Date(year, month - 1, day);
 }
 
 export function DataValorList({
@@ -118,31 +107,14 @@ export function DataValorList({
               className="relative z-0 grid w-full grid-cols-1 items-center gap-2 min-w-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
               data-testid={`${testIdPrefix}-recorrencia-linha`}
             >
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isRowDisabled}
-                    className={cn(inputBaseClass, 'w-full min-w-0 justify-between px-3 font-normal')}
-                    data-testid={`${testIdPrefix}-recorrencia-data`}
-                  >
-                    {item.data ? formatDateStringToBR(item.data) : 'Selecionar data'}
-                    <CalendarBlank className="h-4 w-4 opacity-60" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={parseDateInput(item.data)}
-                    onSelect={(date) => {
-                      if (!date) return;
-                      updateLine(i, 'data', formatDateToLocalYYYYMMDD(date));
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <DateInput
+                value={item.data}
+                onChange={(v) => updateLine(i, 'data', v)}
+                disabled={isRowDisabled}
+                className={cn(inputBaseClass, 'w-full min-w-0')}
+                placeholder="Selecionar data"
+                data-testid={`${testIdPrefix}-recorrencia-data`}
+              />
               {useCurrencyMaskOnValor ? (
                 <CurrencyInput
                   value={item.valor}

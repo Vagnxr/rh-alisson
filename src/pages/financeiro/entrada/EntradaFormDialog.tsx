@@ -17,6 +17,7 @@ import {
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { cn } from '@/lib/cn';
 import { CurrencyInput } from '@/components/ui/currency-input';
+import { DateInput } from '@/components/ui/date-input';
 
 export interface EntradaFormData {
   data: string;
@@ -191,10 +192,9 @@ export function EntradaFormDialog({
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Data entrada</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={formData.data}
-                    onChange={e => setFormData(prev => ({ ...prev, data: e.target.value }))}
+                    onChange={v => setFormData(prev => ({ ...prev, data: v }))}
                     className={INPUT_CLASS}
                     required
                     disabled={restDisabled}
@@ -202,11 +202,10 @@ export function EntradaFormDialog({
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Data emissao (nota)</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={formData.dataEmissao}
-                    onChange={e =>
-                      setFormData(prev => ({ ...prev, dataEmissao: e.target.value }))
+                    onChange={v =>
+                      setFormData(prev => ({ ...prev, dataEmissao: v }))
                     }
                     className={INPUT_CLASS}
                     disabled={restDisabled}
@@ -370,10 +369,9 @@ export function EntradaFormDialog({
                             isDisabled && 'opacity-60'
                           )}
                         >
-                          <input
-                            type="date"
+                          <DateInput
                             value={p.vencimento}
-                            onChange={e => updateContaAPagar(i, 'vencimento', e.target.value)}
+                            onChange={v => updateContaAPagar(i, 'vencimento', v)}
                             className={cn(INPUT_CLASS, 'min-w-0')}
                             disabled={isDisabled || restDisabled}
                           />

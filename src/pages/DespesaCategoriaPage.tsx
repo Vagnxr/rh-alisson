@@ -81,6 +81,7 @@ export function DespesaCategoriaPage({ categoriaFromPath }: DespesaCategoriaPage
       updateItem={updateItem}
       deleteItem={deleteItem}
       useRecorrenciaDataValorList={usaRecorrenciaLista}
+      useCurrencyMaskOnValor
     />
   );
 }

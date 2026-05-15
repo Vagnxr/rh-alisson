@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowsDownUp, CalendarBlank, Plus, PencilSimple, Trash, SpinnerGap } from '@phosphor-icons/react';
+import { ArrowsDownUp, Plus, PencilSimple, Trash, SpinnerGap } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import type { DespesaBase, DespesaInput, DespesaComParcelasInput, DespesaUpdatePayload, DespesaCategoriaConfig, DespesaCategoria } from '@/types/despesa';
 import { TIPOS_DESPESA, ABREVIACOES_TIPO_FUNCIONARIO } from '@/types/despesa';
@@ -28,8 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DateInput } from '@/components/ui/date-input';
 import {
   Select,
   SelectContent,
@@ -92,13 +91,6 @@ function formatDate(date: string) {
 
 function formatDateForInput(date: string) {
   return date.split('T')[0];
-}
-
-function parseDateInput(value?: string) {
-  if (!value) return undefined;
-  const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) return undefined;
-  return new Date(year, month - 1, day);
 }
 
 export function DespesaPage({
@@ -782,30 +774,12 @@ export function DespesaPage({
                   <Label htmlFor="data">
                     Data <span className="text-destructive">*</span>
                   </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full justify-between rounded-xl px-4 font-normal"
-                        data-testid="despesa-categoria-data"
-                      >
-                        {formData.data ? formatDate(formData.data) : 'Selecione uma data'}
-                        <CalendarBlank className="h-4 w-4 opacity-60" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={parseDateInput(formData.data)}
-                        onSelect={(date) => {
-                          if (!date) return;
-                          setFormData({ ...formData, data: formatDateToLocalYYYYMMDD(date) });
-                        }}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DateInput
+                    value={formData.data}
+                    onChange={(v) => setFormData({ ...formData, data: v })}
+                    className="rounded-xl"
+                    data-testid="despesa-categoria-data"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tipo">
@@ -950,32 +924,13 @@ export function DespesaPage({
                   />
                   <div className="space-y-2">
                     <Label htmlFor="recorrenciaFim">Data fim (opcional)</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full justify-between rounded-xl px-4 font-normal"
-                          data-testid="despesa-categoria-recorrencia-fim"
-                        >
-                          {formData.recorrenciaFim ? formatDate(formData.recorrenciaFim) : 'Selecionar data fim'}
-                          <CalendarBlank className="h-4 w-4 opacity-60" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={parseDateInput(formData.recorrenciaFim)}
-                          onSelect={(date) =>
-                            setFormData({
-                              ...formData,
-                              recorrenciaFim: date ? formatDateToLocalYYYYMMDD(date) : undefined,
-                            })
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <DateInput
+                      value={formData.recorrenciaFim ?? ''}
+                      onChange={(v) => setFormData({ ...formData, recorrenciaFim: v || undefined })}
+                      placeholder="Selecionar data fim"
+                      className="rounded-xl"
+                      data-testid="despesa-categoria-recorrencia-fim"
+                    />
                     <p className="text-xs text-muted-foreground">
                       Última data de vencimento da série. A data informada acima conta como a primeira ocorrência (ex.: 6 meses a partir de 13/02 = 13/02, 13/03, …, 13/07). Deixe em branco para gerar até 12 meses.
                     </p>
