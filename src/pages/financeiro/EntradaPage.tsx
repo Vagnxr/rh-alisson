@@ -319,8 +319,8 @@ export function EntradaPage() {
               valor: formatValorForInput(Number((item as unknown as Record<string, number>)[c.id]) || 0),
             }))
             .filter(v => parseValorFromInput(v.valor) > 0);
-      if (valoresFromRow.length === 0 && categorias.length > 0) {
-        valoresFromRow.push({ categoriaId: categorias[0].id, valor: '0' });
+      if (valoresFromRow.length === 0) {
+        valoresFromRow.push({ categoriaId: '', valor: '' });
       }
       const totalFromRow =
         item.total ??
@@ -350,7 +350,7 @@ export function EntradaPage() {
       setFormData({
         ...defaultForm(),
         valorTotalNota: '',
-        valores: categorias.length > 0 ? [{ categoriaId: categorias[0].id, valor: '0' }] : [],
+        valores: [{ categoriaId: '', valor: '' }],
         contasAPagar: [{ vencimento: hoje, valor: '' }],
       });
     }
@@ -429,11 +429,9 @@ export function EntradaPage() {
   );
 
   const addValorLine = () => {
-    const firstCat = categorias[0]?.id;
-    if (!firstCat) return;
     setFormData(prev => ({
       ...prev,
-      valores: [...prev.valores, { categoriaId: firstCat, valor: '0' }],
+      valores: [...prev.valores, { categoriaId: '', valor: '' }],
     }));
   };
 
@@ -515,15 +513,23 @@ export function EntradaPage() {
       toast.error('Adicione ao menos um valor por categoria.');
       return;
     }
+    // Bloqueia se houver linha com valor > 0 sem categoria selecionada (evita cair tudo em comercializacao)
+    const linhaSemCategoria = formData.valores.find(
+      v => parseValorFromInput(v.valor) > 0 && !v.categoriaId.trim(),
+    );
+    if (linhaSemCategoria) {
+      toast.error('Selecione a categoria de cada linha com valor preenchido.');
+      return;
+    }
     const valoresBody: EntradaValorItem[] = formData.valores
+      .filter(v => v.categoriaId.trim() && parseValorFromInput(v.valor) > 0)
       .map(v => ({
         categoriaId: v.categoriaId,
         categoriaNome: categorias.find(c => c.id === v.categoriaId)?.nome,
         valor: parseValorFromInput(v.valor),
-      }))
-      .filter(v => v.valor > 0);
+      }));
     if (valoresBody.length === 0) {
-      toast.error('Informe ao menos um valor maior que zero.');
+      toast.error('Informe ao menos um valor maior que zero com categoria.');
       return;
     }
     const total = valoresBody.reduce((acc, v) => acc + v.valor, 0);

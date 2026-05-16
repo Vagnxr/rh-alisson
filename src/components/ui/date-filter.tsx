@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Calendar as CalendarIcon, CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export type FilterPeriod = 'day' | 'month' | 'year' | 'custom';
 
@@ -27,9 +27,9 @@ function atLocalMidnight(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-/** Calendario compacto dentro do popover do filtro */
+/** Largura do calendario segue o popover (ancora larga); celulas proporcionais */
 const FILTER_CALENDAR_CLASS =
-  'max-w-[17rem] min-w-0 w-full p-2 [--cell-size:2.25rem] sm:max-w-[18rem] sm:p-2.5 sm:[--cell-size:2.45rem]';
+  'w-full min-w-0 max-w-full p-2 [--cell-size:2.35rem] sm:p-2.5 sm:[--cell-size:2.5rem]';
 
 export function getDefaultFilter(): DateFilterValue {
   const now = new Date();
@@ -151,43 +151,60 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
 
   return (
     <div className={cn('relative', className)}>
-      <div
-        className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1"
-        data-testid="despesa-categoria-filtro-mes"
-      >
-        <button
-          type="button"
-          onClick={() => navigate('prev')}
-          disabled={filter.period === 'custom'}
-          className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-          data-testid="despesa-categoria-filtro-prev"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-
-        <Popover open={isOpen} onOpenChange={setIsOpen}>
-          <PopoverTrigger asChild>
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverAnchor asChild>
+          <div
+            className="flex min-w-0 items-center gap-1 rounded-lg border border-slate-200 bg-white p-1"
+            data-testid="despesa-categoria-filtro-mes"
+          >
             <button
               type="button"
-              className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded px-2 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-              data-testid="despesa-categoria-filtro-periodo-mes"
+              onClick={() => navigate('prev')}
+              disabled={filter.period === 'custom'}
+              className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+              data-testid="despesa-categoria-filtro-prev"
             >
-              <CalendarIcon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{displayText}</span>
+              <ChevronLeft className="h-4 w-4" />
             </button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="end"
-            side="bottom"
-            sideOffset={6}
-            collisionPadding={12}
-            avoidCollisions
-            className={cn(
-              'flex w-[min(18.5rem,calc(100vw-1.25rem))] max-w-[calc(100vw-1rem)] flex-col overflow-hidden p-0 shadow-lg',
-              'max-h-[min(70dvh,calc(100dvh-2rem))]',
-            )}
-          >
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-2.5 [scrollbar-gutter:stable]">
+
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded px-2 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                data-testid="despesa-categoria-filtro-periodo-mes"
+              >
+                <CalendarIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{displayText}</span>
+              </button>
+            </PopoverTrigger>
+
+            <button
+              type="button"
+              onClick={() => navigate('next')}
+              disabled={filter.period === 'custom'}
+              className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+              data-testid="despesa-categoria-filtro-next"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </PopoverAnchor>
+
+        <PopoverContent
+          align="center"
+          side="bottom"
+          sideOffset={6}
+          avoidCollisions
+          sticky="partial"
+          updatePositionStrategy="always"
+          collisionPadding={{ top: 10, bottom: 16, left: 12, right: 12 }}
+          className={cn(
+            'flex min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-xl',
+            'w-max min-w-[20.25rem] max-w-[min(22rem,calc(var(--radix-popper-available-width,100vw)-16px))]',
+            'max-h-[calc(var(--radix-popper-available-height,100dvh)-12px)]',
+          )}
+        >
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-2.5">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="text-sm font-medium text-slate-700">Periodo</span>
                 <button
@@ -247,6 +264,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                       >
                         <Calendar
                           mode="single"
+                          showOutsideDays={false}
                           selected={atLocalMidnight(filter.startDate)}
                           defaultMonth={filter.startDate}
                           onSelect={(d) => {
@@ -293,6 +311,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                       >
                         <Calendar
                           mode="single"
+                          showOutsideDays={false}
                           selected={atLocalMidnight(filter.endDate)}
                           defaultMonth={filter.endDate}
                           onSelect={(d) => {
@@ -317,19 +336,8 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                 </div>
               </div>
             </div>
-          </PopoverContent>
-        </Popover>
-
-        <button
-          type="button"
-          onClick={() => navigate('next')}
-          disabled={filter.period === 'custom'}
-          className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-          data-testid="despesa-categoria-filtro-next"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

@@ -26,7 +26,6 @@ import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import type { SaidaRow, SaidaFormaPagamento } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR } from '@/lib/date';
-import { cn } from '@/lib/cn';
 import { DateInput } from '@/components/ui/date-input';
 
 function formatCurrency(value: number) {
@@ -42,6 +41,7 @@ const inputClass =
   'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 const CAMPOS_NUMERICOS_ORDEM = [
+  'industrializacao',
   'comercializacao',
   'embalagem',
   'materialUsoCons',
@@ -50,6 +50,9 @@ const CAMPOS_NUMERICOS_ORDEM = [
 ] as const;
 
 const LABEL_CAMPO: Record<string, string> = {
+  industrializacao: 'Industrializacao',
+  comercializacao: 'Comercializacao',
+  embalagem: 'Embalagem',
   materialUsoCons: 'Material uso/cons.',
   mercadoriaUsoCons: 'Mercadoria uso/cons.',
   gas: 'GLP',
@@ -61,6 +64,7 @@ const defaultForm = () => ({
   data: new Date().toISOString().split('T')[0],
   formaPagamento: 'BOLETO' as SaidaFormaPagamento,
   fornecedor: '',
+  industrializacao: '',
   comercializacao: '',
   embalagem: '',
   materialUsoCons: '',
@@ -75,6 +79,7 @@ const SAIDA_DEFAULT_ORDER = [
   'fornecedor',
   'dataEntrada',
   'formaPagamento',
+  'industrializacao',
   'comercializacao',
   'embalagem',
   'materialUsoCons',
@@ -124,6 +129,7 @@ export function SaidaPage() {
             ? item.formaPagamento
             : 'BOLETO',
         fornecedor: item.fornecedor ?? '',
+        industrializacao: String(item.industrializacao ?? 0),
         comercializacao: String(item.comercializacao),
         embalagem: String(item.embalagem),
         materialUsoCons: String(item.materialUsoCons),
@@ -149,7 +155,7 @@ export function SaidaPage() {
       data,
       formaPagamento: formData.formaPagamento,
       fornecedor: formData.fornecedor,
-      industrializacao: 0,
+      industrializacao: parseNum(formData.industrializacao),
       comercializacao: parseNum(formData.comercializacao),
       embalagem: parseNum(formData.embalagem),
       materialUsoCons: parseNum(formData.materialUsoCons),
@@ -192,8 +198,7 @@ export function SaidaPage() {
         ),
         cell: ({ row }) => {
           const val = String(row.getValue('data') ?? '');
-          const hasVal = !!val.trim();
-          return <span className={cn(hasVal && 'font-semibold')}>{formatDateStringToBR(val) || '-'}</span>;
+          return <span>{formatDateStringToBR(val) || '-'}</span>;
         },
       },
       modeloNota: {
@@ -201,8 +206,7 @@ export function SaidaPage() {
         header: 'MODELO',
         cell: ({ row }) => {
           const val = row.original.modeloNota ?? '';
-          const hasVal = !!String(val).trim();
-          return <span className={cn('text-slate-600', hasVal && 'font-semibold')}>{val || '-'}</span>;
+          return <span className="text-slate-600">{val || '-'}</span>;
         },
       },
       cnpjCpf: {
@@ -210,8 +214,7 @@ export function SaidaPage() {
         header: 'CNPJ/CPF',
         cell: ({ row }) => {
           const val = row.original.cnpjCpf ?? '';
-          const hasVal = !!String(val).trim();
-          return <span className={cn('text-slate-600', hasVal && 'font-semibold')}>{val || '-'}</span>;
+          return <span className="text-slate-600">{val || '-'}</span>;
         },
       },
       fornecedor: {
@@ -219,8 +222,7 @@ export function SaidaPage() {
         header: 'FORNECEDOR',
         cell: ({ row }) => {
           const val = row.original.fornecedor ?? '';
-          const hasVal = !!String(val).trim();
-          return <span className={cn('text-slate-600', hasVal && 'font-semibold')}>{val || '-'}</span>;
+          return <span className="text-slate-600">{val || '-'}</span>;
         },
       },
       dataEntrada: {
@@ -228,12 +230,7 @@ export function SaidaPage() {
         header: 'DATA ENTRADA',
         cell: ({ row }) => {
           const val = row.original.dataEntrada ?? '';
-          const hasVal = !!String(val).trim();
-          return (
-            <span className={cn('text-slate-600', hasVal && 'font-semibold')}>
-              {formatDateStringToBR(val) || '-'}
-            </span>
-          );
+          return <span className="text-slate-600">{formatDateStringToBR(val) || '-'}</span>;
         },
       },
       formaPagamento: {
@@ -241,8 +238,15 @@ export function SaidaPage() {
         header: 'FORMA DE PAGTO',
         cell: ({ row }) => {
           const val = row.original.formaPagamento ?? '';
-          const hasVal = !!String(val).trim();
-          return <span className={cn('text-slate-600', hasVal && 'font-semibold')}>{val || '-'}</span>;
+          return <span className="text-slate-600">{val || '-'}</span>;
+        },
+      },
+      industrializacao: {
+        accessorKey: 'industrializacao',
+        header: 'INDUSTRIALIZAÇÃO',
+        cell: ({ row }) => {
+          const n = Number(row.original.industrializacao ?? 0);
+          return <span>{formatCurrency(n)}</span>;
         },
       },
       comercializacao: {
@@ -250,54 +254,33 @@ export function SaidaPage() {
         header: 'COMERCIALIZAÇÃO',
         cell: ({ row }) => {
           const n = Number(row.original.comercializacao ?? 0);
-          const hasVal = Number.isFinite(n) && n !== 0;
-          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
+          return <span>{formatCurrency(n)}</span>;
         },
       },
       embalagem: {
         accessorKey: 'embalagem',
         header: 'EMBALAGEM',
-        cell: ({ row }) => {
-          const n = Number(row.original.embalagem ?? 0);
-          const hasVal = Number.isFinite(n) && n !== 0;
-          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
-        },
+        cell: ({ row }) => <span>{formatCurrency(Number(row.original.embalagem ?? 0))}</span>,
       },
       materialUsoCons: {
         accessorKey: 'materialUsoCons',
         header: 'MATERIAL USO/CONS',
-        cell: ({ row }) => {
-          const n = Number(row.original.materialUsoCons ?? 0);
-          const hasVal = Number.isFinite(n) && n !== 0;
-          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
-        },
+        cell: ({ row }) => <span>{formatCurrency(Number(row.original.materialUsoCons ?? 0))}</span>,
       },
       mercadoriaUsoCons: {
         accessorKey: 'mercadoriaUsoCons',
         header: 'MERCADORIA USO/CONS',
-        cell: ({ row }) => {
-          const n = Number(row.original.mercadoriaUsoCons ?? 0);
-          const hasVal = Number.isFinite(n) && n !== 0;
-          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
-        },
+        cell: ({ row }) => <span>{formatCurrency(Number(row.original.mercadoriaUsoCons ?? 0))}</span>,
       },
       gas: {
         accessorKey: 'gas',
         header: 'GLP',
-        cell: ({ row }) => {
-          const n = Number(row.original.gas ?? 0);
-          const hasVal = Number.isFinite(n) && n !== 0;
-          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
-        },
+        cell: ({ row }) => <span>{formatCurrency(Number(row.original.gas ?? 0))}</span>,
       },
       total: {
         accessorKey: 'total',
         header: 'TOTAL',
-        cell: ({ row }) => {
-          const n = Number(row.original.total ?? 0);
-          const hasVal = Number.isFinite(n) && n !== 0;
-          return <span className={cn(hasVal && 'font-semibold')}>{formatCurrency(n)}</span>;
-        },
+        cell: ({ row }) => <span>{formatCurrency(Number(row.original.total ?? 0))}</span>,
       },
     }),
     [],
@@ -345,6 +328,7 @@ export function SaidaPage() {
               fornecedor: r.fornecedor ?? '',
               dataEntrada: formatDateStringToBR(r.dataEntrada ?? ''),
               formaPagamento: r.formaPagamento ?? '',
+              industrializacao: formatCurrency(Number(r.industrializacao ?? 0)),
               comercializacao: formatCurrency(Number(r.comercializacao)),
               embalagem: formatCurrency(Number(r.embalagem)),
               materialUsoCons: formatCurrency(Number(r.materialUsoCons)),
@@ -359,6 +343,7 @@ export function SaidaPage() {
               { key: 'fornecedor', label: 'FORNECEDOR' },
               { key: 'dataEntrada', label: 'DATA ENTRADA' },
               { key: 'formaPagamento', label: 'FORMA DE PAGTO' },
+              { key: 'industrializacao', label: 'INDUSTRIALIZAÇÃO' },
               { key: 'comercializacao', label: 'COMERCIALIZAÇÃO' },
               { key: 'embalagem', label: 'EMBALAGEM' },
               { key: 'materialUsoCons', label: 'MATERIAL USO/CONS.' },
@@ -386,7 +371,7 @@ export function SaidaPage() {
                     {hg.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="px-4 py-3 text-left text-xs font-medium tracking-wider text-slate-500 uppercase"
+                        className="px-4 py-3 text-left text-xs font-bold tracking-wider text-slate-700 uppercase"
                       >
                         {header.isPlaceholder
                           ? null

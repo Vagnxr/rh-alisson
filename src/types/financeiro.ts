@@ -30,6 +30,16 @@ export interface ControleCartoesRow {
   taxa?: number;
   /** Apenas credito: a-vista | parcelado-vista | parcelado-prazo */
   tipoCredito?: 'a-vista' | 'parcelado-vista' | 'parcelado-prazo';
+  /** Apenas credito parcelado-prazo: numero de parcelas */
+  numeroParcelas?: number;
+  /** Maquininha/operadora: cielo, rede, getnet, stone, pagbank, etc. */
+  operadora?: string;
+  /** Bandeira (cartao ou voucher) */
+  bandeira?: string;
+  /** Tipo: credito | debito | pix | voucher | ifood | outras */
+  tipo?: string;
+  /** iFood: valor recebido na loja (em mãos) — nao soma no a receber. */
+  valorLoja?: number;
   aReceber: number;
   dataAReceber: string;
   diaSemanaAReceber?: string;

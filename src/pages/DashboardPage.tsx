@@ -193,16 +193,16 @@ export function DashboardPage() {
                   <table className="w-full">
                     <thead className="border-b border-slate-200 bg-slate-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                        <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
                           Descricao
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                        <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
                           Categoria
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                        <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
                           Data
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">
+                        <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-700">
                           Valor
                         </th>
                       </tr>

@@ -216,7 +216,7 @@ export function VendaCartoesPage() {
                   {hg.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700"
                     >
                       {header.isPlaceholder
                         ? null

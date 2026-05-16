@@ -501,7 +501,7 @@ export function AtivoImobilizadoPage() {
                 {hg.headers.map(header => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-xs font-medium tracking-wider text-slate-500 uppercase"
+                    className="px-4 py-3 text-left text-xs font-bold tracking-wider text-slate-700 uppercase"
                   >
                     {header.isPlaceholder
                       ? null

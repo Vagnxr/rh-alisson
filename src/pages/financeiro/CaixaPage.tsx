@@ -437,7 +437,7 @@ export function CaixaPage() {
                   {hg.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="min-w-0 px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 whitespace-normal break-words"
+                      className="min-w-0 px-3 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700 whitespace-normal break-words"
                     >
                       {header.isPlaceholder
                         ? null

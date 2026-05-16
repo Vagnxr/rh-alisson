@@ -15,6 +15,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="MSystem" />
     <title>MSystem</title>
+    <style>
+      /* Evita flash de tela preta antes do React montar e em transicoes (Chrome dark mode) */
+      html, body, #root { background-color: #ffffff; color: #0f172a; }
+      @media (prefers-color-scheme: dark) {
+        html, body, #root { background-color: #ffffff; color: #0f172a; }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

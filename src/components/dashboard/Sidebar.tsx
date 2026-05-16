@@ -24,6 +24,11 @@ import {
   ArrowDown,
   Building,
   Plus,
+  Wallet,
+  Banknote,
+  Calculator,
+  ClipboardList,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSidebarStore } from '@/stores/sidebarStore';
@@ -67,10 +72,235 @@ const ICON_BY_NAME: Record<string, React.ElementType> = {
   ArrowDown,
   Building,
   Plus,
+  Wallet,
+  Banknote,
+  Calculator,
+  ClipboardList,
+  Sparkles,
 };
 
 function resolveIcon(iconName: string): React.ElementType {
   return ICON_BY_NAME[iconName] ?? FileText;
+}
+
+/** Grupos da sidebar (categorias visuais). */
+type SidebarGroup = 'Operacional' | 'Vendas' | 'Compras' | 'Financeiro' | 'Analise' | 'Cadastros' | 'Sistema';
+
+/** Configuracao de tema por modulo (grupo + cores Tailwind para icone). */
+interface ModuleTheme {
+  group: SidebarGroup;
+  /** Cor base usada no fundo do icone quando inativo. */
+  bgColor: string;
+  /** Cor base usada no icone. */
+  iconColor: string;
+  /** Cor base do estado ativo (fundo). */
+  activeBg: string;
+  /** Cor base do estado ativo (texto). */
+  activeText: string;
+  /** Cor da barra lateral no estado ativo. */
+  activeBar: string;
+}
+
+/** Tema padrao quando o modulo nao esta mapeado. */
+const DEFAULT_THEME: ModuleTheme = {
+  group: 'Operacional',
+  bgColor: 'bg-slate-100',
+  iconColor: 'text-slate-600',
+  activeBg: 'bg-slate-100',
+  activeText: 'text-slate-900',
+  activeBar: 'bg-slate-500',
+};
+
+/** Cor por modulo. Cada modulo tem sua cor distintiva, mas a paleta e harmoniosa. */
+const MODULE_THEME: Record<string, ModuleTheme> = {
+  // Operacional
+  dashboard: {
+    group: 'Operacional',
+    bgColor: 'bg-indigo-50',
+    iconColor: 'text-indigo-600',
+    activeBg: 'bg-indigo-50',
+    activeText: 'text-indigo-900',
+    activeBar: 'bg-indigo-500',
+  },
+  agenda: {
+    group: 'Operacional',
+    bgColor: 'bg-blue-50',
+    iconColor: 'text-blue-600',
+    activeBg: 'bg-blue-50',
+    activeText: 'text-blue-900',
+    activeBar: 'bg-blue-500',
+  },
+  lembretes: {
+    group: 'Operacional',
+    bgColor: 'bg-amber-50',
+    iconColor: 'text-amber-600',
+    activeBg: 'bg-amber-50',
+    activeText: 'text-amber-900',
+    activeBar: 'bg-amber-500',
+  },
+  'recursos-humanos': {
+    group: 'Operacional',
+    bgColor: 'bg-violet-50',
+    iconColor: 'text-violet-600',
+    activeBg: 'bg-violet-50',
+    activeText: 'text-violet-900',
+    activeBar: 'bg-violet-500',
+  },
+  'outras-funcoes': {
+    group: 'Operacional',
+    bgColor: 'bg-slate-100',
+    iconColor: 'text-slate-600',
+    activeBg: 'bg-slate-100',
+    activeText: 'text-slate-900',
+    activeBar: 'bg-slate-500',
+  },
+
+  // Vendas
+  'controle-cartoes': {
+    group: 'Vendas',
+    bgColor: 'bg-purple-50',
+    iconColor: 'text-purple-600',
+    activeBg: 'bg-purple-50',
+    activeText: 'text-purple-900',
+    activeBar: 'bg-purple-500',
+  },
+
+  // Compras
+  entrada: {
+    group: 'Compras',
+    bgColor: 'bg-sky-50',
+    iconColor: 'text-sky-600',
+    activeBg: 'bg-sky-50',
+    activeText: 'text-sky-900',
+    activeBar: 'bg-sky-500',
+  },
+  saida: {
+    group: 'Compras',
+    bgColor: 'bg-rose-50',
+    iconColor: 'text-rose-600',
+    activeBg: 'bg-rose-50',
+    activeText: 'text-rose-900',
+    activeBar: 'bg-rose-500',
+  },
+  fornecedores: {
+    group: 'Compras',
+    bgColor: 'bg-teal-50',
+    iconColor: 'text-teal-600',
+    activeBg: 'bg-teal-50',
+    activeText: 'text-teal-900',
+    activeBar: 'bg-teal-500',
+  },
+  'ativo-imobilizado': {
+    group: 'Compras',
+    bgColor: 'bg-orange-50',
+    iconColor: 'text-orange-600',
+    activeBg: 'bg-orange-50',
+    activeText: 'text-orange-900',
+    activeBar: 'bg-orange-500',
+  },
+
+  // Financeiro
+  despesas: {
+    group: 'Financeiro',
+    bgColor: 'bg-red-50',
+    iconColor: 'text-red-600',
+    activeBg: 'bg-red-50',
+    activeText: 'text-red-900',
+    activeBar: 'bg-red-500',
+  },
+  socios: {
+    group: 'Financeiro',
+    bgColor: 'bg-fuchsia-50',
+    iconColor: 'text-fuchsia-600',
+    activeBg: 'bg-fuchsia-50',
+    activeText: 'text-fuchsia-900',
+    activeBar: 'bg-fuchsia-500',
+  },
+  financeiro: {
+    group: 'Financeiro',
+    bgColor: 'bg-emerald-50',
+    iconColor: 'text-emerald-600',
+    activeBg: 'bg-emerald-50',
+    activeText: 'text-emerald-900',
+    activeBar: 'bg-emerald-500',
+  },
+  parcelamento: {
+    group: 'Financeiro',
+    bgColor: 'bg-yellow-50',
+    iconColor: 'text-yellow-600',
+    activeBg: 'bg-yellow-50',
+    activeText: 'text-yellow-900',
+    activeBar: 'bg-yellow-500',
+  },
+  'renda-extra': {
+    group: 'Financeiro',
+    bgColor: 'bg-green-50',
+    iconColor: 'text-green-600',
+    activeBg: 'bg-green-50',
+    activeText: 'text-green-900',
+    activeBar: 'bg-green-500',
+  },
+  investimento: {
+    group: 'Financeiro',
+    bgColor: 'bg-cyan-50',
+    iconColor: 'text-cyan-600',
+    activeBg: 'bg-cyan-50',
+    activeText: 'text-cyan-900',
+    activeBar: 'bg-cyan-500',
+  },
+
+  // Analise
+  'balanco-geral': {
+    group: 'Analise',
+    bgColor: 'bg-violet-50',
+    iconColor: 'text-violet-600',
+    activeBg: 'bg-violet-50',
+    activeText: 'text-violet-900',
+    activeBar: 'bg-violet-500',
+  },
+  relatorios: {
+    group: 'Analise',
+    bgColor: 'bg-pink-50',
+    iconColor: 'text-pink-600',
+    activeBg: 'bg-pink-50',
+    activeText: 'text-pink-900',
+    activeBar: 'bg-pink-500',
+  },
+
+  // Cadastros
+  lojas: {
+    group: 'Cadastros',
+    bgColor: 'bg-amber-50',
+    iconColor: 'text-amber-700',
+    activeBg: 'bg-amber-50',
+    activeText: 'text-amber-900',
+    activeBar: 'bg-amber-600',
+  },
+
+  // Sistema
+  configuracoes: {
+    group: 'Sistema',
+    bgColor: 'bg-slate-100',
+    iconColor: 'text-slate-500',
+    activeBg: 'bg-slate-100',
+    activeText: 'text-slate-900',
+    activeBar: 'bg-slate-500',
+  },
+};
+
+/** Ordem de exibicao dos grupos na sidebar. */
+const GROUP_ORDER: SidebarGroup[] = [
+  'Operacional',
+  'Vendas',
+  'Compras',
+  'Financeiro',
+  'Analise',
+  'Cadastros',
+  'Sistema',
+];
+
+function getTheme(permissionId: string): ModuleTheme {
+  return MODULE_THEME[permissionId] ?? DEFAULT_THEME;
 }
 
 /** Palavras de ligacao (2+ letras) que ficam em minusculo no titulo. */
@@ -117,6 +347,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
   const openSubmenus = useSidebarStore(s => s.openSubmenus);
   const toggleSubmenu = useSidebarStore(s => s.toggleSubmenu);
   const setSubmenuOpen = useSidebarStore(s => s.setSubmenuOpen);
+  const theme = getTheme(item.permissionId);
 
   const isOpen = openSubmenus.includes(item.label);
 
@@ -135,17 +366,31 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
     }
   }, [location.pathname, isSubItemActive, isOpen, item.label, setSubmenuOpen]);
 
+  /** Renderiza apenas o icone com fundo colorido (chip). Reutilizado em ambos os tipos de item. */
+  const IconChip = ({ active }: { active: boolean }) => (
+    <span
+      className={cn(
+        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
+        active ? theme.activeBg : theme.bgColor,
+      )}
+    >
+      <item.icon className={cn('h-[18px] w-[18px]', theme.iconColor)} />
+    </span>
+  );
+
   if (item.subItems && item.subItems.length > 0) {
     const parentHref = item.href;
-    const rowClassName = cn(
-      'flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
-      isSubItemActive
-        ? 'bg-emerald-100 text-emerald-800'
-        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
-    );
     return (
       <li className="group relative">
-        <div className="flex w-full items-center gap-0">
+        <div className="relative flex w-full items-center gap-0">
+          {/* Barra lateral colorida quando ativo */}
+          <span
+            className={cn(
+              'absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full transition-opacity',
+              isSubItemActive ? `${theme.activeBar} opacity-100` : 'opacity-0',
+            )}
+            aria-hidden
+          />
           {parentHref ? (
             <>
               <NavLink
@@ -153,17 +398,17 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
                 onClick={() => close()}
                 className={({ isActive }) =>
                   cn(
-                    'flex flex-1 min-w-0 items-center rounded-lg px-3 py-2.5 text-left transition-opacity duration-150',
+                    'flex flex-1 min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-left transition-all duration-150',
                     isActive || isSubItemActive
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                      ? `${theme.activeBg} ${theme.activeText} font-semibold`
+                      : 'text-slate-700 hover:bg-slate-50',
                     isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
                   )
                 }
                 title={!isExpanded ? item.label : undefined}
               >
-                <item.icon className="h-5 w-5 shrink-0" />
-                <span className="ml-3 truncate">{item.label}</span>
+                <IconChip active={isSubItemActive} />
+                <span className="truncate text-sm">{item.label}</span>
               </NavLink>
               <button
                 type="button"
@@ -171,7 +416,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
                 aria-label={isOpen ? 'Fechar submenu' : 'Abrir submenu'}
                 className={cn(
                   'flex shrink-0 items-center justify-center rounded-lg p-2 transition-all duration-150',
-                  isSubItemActive ? 'text-emerald-800' : 'text-slate-600 hover:bg-slate-100',
+                  isSubItemActive ? theme.activeText : 'text-slate-500 hover:bg-slate-100',
                   isOpen && 'rotate-180',
                   isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
                 )}
@@ -184,12 +429,17 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
               type="button"
               onClick={() => isExpanded && toggleSubmenu(item.label)}
               title={!isExpanded ? item.label : undefined}
-              className={rowClassName}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-colors duration-150',
+                isSubItemActive
+                  ? `${theme.activeBg} ${theme.activeText} font-semibold`
+                  : 'text-slate-700 hover:bg-slate-50',
+              )}
             >
-              <item.icon className="h-5 w-5 shrink-0" />
+              <IconChip active={isSubItemActive} />
               <span
                 className={cn(
-                  'ml-3 flex-1 truncate text-left transition-opacity duration-150',
+                  'flex-1 truncate text-left transition-opacity duration-150',
                   isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
                 )}
               >
@@ -212,7 +462,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
             isExpanded && isOpen ? 'max-h-[50vh] opacity-100' : 'max-h-0 overflow-hidden opacity-0',
           )}
         >
-          <ul className="mt-1 ml-8 max-h-[calc(50vh-1rem)] space-y-1 overflow-y-auto border-l border-slate-200 pl-3">
+          <ul className="mt-1 ml-10 max-h-[calc(50vh-1rem)] space-y-0.5 overflow-y-auto border-l-2 border-slate-200 pl-3">
             {item.subItems.map(subItem => (
               <li key={subItem.href}>
                 <NavLink
@@ -222,7 +472,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
                     cn(
                       'block rounded-lg px-3 py-1.5 text-sm transition-colors',
                       isActive
-                        ? 'bg-emerald-100 font-medium text-emerald-800'
+                        ? `${theme.activeBg} ${theme.activeText} font-semibold`
                         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
                     )
                   }
@@ -237,7 +487,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
         {!isExpanded && (
           <div className="absolute top-0 left-full z-50 ml-2 hidden max-h-[70vh] min-w-48 flex-col rounded-lg border border-slate-200 bg-white shadow-lg group-hover:flex">
             <div className="shrink-0 border-b border-slate-100 px-3 py-2">
-              <span className="text-sm font-medium text-slate-900">{item.label}</span>
+              <span className="text-sm font-semibold text-slate-900">{item.label}</span>
             </div>
             <div className="flex-1 overflow-y-auto py-2">
               {item.subItems.map(subItem => (
@@ -249,7 +499,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
                     cn(
                       'block px-3 py-1.5 text-sm transition-colors',
                       isActive
-                        ? 'bg-emerald-100 font-medium text-emerald-800'
+                        ? `${theme.activeBg} ${theme.activeText} font-semibold`
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
                     )
                   }
@@ -264,25 +514,32 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
     );
   }
 
+  const isActive = !!item.href && location.pathname === item.href;
   return (
     <li className="group relative">
+      {/* Barra lateral colorida quando ativo */}
+      <span
+        className={cn(
+          'absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full transition-opacity',
+          isActive ? `${theme.activeBar} opacity-100` : 'opacity-0',
+        )}
+        aria-hidden
+      />
       <NavLink
         to={item.href!}
         onClick={() => close()}
         title={!isExpanded ? item.label : undefined}
-        className={({ isActive }) =>
-          cn(
-            'flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
-            isActive
-              ? 'bg-emerald-100 text-emerald-800'
-              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
-          )
-        }
+        className={cn(
+          'flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-all duration-150',
+          isActive
+            ? `${theme.activeBg} ${theme.activeText} font-semibold`
+            : 'text-slate-700 hover:bg-slate-50',
+        )}
       >
-        <item.icon className="h-5 w-5 shrink-0" />
+        <IconChip active={isActive} />
         <span
           className={cn(
-            'ml-3 truncate transition-opacity duration-150',
+            'truncate transition-opacity duration-150',
             isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
           )}
         >
@@ -318,6 +575,20 @@ export function Sidebar() {
     }
     return items;
   }, [menuFromApi, currentTenant?.isMultiloja]);
+
+  /** Agrupa items por categoria visual (sem alterar o conteudo). */
+  const groupedMenu = useMemo(() => {
+    const map = new Map<SidebarGroup, MenuItem[]>();
+    for (const g of GROUP_ORDER) map.set(g, []);
+    for (const item of menuItems) {
+      const group = getTheme(item.permissionId).group;
+      const list = map.get(group) ?? [];
+      list.push(item);
+      map.set(group, list);
+    }
+    return Array.from(map.entries())
+      .filter(([, list]) => list.length > 0);
+  }, [menuItems]);
 
   // Fechar sidebar no mobile ao trocar de rota (evita ficar fixa/aberta)
   useEffect(() => {
@@ -403,13 +674,31 @@ export function Sidebar() {
           </button>
         </div>
 
-        {/* Menu */}
+        {/* Menu agrupado por categoria visual */}
         <nav className="flex-1 overflow-x-hidden overflow-y-auto p-2">
-          <ul className="space-y-1">
-            {menuItems.map(item => (
-              <MenuItemComponent key={item.permissionId} item={item} isExpanded={isExpanded} />
-            ))}
-          </ul>
+          {groupedMenu.map(([group, items], groupIndex) => (
+            <div key={group} className={cn('space-y-1', groupIndex > 0 && 'mt-4')}>
+              <div
+                className={cn(
+                  'flex items-center px-3 transition-all duration-150',
+                  isExpanded ? 'opacity-100' : 'lg:opacity-0 lg:h-0 lg:overflow-hidden',
+                )}
+              >
+                <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400">
+                  {group}
+                </span>
+              </div>
+              <ul className="space-y-0.5">
+                {items.map(item => (
+                  <MenuItemComponent
+                    key={item.permissionId}
+                    item={item}
+                    isExpanded={isExpanded}
+                  />
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
 
         {/* Footer */}

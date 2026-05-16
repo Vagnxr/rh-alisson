@@ -47,16 +47,13 @@ export function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen">
-      {/* Fundo: capa em tela cheia (2/3 visivel no desktop; atras do painel) */}
-      <div className="absolute inset-0">
-        {/* Troque public/login.jpeg por export ~3840px de largura e qualidade ~85-92% para fundo nitido em 4K */}
-        <img
-          src="/login.jpg"
-          alt=""
-          decoding="async"
-          fetchPriority="high"
-          className="h-full w-full object-cover object-center"
+    <div className="relative flex min-h-dvh">
+      {/* Fundo: CSS background-size cover (sem conflito com preflight img { height: auto }) */}
+      <div className="absolute inset-0 overflow-hidden bg-[#1d3853]">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/login.jpg')" }}
+          role="presentation"
         />
         {/* Overlay sutil para dar contraste ao painel */}
         <div

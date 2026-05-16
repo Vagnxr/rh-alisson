@@ -113,6 +113,44 @@ export function EntradaFormDialog({
         <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
           <DialogBody className="min-w-0 overflow-x-hidden overflow-y-auto">
             <div className="mb-4 mt-4 space-y-4">
+              {/* Fornecedor primeiro (e o inicio de tudo): valida CPF/CNPJ antes de liberar demais campos */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  CNPJ ou CPF do fornecedor <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="00.000.000/0000-00 ou 000.000.000-00"
+                  maxLength={18}
+                  value={formData.fornecedor}
+                  onChange={e => onFornecedorChange(e.target.value)}
+                  onBlur={onFornecedorBlur}
+                  onPaste={onFornecedorPaste}
+                  className={cn(INPUT_CLASS, fornecedorError && 'border-red-500')}
+                />
+                {fornecedorNome && (
+                  <p className="text-sm font-medium text-emerald-700">{fornecedorNome}</p>
+                )}
+                {fornecedorError && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm text-red-600">{fornecedorError}</p>
+                    <button
+                      type="button"
+                      onClick={onCadastroFornecedorOpen}
+                      className="text-sm font-medium text-emerald-600 hover:underline"
+                    >
+                      Cadastrar fornecedor
+                    </button>
+                  </div>
+                )}
+                {!fornecedorDocumentoValido && !fornecedorError && (
+                  <p className="text-xs text-amber-700">
+                    Informe um CPF/CNPJ válido e cadastrado para liberar os demais campos.
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Modelo da nota</label>
@@ -135,15 +173,18 @@ export function EntradaFormDialog({
                   <label className="text-sm font-medium text-slate-700">Tipo</label>
                   <select
                     value={formData.tipoEntradaId}
-                    onChange={e =>
-                      setFormData(prev => ({
-                        ...prev,
-                        tipoEntradaId: e.target.value,
-                        ...(e.target.value === 'Bonificação'
-                          ? { formaPagamentoId: '', contasAPagar: [] }
-                          : {}),
-                      }))
-                    }
+                    onChange={e => {
+                      const novoTipo = e.target.value;
+                      setFormData(prev => {
+                        if (novoTipo === 'Bonificação') {
+                          // Bonificação não tem pagamento nem contas a pagar
+                          return { ...prev, tipoEntradaId: novoTipo, formaPagamentoId: '', contasAPagar: [] };
+                        }
+                        // Voltando para Compra/Outros: se a forma estava vazia (vindo de Bonificação), repõe a primeira disponível
+                        const formaRestaurada = prev.formaPagamentoId || (formasPagamento[0]?.nome ?? '');
+                        return { ...prev, tipoEntradaId: novoTipo, formaPagamentoId: formaRestaurada };
+                      });
+                    }}
                     className={INPUT_CLASS}
                     disabled={restDisabled}
                   >
@@ -155,40 +196,6 @@ export function EntradaFormDialog({
                         </option>
                       ))}
                   </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">CNPJ ou CPF do fornecedor</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="00.000.000/0000-00 ou 000.000.000-00"
-                    maxLength={18}
-                    value={formData.fornecedor}
-                    onChange={e => onFornecedorChange(e.target.value)}
-                    onBlur={onFornecedorBlur}
-                    onPaste={onFornecedorPaste}
-                    className={cn(INPUT_CLASS, fornecedorError && 'border-red-500')}
-                  />
-                  {fornecedorNome && (
-                    <p className="text-sm font-medium text-emerald-700">{fornecedorNome}</p>
-                  )}
-                  {fornecedorError && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm text-red-600">{fornecedorError}</p>
-                      <button
-                        type="button"
-                        onClick={onCadastroFornecedorOpen}
-                        className="text-sm font-medium text-emerald-600 hover:underline"
-                      >
-                        Cadastrar fornecedor
-                      </button>
-                    </div>
-                  )}
-                  {!fornecedorDocumentoValido && (
-                    <p className="text-xs text-amber-700">
-                      Informe um CPF/CNPJ válido e cadastrado para liberar os demais campos.
-                    </p>
-                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Data entrada</label>
@@ -257,10 +264,18 @@ export function EntradaFormDialog({
                       <select
                         value={v.categoriaId}
                         onChange={e => updateValorLine(i, 'categoriaId', e.target.value)}
-                        className={cn(INPUT_CLASS, 'min-w-[180px] flex-1 shrink-0')}
+                        className={cn(
+                          INPUT_CLASS,
+                          'min-w-[180px] flex-1 shrink-0',
+                          !v.categoriaId && 'text-slate-400',
+                        )}
                         title={categorias.find(c => c.id === v.categoriaId)?.nome}
                         disabled={restDisabled}
+                        required
                       >
+                        <option value="" disabled>
+                          Selecione a categoria...
+                        </option>
                         {[...categorias]
                           .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
                           .map(c => (

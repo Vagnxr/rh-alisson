@@ -407,7 +407,7 @@ export function ControleDepositoPage() {
                 {table1.getHeaderGroups().map((hg) => (
                   <tr key={hg.id}>
                     {hg.headers.map((header) => (
-                      <th key={header.id} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                      <th key={header.id} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
                         {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </th>
                     ))}
@@ -489,7 +489,7 @@ export function ControleDepositoPage() {
                 {table2.getHeaderGroups().map((hg) => (
                   <tr key={hg.id}>
                     {hg.headers.map((header) => (
-                      <th key={header.id} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                      <th key={header.id} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
                         {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </th>
                     ))}

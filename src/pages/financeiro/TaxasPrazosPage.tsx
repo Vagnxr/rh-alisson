@@ -125,16 +125,16 @@ export function TaxasPrazosPage() {
         <table className="w-full">
           <thead className="border-b border-slate-200 bg-slate-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
                 Bandeira
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
                 Tipo
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
                 Taxa (%)
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+              <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
                 Prazo (dias)
               </th>
             </tr>
