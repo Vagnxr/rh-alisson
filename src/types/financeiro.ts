@@ -45,7 +45,9 @@ export interface ControleCartoesRow {
   diaSemanaAReceber?: string;
 }
 
-/** Bandeiras para Credito/Debito */
+/** Bandeiras para Credito/Debito. O `(string & {})` deixa o union aberto para
+ * aceitar bandeiras customizadas cadastradas pelo cliente em Taxas e Prazos
+ * (mantendo autocomplete dos defaults). */
 export type BandeiraCartao =
   | 'amex'
   | 'elo-credito'
@@ -54,7 +56,9 @@ export type BandeiraCartao =
   | 'visa'
   | 'electron'
   | 'elo-debito'
-  | 'maestro';
+  | 'maestro'
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  | (string & {});
 
 /** Linha Vendas */
 export interface VendasRow {
@@ -197,6 +201,7 @@ export interface SaidaRow {
   /** Dados da entrada vinculada (quando saida veio de uma entrada). */
   dataEntrada?: string;
   modeloNota?: string;
+  numeroNota?: string;
   cnpjCpf?: string;
   industrializacao: number;
   comercializacao: number;

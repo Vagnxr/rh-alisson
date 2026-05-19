@@ -576,7 +576,11 @@ export function AgendaPage() {
           }
         }}
       >
-        <DialogContent data-testid="agenda-dialog-dia" closeButtonDataTestId="agenda-dialog-dia-fechar">
+        <DialogContent
+          data-testid="agenda-dialog-dia"
+          closeButtonDataTestId="agenda-dialog-dia-fechar"
+          className="sm:w-[80vw] sm:max-w-[1100px]"
+        >
           <DialogHeader>
             <DialogTitle>
               {diaSelecionado
@@ -603,7 +607,7 @@ export function AgendaPage() {
                     Total do dia (soma):{' '}
                     {formatCurrency(diaSelecionado.totalEntradas + diaSelecionado.totalSaidas)}
                   </div>
-                  <ul className="max-h-64 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2" data-testid="agenda-dia-itens">
+                  <ul className="max-h-[60vh] min-h-[280px] space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2" data-testid="agenda-dia-itens">
                     {(diaSelecionado.itens ?? []).length === 0 ? (
                       <li className="py-4 text-center text-sm text-slate-500">
                         Nenhum item neste dia

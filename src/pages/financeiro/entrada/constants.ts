@@ -11,7 +11,7 @@ export const CATEGORIAS_INICIAIS = [
   { id: 'bonif-loja', nome: 'BONIF LOJA' },
 ];
 
-export const MODELOS_NOTA_INICIAIS = ['NF-e', 'NFC-e', 'NFS-e', 'ENT SN', 'BONIFICAÇÃO'];
+export const MODELOS_NOTA_INICIAIS = ['NF-e', 'NFC-e', 'NFS-e', 'ENT SN'];
 
 export const TIPOS_ENTRADA = ['Compra', 'Outros', 'Bonificação'];
 

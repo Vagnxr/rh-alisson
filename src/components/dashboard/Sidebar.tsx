@@ -84,7 +84,7 @@ function resolveIcon(iconName: string): React.ElementType {
 }
 
 /** Grupos da sidebar (categorias visuais). */
-type SidebarGroup = 'Operacional' | 'Vendas' | 'Compras' | 'Financeiro' | 'Analise' | 'Cadastros' | 'Sistema';
+type SidebarGroup = 'Inicio' | 'Financeiro' | 'Vendas' | 'Compras' | 'Operacional' | 'Analise' | 'Cadastros' | 'Sistema';
 
 /** Configuracao de tema por modulo (grupo + cores Tailwind para icone). */
 interface ModuleTheme {
@@ -115,7 +115,7 @@ const DEFAULT_THEME: ModuleTheme = {
 const MODULE_THEME: Record<string, ModuleTheme> = {
   // Operacional
   dashboard: {
-    group: 'Operacional',
+    group: 'Inicio',
     bgColor: 'bg-indigo-50',
     iconColor: 'text-indigo-600',
     activeBg: 'bg-indigo-50',
@@ -288,16 +288,20 @@ const MODULE_THEME: Record<string, ModuleTheme> = {
   },
 };
 
-/** Ordem de exibicao dos grupos na sidebar. */
+/** Ordem de exibicao dos grupos na sidebar (Dashboard no topo, depois ordem pedida pelo cliente). */
 const GROUP_ORDER: SidebarGroup[] = [
-  'Operacional',
+  'Inicio',
+  'Financeiro',
   'Vendas',
   'Compras',
-  'Financeiro',
+  'Operacional',
   'Analise',
   'Cadastros',
   'Sistema',
 ];
+
+/** Grupos cujo cabecalho (titulo da categoria) nao deve ser exibido. */
+const HIDE_GROUP_HEADER: Set<SidebarGroup> = new Set<SidebarGroup>(['Inicio']);
 
 function getTheme(permissionId: string): ModuleTheme {
   return MODULE_THEME[permissionId] ?? DEFAULT_THEME;
@@ -678,16 +682,18 @@ export function Sidebar() {
         <nav className="flex-1 overflow-x-hidden overflow-y-auto p-2">
           {groupedMenu.map(([group, items], groupIndex) => (
             <div key={group} className={cn('space-y-1', groupIndex > 0 && 'mt-4')}>
-              <div
-                className={cn(
-                  'flex items-center px-3 transition-all duration-150',
-                  isExpanded ? 'opacity-100' : 'lg:opacity-0 lg:h-0 lg:overflow-hidden',
-                )}
-              >
-                <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400">
-                  {group}
-                </span>
-              </div>
+              {!HIDE_GROUP_HEADER.has(group) && (
+                <div
+                  className={cn(
+                    'flex items-center px-3 transition-all duration-150',
+                    isExpanded ? 'opacity-100' : 'lg:opacity-0 lg:h-0 lg:overflow-hidden',
+                  )}
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400">
+                    {group}
+                  </span>
+                </div>
+              )}
               <ul className="space-y-0.5">
                 {items.map(item => (
                   <MenuItemComponent

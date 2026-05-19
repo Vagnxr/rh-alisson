@@ -113,45 +113,25 @@ export function EntradaFormDialog({
         <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
           <DialogBody className="min-w-0 overflow-x-hidden overflow-y-auto">
             <div className="mb-4 mt-4 space-y-4">
-              {/* Fornecedor primeiro (e o inicio de tudo): valida CPF/CNPJ antes de liberar demais campos */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  CNPJ ou CPF do fornecedor <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="00.000.000/0000-00 ou 000.000.000-00"
-                  maxLength={18}
-                  value={formData.fornecedor}
-                  onChange={e => onFornecedorChange(e.target.value)}
-                  onBlur={onFornecedorBlur}
-                  onPaste={onFornecedorPaste}
-                  className={cn(INPUT_CLASS, fornecedorError && 'border-red-500')}
-                />
-                {fornecedorNome && (
-                  <p className="text-sm font-medium text-emerald-700">{fornecedorNome}</p>
-                )}
-                {fornecedorError && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm text-red-600">{fornecedorError}</p>
-                    <button
-                      type="button"
-                      onClick={onCadastroFornecedorOpen}
-                      className="text-sm font-medium text-emerald-600 hover:underline"
-                    >
-                      Cadastrar fornecedor
-                    </button>
-                  </div>
-                )}
-                {!fornecedorDocumentoValido && !fornecedorError && (
-                  <p className="text-xs text-amber-700">
-                    Informe um CPF/CNPJ válido e cadastrado para liberar os demais campos.
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {/* Fornecedor primeiro (e o inicio de tudo): valida CPF/CNPJ antes de liberar demais campos.
+                  CNPJ/CPF dividindo a primeira linha com Modelo da nota + Tipo (3 campos em row). */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    CNPJ ou CPF do fornecedor <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="00.000.000/0000-00"
+                    maxLength={18}
+                    value={formData.fornecedor}
+                    onChange={e => onFornecedorChange(e.target.value)}
+                    onBlur={onFornecedorBlur}
+                    onPaste={onFornecedorPaste}
+                    className={cn(INPUT_CLASS, fornecedorError && 'border-red-500')}
+                  />
+                </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Modelo da nota</label>
                   <select
@@ -177,10 +157,8 @@ export function EntradaFormDialog({
                       const novoTipo = e.target.value;
                       setFormData(prev => {
                         if (novoTipo === 'Bonificação') {
-                          // Bonificação não tem pagamento nem contas a pagar
                           return { ...prev, tipoEntradaId: novoTipo, formaPagamentoId: '', contasAPagar: [] };
                         }
-                        // Voltando para Compra/Outros: se a forma estava vazia (vindo de Bonificação), repõe a primeira disponível
                         const formaRestaurada = prev.formaPagamentoId || (formasPagamento[0]?.nome ?? '');
                         return { ...prev, tipoEntradaId: novoTipo, formaPagamentoId: formaRestaurada };
                       });
@@ -197,6 +175,35 @@ export function EntradaFormDialog({
                       ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Mensagens do fornecedor (ocupam linha cheia abaixo do grid) */}
+              {(fornecedorNome || fornecedorError || (!fornecedorDocumentoValido && !fornecedorError)) && (
+                <div className="space-y-1">
+                  {fornecedorNome && (
+                    <p className="text-sm font-medium text-emerald-700">{fornecedorNome}</p>
+                  )}
+                  {fornecedorError && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm text-red-600">{fornecedorError}</p>
+                      <button
+                        type="button"
+                        onClick={onCadastroFornecedorOpen}
+                        className="text-sm font-medium text-emerald-600 hover:underline"
+                      >
+                        Cadastrar fornecedor
+                      </button>
+                    </div>
+                  )}
+                  {!fornecedorDocumentoValido && !fornecedorError && (
+                    <p className="text-xs text-amber-700">
+                      Informe um CPF/CNPJ válido e cadastrado para liberar os demais campos.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Data entrada</label>
                   <DateInput

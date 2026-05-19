@@ -37,6 +37,9 @@ import { cn } from '@/lib/cn';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR } from '@/lib/date';
 import { DateInput } from '@/components/ui/date-input';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { parseValorFromInput, formatValorForInput } from '@/lib/formatValor';
+import { MAQUININHAS_PADRAO_LIST, MAQUININHAS_PADRAO_HABILITADAS } from '@/lib/maquininhas';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -50,16 +53,6 @@ function parseNum(v: string): number {
 /** Permite apenas digitos (inteiro). */
 function sanitizeInteger(value: string): string {
   return value.replace(/\D/g, '');
-}
-
-/** Permite apenas digitos e no maximo um separador decimal (virgula ou ponto). */
-function sanitizeDecimal(value: string): string {
-  const cleaned = value.replace(/[^\d,.]/g, '');
-  const sepIndex = Math.max(cleaned.lastIndexOf(','), cleaned.lastIndexOf('.'));
-  if (sepIndex < 0) return cleaned;
-  const intPart = cleaned.slice(0, sepIndex).replace(/[,.]/g, '');
-  const decPart = cleaned.slice(sepIndex + 1).replace(/\D/g, '');
-  return intPart + cleaned[sepIndex] + decPart;
 }
 
 function diaSemanaFromDate(dateStr: string): string {
@@ -91,7 +84,6 @@ const BANDEIRAS_VOUCHER: { id: string; label: string }[] = [
   { id: 'ticket', label: 'Ticket' },
   { id: 'vr', label: 'VR' },
   { id: 'verocard', label: 'Verocard' },
-  { id: 'plush', label: 'Plush' },
 ];
 
 /** Tipos de pagamento configuraveis por maquininha. */
@@ -119,20 +111,15 @@ interface MaquininhaConfig {
 /** Tipos padrao quando cria/usa maquininha sem config explicita. */
 const TIPOS_DEFAULT = ['a-vista', 'parcelado-vista', 'parcelado-prazo', 'debito', 'pix'];
 
-/** Maquininhas (operadoras) padrao do sistema. Cliente pode habilitar mais ou criar novas. */
-const MAQUININHAS_PADRAO: MaquininhaConfig[] = [
-  { id: 'cielo', label: 'Cielo', tipos: TIPOS_DEFAULT, bandeirasCredito: BANDEIRAS_CREDITO.map((b) => b.id), bandeirasDebito: BANDEIRAS_DEBITO.map((b) => b.id) },
-  { id: 'rede', label: 'Rede', tipos: TIPOS_DEFAULT, bandeirasCredito: BANDEIRAS_CREDITO.map((b) => b.id), bandeirasDebito: BANDEIRAS_DEBITO.map((b) => b.id) },
-  { id: 'getnet', label: 'GetNet', tipos: TIPOS_DEFAULT, bandeirasCredito: BANDEIRAS_CREDITO.map((b) => b.id), bandeirasDebito: BANDEIRAS_DEBITO.map((b) => b.id) },
-  { id: 'stone', label: 'Stone', tipos: TIPOS_DEFAULT, bandeirasCredito: BANDEIRAS_CREDITO.map((b) => b.id), bandeirasDebito: BANDEIRAS_DEBITO.map((b) => b.id) },
-  { id: 'pagbank', label: 'PagBank', tipos: TIPOS_DEFAULT, bandeirasCredito: BANDEIRAS_CREDITO.map((b) => b.id), bandeirasDebito: BANDEIRAS_DEBITO.map((b) => b.id) },
-  { id: 'mercado-pago', label: 'Mercado Pago', tipos: TIPOS_DEFAULT, bandeirasCredito: BANDEIRAS_CREDITO.map((b) => b.id), bandeirasDebito: BANDEIRAS_DEBITO.map((b) => b.id) },
-  { id: 'safrapay', label: 'SafraPay', tipos: TIPOS_DEFAULT, bandeirasCredito: BANDEIRAS_CREDITO.map((b) => b.id), bandeirasDebito: BANDEIRAS_DEBITO.map((b) => b.id) },
-  { id: 'infinite-pay', label: 'InfinitePay', tipos: TIPOS_DEFAULT, bandeirasCredito: BANDEIRAS_CREDITO.map((b) => b.id), bandeirasDebito: BANDEIRAS_DEBITO.map((b) => b.id) },
-];
-
-/** Maquininhas habilitadas por padrao (3 principais). Tenant pode habilitar/desabilitar. */
-const MAQUININHAS_PADRAO_HABILITADAS = ['cielo', 'rede', 'getnet'];
+/** Maquininhas (operadoras) padrao do sistema. Cliente pode habilitar mais ou criar novas.
+ * O catalogo basico vem de @/lib/maquininhas (compartilhado com TaxasPrazosPage). */
+const MAQUININHAS_PADRAO: MaquininhaConfig[] = MAQUININHAS_PADRAO_LIST.map((m) => ({
+  id: m.id,
+  label: m.label,
+  tipos: TIPOS_DEFAULT,
+  bandeirasCredito: BANDEIRAS_CREDITO.map((b) => b.id),
+  bandeirasDebito: BANDEIRAS_DEBITO.map((b) => b.id),
+}));
 
 /** Slugify para gerar id a partir de label de maquininha custom. */
 function slugifyMaq(s: string): string {
@@ -217,11 +204,27 @@ export function ControleCartoesPage() {
     [],
   );
 
-  /** Carrega config (habilitadas + custom) do backend. */
+  /** Bandeiras extras cadastradas em Taxas e Prazos (alem das defaults). */
+  const [bandeirasCreditoExtras, setBandeirasCreditoExtras] = useState<{ id: string; label: string }[]>([]);
+  const [bandeirasDebitoExtras, setBandeirasDebitoExtras] = useState<{ id: string; label: string }[]>([]);
+
+  /** Listas finais (defaults + extras, sem duplicar). Usadas em todos os selects/checkboxes da pagina. */
+  const bandeirasCreditoAll = useMemo<{ id: string; label: string }[]>(() => {
+    const seen = new Set(BANDEIRAS_CREDITO.map((b) => b.id));
+    return [...BANDEIRAS_CREDITO, ...bandeirasCreditoExtras.filter((b) => !seen.has(b.id))];
+  }, [bandeirasCreditoExtras]);
+  const bandeirasDebitoAll = useMemo<{ id: string; label: string }[]>(() => {
+    const seen = new Set(BANDEIRAS_DEBITO.map((b) => b.id));
+    return [...BANDEIRAS_DEBITO, ...bandeirasDebitoExtras.filter((b) => !seen.has(b.id))];
+  }, [bandeirasDebitoExtras]);
+
+  /** Carrega config (habilitadas + custom + bandeiras cadastradas) do backend.
+   * O JSON eh envelopado: { taxas: { bandeirasCadastradas?, maquininhasHabilitadas?, maquininhasCustom?, taxas? } }. */
   useEffect(() => {
     api
       .get<{
         taxas?: {
+          bandeirasCadastradas?: Array<{ id: string; label: string; tipo: 'credito' | 'debito' }>;
           maquininhasHabilitadas?: string[];
           maquininhasCustom?: MaquininhaConfig[];
         };
@@ -229,12 +232,27 @@ export function ControleCartoesPage() {
       .then((res) => {
         const habilitadas = res.data?.taxas?.maquininhasHabilitadas;
         const customs = res.data?.taxas?.maquininhasCustom;
+        const cadastradas = res.data?.taxas?.bandeirasCadastradas;
         if (Array.isArray(customs)) {
           setMaquininhasCustom(customs);
         }
         if (Array.isArray(habilitadas) && habilitadas.length > 0) {
           setMaquininhasHabilitadas(habilitadas);
           if (!habilitadas.includes(operadora)) setOperadora(habilitadas[0]);
+        }
+        if (Array.isArray(cadastradas)) {
+          const defaultsCred = new Set(BANDEIRAS_CREDITO.map((b) => b.id));
+          const defaultsDeb = new Set(BANDEIRAS_DEBITO.map((b) => b.id));
+          setBandeirasCreditoExtras(
+            cadastradas
+              .filter((b) => b.tipo === 'credito' && !defaultsCred.has(b.id))
+              .map(({ id, label }) => ({ id, label })),
+          );
+          setBandeirasDebitoExtras(
+            cadastradas
+              .filter((b) => b.tipo === 'debito' && !defaultsDeb.has(b.id))
+              .map(({ id, label }) => ({ id, label })),
+          );
         }
       })
       .catch(() => {});
@@ -286,12 +304,12 @@ export function ControleCartoesPage() {
       };
       setFormData({
         data: (item.data ?? '').toString().split('T')[0]?.slice(0, 10) ?? '',
-        valor: String(item.valor),
+        valor: formatValorForInput(Number(item.valor ?? 0)),
         prazo: item.prazo != null ? String(item.prazo) : '',
         taxaPercent: taxaVal != null ? String(taxaVal) : '',
         dataAReceber: (item.dataAReceber ?? '').toString().split('T')[0]?.slice(0, 10) ?? '',
         numeroParcelas: itemAny.numeroParcelas != null ? String(itemAny.numeroParcelas) : '',
-        valorLoja: itemAny.valorLoja != null ? String(itemAny.valorLoja) : '',
+        valorLoja: itemAny.valorLoja != null ? formatValorForInput(Number(itemAny.valorLoja)) : '',
       });
     } else {
       setEditingItem(null);
@@ -316,14 +334,16 @@ export function ControleCartoesPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data = formData.data.slice(0, 10);
-    const dataAReceber = formData.dataAReceber.slice(0, 10);
-    const valor = parseNum(formData.valor);
-    const prazo = formData.prazo.trim() ? parseNum(formData.prazo) : undefined;
-    const taxaPercent = formData.taxaPercent.trim() ? parseNum(formData.taxaPercent) : undefined;
+    const valor = parseValorFromInput(String(formData.valor));
+    const valorLoja = formData.valorLoja.trim()
+      ? parseValorFromInput(String(formData.valorLoja))
+      : undefined;
     const numeroParcelas =
       tab === 'credito' && tipoCredito === 'parcelado-prazo' && formData.numeroParcelas.trim()
         ? parseNum(formData.numeroParcelas)
         : undefined;
+    // prazo, taxa e dataAReceber sao calculados no backend a partir da config de Taxas e Prazos
+    // (bandeira+tipo). O form so envia o que o usuario realmente preenche.
     const body: Record<string, unknown> = {
       tipo: tab,
       ...((tab === 'credito' || tab === 'debito') && { bandeira }),
@@ -333,9 +353,7 @@ export function ControleCartoesPage() {
       ...(numeroParcelas != null && { numeroParcelas }),
       data,
       valor,
-      dataAReceber,
-      ...(prazo != null && { prazo }),
-      ...(taxaPercent != null && { taxaPercent }),
+      ...(valorLoja != null && { valorLoja }),
     };
     if (tab === 'credito' && tipoCredito === 'parcelado-prazo' && (numeroParcelas == null || numeroParcelas < 1)) {
       toast.error('Informe o numero de parcelas para credito parcelado a prazo.');
@@ -497,12 +515,12 @@ export function ControleCartoesPage() {
   /** Filtra bandeiras conforme config da maquininha selecionada. */
   const bandeirasList = useMemo(() => {
     if (tab === 'credito') {
-      const aceitas = operadoraConfig?.bandeirasCredito ?? BANDEIRAS_CREDITO.map((b) => b.id);
-      return BANDEIRAS_CREDITO.filter((b) => aceitas.includes(b.id));
+      const aceitas = operadoraConfig?.bandeirasCredito ?? bandeirasCreditoAll.map((b) => b.id);
+      return bandeirasCreditoAll.filter((b) => aceitas.includes(b.id));
     }
     if (tab === 'debito') {
-      const aceitas = operadoraConfig?.bandeirasDebito ?? BANDEIRAS_DEBITO.map((b) => b.id);
-      return BANDEIRAS_DEBITO.filter((b) => aceitas.includes(b.id));
+      const aceitas = operadoraConfig?.bandeirasDebito ?? bandeirasDebitoAll.map((b) => b.id);
+      return bandeirasDebitoAll.filter((b) => aceitas.includes(b.id));
     }
     return [];
   }, [tab, operadoraConfig]);
@@ -798,12 +816,10 @@ export function ControleCartoesPage() {
                 <label className="text-sm font-medium text-slate-700">
                   Valor (R$) {tab === 'ifood' && <span className="text-xs text-slate-400">(bruto iFood)</span>}
                 </label>
-                <input
-                  type="text"
-                  inputMode="decimal"
+                <CurrencyInput
                   placeholder="0,00"
                   value={formData.valor}
-                  onChange={(e) => setFormData({ ...formData, valor: sanitizeDecimal(e.target.value) })}
+                  onChange={(v) => setFormData({ ...formData, valor: v })}
                   className={inputClass}
                   required
                 />
@@ -837,14 +853,10 @@ export function ControleCartoesPage() {
                   <label className="text-sm font-medium text-slate-700">
                     Valor recebido na loja (R$)
                   </label>
-                  <input
-                    type="text"
-                    inputMode="decimal"
+                  <CurrencyInput
                     placeholder="0,00"
                     value={formData.valorLoja}
-                    onChange={(e) =>
-                      setFormData({ ...formData, valorLoja: sanitizeDecimal(e.target.value) })
-                    }
+                    onChange={(v) => setFormData({ ...formData, valorLoja: v })}
                     className={inputClass}
                   />
                   <p className="text-xs text-slate-500">
@@ -852,41 +864,13 @@ export function ControleCartoesPage() {
                   </p>
                 </div>
               )}
-              {(tab === 'credito' || tab === 'debito' || tab === 'outras') && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Prazo (dias)</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Ex.: 30"
-                      value={formData.prazo}
-                      onChange={(e) => setFormData({ ...formData, prazo: sanitizeInteger(e.target.value) })}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Taxa %</label>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="Ex.: 2,5"
-                      value={formData.taxaPercent}
-                      onChange={(e) => setFormData({ ...formData, taxaPercent: sanitizeDecimal(e.target.value) })}
-                      className={inputClass}
-                    />
-                  </div>
-                </>
-              )}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Data a receber</label>
-                <DateInput
-                  value={formData.dataAReceber}
-                  onChange={(v) => setFormData({ ...formData, dataAReceber: v })}
-                  className={inputClass}
-                  required
-                />
-              </div>
+              {/* Prazo, taxa e data a receber sao calculados automaticamente pelo backend
+                  a partir da configuracao de Taxas e Prazos (bandeira + tipo).
+                  Para alterar, vá em "Taxas e prazos". */}
+              <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                Taxa, prazo e data a receber serao calculados automaticamente
+                conforme a configuracao em <strong>Taxas e prazos</strong>.
+              </p>
             </div>
             </DialogBody>
             <DialogFooter>
@@ -994,8 +978,8 @@ export function ControleCartoesPage() {
                           label: '',
                           custom: true,
                           tipos: [...TIPOS_DEFAULT],
-                          bandeirasCredito: BANDEIRAS_CREDITO.map((b) => b.id),
-                          bandeirasDebito: BANDEIRAS_DEBITO.map((b) => b.id),
+                          bandeirasCredito: bandeirasCreditoAll.map((b) => b.id),
+                          bandeirasDebito: bandeirasDebitoAll.map((b) => b.id),
                         })
                       }
                       className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
@@ -1091,6 +1075,8 @@ export function ControleCartoesPage() {
               <MaquininhaForm
                 value={editingMaq}
                 onChange={setEditingMaq}
+                bandeirasCredito={bandeirasCreditoAll}
+                bandeirasDebito={bandeirasDebitoAll}
                 onCancel={() => setEditingMaq(null)}
                 onSave={(maq) => {
                   // Cria ou atualiza
@@ -1144,11 +1130,22 @@ export function ControleCartoesPage() {
 interface MaquininhaFormProps {
   value: MaquininhaConfig;
   onChange: (m: MaquininhaConfig) => void;
+  /** Bandeiras de credito disponiveis (defaults + cadastradas em Taxas e Prazos). */
+  bandeirasCredito: { id: string; label: string }[];
+  /** Bandeiras de debito disponiveis. */
+  bandeirasDebito: { id: string; label: string }[];
   onSave: (m: MaquininhaConfig) => void;
   onCancel: () => void;
 }
 
-function MaquininhaForm({ value, onChange, onSave, onCancel }: MaquininhaFormProps) {
+function MaquininhaForm({
+  value,
+  onChange,
+  bandeirasCredito,
+  bandeirasDebito,
+  onSave,
+  onCancel,
+}: MaquininhaFormProps) {
   const toggle = (lista: string[], id: string): string[] =>
     lista.includes(id) ? lista.filter((x) => x !== id) : [...lista, id];
 
@@ -1202,7 +1199,7 @@ function MaquininhaForm({ value, onChange, onSave, onCancel }: MaquininhaFormPro
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Bandeiras de credito aceitas</label>
           <div className="flex flex-wrap gap-2">
-            {BANDEIRAS_CREDITO.map((b) => {
+            {bandeirasCredito.map((b) => {
               const ativo = value.bandeirasCredito.includes(b.id);
               return (
                 <button
@@ -1230,7 +1227,7 @@ function MaquininhaForm({ value, onChange, onSave, onCancel }: MaquininhaFormPro
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Bandeiras de debito aceitas</label>
           <div className="flex flex-wrap gap-2">
-            {BANDEIRAS_DEBITO.map((b) => {
+            {bandeirasDebito.map((b) => {
               const ativo = value.bandeirasDebito.includes(b.id);
               return (
                 <button

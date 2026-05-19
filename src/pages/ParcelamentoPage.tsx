@@ -36,7 +36,7 @@ import {
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { DateInput } from '@/components/ui/date-input';
 
-const PARCELAMENTO_TABLE_DEFAULT_ORDER = ['data', 'descricao', 'parcela', 'valor'];
+const PARCELAMENTO_TABLE_DEFAULT_ORDER = ['data', 'descricao', 'parcela', 'valor', 'comunicarAgenda'];
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -247,6 +247,22 @@ export function ParcelamentoPage() {
             {formatCurrency(row.getValue('valor'))}
           </span>
         ),
+      },
+      comunicarAgenda: {
+        accessorKey: 'comunicarAgenda',
+        header: 'COMUNICAR AGENDA',
+        cell: ({ row }) => {
+          const v = row.original.comunicarAgenda ?? false;
+          return (
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                v ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {v ? 'SIM' : 'NAO'}
+            </span>
+          );
+        },
       },
     }),
     []

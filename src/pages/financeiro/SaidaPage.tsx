@@ -27,6 +27,16 @@ import type { SaidaRow, SaidaFormaPagamento } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR } from '@/lib/date';
 import { DateInput } from '@/components/ui/date-input';
+import { maskCPF, maskCNPJ, onlyNumbers } from '@/lib/masks';
+
+/** Formata CNPJ (14 digitos) ou CPF (11 digitos) com a mascara visual padrao. */
+function formatCnpjCpf(value: string | undefined): string {
+  if (!value) return '-';
+  const digits = onlyNumbers(value);
+  if (digits.length === 11) return maskCPF(digits);
+  if (digits.length === 14) return maskCNPJ(digits);
+  return value;
+}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -73,14 +83,15 @@ const defaultForm = () => ({
 });
 
 const SAIDA_DEFAULT_ORDER = [
+  'dataEntrada',
   'data',
+  'numeroNota',
   'modeloNota',
   'cnpjCpf',
   'fornecedor',
-  'dataEntrada',
   'formaPagamento',
-  'industrializacao',
   'comercializacao',
+  'industrializacao',
   'embalagem',
   'materialUsoCons',
   'mercadoriaUsoCons',
@@ -209,12 +220,20 @@ export function SaidaPage() {
           return <span className="text-slate-600">{val || '-'}</span>;
         },
       },
+      numeroNota: {
+        accessorKey: 'numeroNota',
+        header: 'Nº DA NOTA',
+        cell: ({ row }) => {
+          const val = row.original.numeroNota ?? '';
+          return <span className="text-slate-600">{val || '-'}</span>;
+        },
+      },
       cnpjCpf: {
         accessorKey: 'cnpjCpf',
         header: 'CNPJ/CPF',
         cell: ({ row }) => {
           const val = row.original.cnpjCpf ?? '';
-          return <span className="text-slate-600">{val || '-'}</span>;
+          return <span className="text-slate-600">{formatCnpjCpf(val)}</span>;
         },
       },
       fornecedor: {
@@ -288,7 +307,15 @@ export function SaidaPage() {
 
   const columns = useMemo(
     () =>
-      buildTableColumns<SaidaRow>(columnDefsByKey, columnsFromApi ?? null, SAIDA_DEFAULT_ORDER),
+      buildTableColumns<SaidaRow>(
+        columnDefsByKey,
+        columnsFromApi ?? null,
+        SAIDA_DEFAULT_ORDER,
+        undefined,
+        // Garante que a coluna "Nº da Nota" sempre aparece, mesmo que o backend
+        // nao retorne ela em `columns` (config de visibilidade legado).
+        ['numeroNota'],
+      ),
     [columnDefsByKey, columnsFromApi],
   );
 
@@ -322,14 +349,15 @@ export function SaidaPage() {
           </button>
           <ExportButtons
             data={items.map((r) => ({
-              dataPagamento: formatDateStringToBR(r.data),
-              modeloNota: r.modeloNota ?? '',
-              cnpjCpf: r.cnpjCpf ?? '',
-              fornecedor: r.fornecedor ?? '',
               dataEntrada: formatDateStringToBR(r.dataEntrada ?? ''),
+              dataPagamento: formatDateStringToBR(r.data),
+              numeroNota: r.numeroNota ?? '',
+              modeloNota: r.modeloNota ?? '',
+              cnpjCpf: formatCnpjCpf(r.cnpjCpf ?? ''),
+              fornecedor: r.fornecedor ?? '',
               formaPagamento: r.formaPagamento ?? '',
-              industrializacao: formatCurrency(Number(r.industrializacao ?? 0)),
               comercializacao: formatCurrency(Number(r.comercializacao)),
+              industrializacao: formatCurrency(Number(r.industrializacao ?? 0)),
               embalagem: formatCurrency(Number(r.embalagem)),
               materialUsoCons: formatCurrency(Number(r.materialUsoCons)),
               mercadoriaUsoCons: formatCurrency(Number(r.mercadoriaUsoCons)),
@@ -337,14 +365,15 @@ export function SaidaPage() {
               total: formatCurrency(Number(r.total ?? 0)),
             }))}
             columns={[
+              { key: 'dataEntrada', label: 'DATA ENTRADA' },
               { key: 'dataPagamento', label: 'DATA PAGAMENTO' },
+              { key: 'numeroNota', label: 'Nº DA NOTA' },
               { key: 'modeloNota', label: 'MODELO' },
               { key: 'cnpjCpf', label: 'CNPJ/CPF' },
               { key: 'fornecedor', label: 'FORNECEDOR' },
-              { key: 'dataEntrada', label: 'DATA ENTRADA' },
               { key: 'formaPagamento', label: 'FORMA DE PAGTO' },
-              { key: 'industrializacao', label: 'INDUSTRIALIZAÇÃO' },
               { key: 'comercializacao', label: 'COMERCIALIZAÇÃO' },
+              { key: 'industrializacao', label: 'INDUSTRIALIZAÇÃO' },
               { key: 'embalagem', label: 'EMBALAGEM' },
               { key: 'materialUsoCons', label: 'MATERIAL USO/CONS.' },
               { key: 'mercadoriaUsoCons', label: 'MERCADORIA USO/CONS.' },
