@@ -12,6 +12,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL, INPUT_CLASS, INPUT_TIME_CLASS, OPTION_SELECTED, OPTION_DEFAULT } from '@/lib/uiClasses';
 import {
   Dialog,
   DialogContent,
@@ -38,7 +39,7 @@ import { DateInput } from '@/components/ui/date-input';
 type FiltroStatus = 'todos' | 'pendente' | 'concluido' | 'cancelado';
 
 const PRIORIDADE_CONFIG = {
-  baixa: { label: 'BAIXA', cor: 'bg-slate-100 text-slate-600' },
+  baixa: { label: 'BAIXA', cor: 'bg-muted text-muted-foreground' },
   media: { label: 'MEDIA', cor: 'bg-amber-100 text-amber-700' },
   alta: { label: 'ALTA', cor: 'bg-red-100 text-red-700' },
 };
@@ -46,7 +47,7 @@ const PRIORIDADE_CONFIG = {
 const STATUS_CONFIG = {
   pendente: { label: 'PENDENTE', icon: AlertCircle, cor: 'text-amber-500' },
   concluido: { label: 'CONCLUIDO', icon: CheckCircle2, cor: 'text-emerald-500' },
-  cancelado: { label: 'CANCELADO', icon: XCircle, cor: 'text-slate-400' },
+  cancelado: { label: 'CANCELADO', icon: XCircle, cor: 'text-muted-foreground' },
 };
 
 function isOverdue(dateStr: string) {
@@ -200,8 +201,8 @@ export function LembretesPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Lembretes</h1>
-          <p className="mt-1 text-sm text-slate-500">Gerencie seus lembretes e notificacoes</p>
+          <h1 className={PAGE_TITLE}>Lembretes</h1>
+          <p className={PAGE_SUBTITLE}>Gerencie seus lembretes e notificacoes</p>
         </div>
         <button
           onClick={() => handleOpenDialog()}
@@ -214,37 +215,37 @@ export function LembretesPage() {
 
       {/* Cards de resumo */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
               <Bell className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Pendentes</p>
-              <p className="text-lg font-bold text-slate-900">{contadores.pendentes}</p>
+              <p className="text-xs font-medium text-muted-foreground">Pendentes</p>
+              <p className="text-lg font-bold text-foreground">{contadores.pendentes}</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Concluidos</p>
-              <p className="text-lg font-bold text-slate-900">{contadores.concluidos}</p>
+              <p className="text-xs font-medium text-muted-foreground">Concluidos</p>
+              <p className="text-lg font-bold text-foreground">{contadores.concluidos}</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
               <AlertCircle className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Atrasados</p>
+              <p className="text-xs font-medium text-muted-foreground">Atrasados</p>
               <p className="text-lg font-bold text-red-600">{contadores.atrasados}</p>
             </div>
           </div>
@@ -252,7 +253,7 @@ export function LembretesPage() {
       </div>
 
       {/* Filtros */}
-      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-1 w-fit">
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-1 w-fit">
         {(['todos', 'pendente', 'concluido', 'cancelado'] as FiltroStatus[]).map((status) => (
           <button
             key={status}
@@ -261,7 +262,7 @@ export function LembretesPage() {
               'rounded px-3 py-1.5 text-sm font-medium transition-colors',
               filtroStatus === status
                 ? 'bg-emerald-600 text-white'
-                : 'text-slate-600 hover:bg-slate-100'
+                : 'text-muted-foreground hover:bg-muted'
             )}
           >
             {status === 'todos' ? 'Todos' : STATUS_CONFIG[status].label}
@@ -272,13 +273,13 @@ export function LembretesPage() {
       {/* Lista de lembretes */}
       <div className="space-y-3">
         {isLoading ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
-            <p className="text-sm text-slate-500">Carregando lembretes...</p>
+          <div className="rounded-xl border border-border bg-card p-12 text-center">
+            <p className="text-sm text-muted-foreground">Carregando lembretes...</p>
           </div>
         ) : lembretesFiltrados.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
-            <Bell className="mx-auto h-12 w-12 text-slate-300" />
-            <p className="mt-4 text-sm text-slate-500">Nenhum lembrete encontrado</p>
+          <div className="rounded-xl border border-border bg-card p-12 text-center">
+            <Bell className="mx-auto h-12 w-12 text-muted-foreground/50" />
+            <p className="mt-4 text-sm text-muted-foreground">Nenhum lembrete encontrado</p>
           </div>
         ) : (
           lembretesFiltrados.map((lembrete) => {
@@ -289,8 +290,8 @@ export function LembretesPage() {
               <div
                 key={lembrete.id}
                 className={cn(
-                  'rounded-xl border bg-white p-4 transition-all hover:shadow-md',
-                  atrasado ? 'border-red-200 bg-red-50' : 'border-slate-200',
+                  'rounded-xl border bg-card p-4 transition-all hover:shadow-md',
+                  atrasado ? 'border-red-200 bg-red-50' : 'border-border',
                   lembrete.status === 'concluido' && 'opacity-60'
                 )}
               >
@@ -302,7 +303,7 @@ export function LembretesPage() {
                       'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
                       lembrete.status === 'concluido'
                         ? 'border-emerald-500 bg-emerald-500'
-                        : 'border-slate-300 hover:border-emerald-500'
+                        : 'border-border hover:border-emerald-500'
                     )}
                   >
                     {lembrete.status === 'concluido' && (
@@ -318,14 +319,14 @@ export function LembretesPage() {
                           className={cn(
                             'font-medium',
                             lembrete.status === 'concluido'
-                              ? 'text-slate-500 line-through'
-                              : 'text-slate-900'
+                              ? 'text-muted-foreground line-through'
+                              : 'text-foreground'
                           )}
                         >
                           {lembrete.titulo}
                         </h3>
                         {lembrete.descricao && (
-                          <p className="mt-0.5 text-sm text-slate-500">{lembrete.descricao}</p>
+                          <p className="mt-0.5 text-sm text-muted-foreground">{lembrete.descricao}</p>
                         )}
                       </div>
                       <span
@@ -338,7 +339,7 @@ export function LembretesPage() {
                       </span>
                     </div>
 
-                    <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
+                    <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
                         <span className={atrasado ? 'text-red-600 font-medium' : ''}>
@@ -360,7 +361,7 @@ export function LembretesPage() {
                     {lembrete.status === 'cancelado' ? (
                       <button
                         onClick={() => handleReabrir(lembrete.id)}
-                        className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                         title="Reabrir lembrete"
                       >
                         <RotateCcw className="h-4 w-4" />
@@ -368,7 +369,7 @@ export function LembretesPage() {
                     ) : (
                       <button
                         onClick={() => handleCancelar(lembrete.id)}
-                        className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                         title="Marcar como cancelado"
                       >
                         <XCircle className="h-4 w-4" />
@@ -376,14 +377,14 @@ export function LembretesPage() {
                     )}
                     <button
                       onClick={() => handleOpenDialog(lembrete)}
-                      className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                      className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                       title="Editar"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => setDeleteId(lembrete.id)}
-                      className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-red-600"
                       title="Excluir"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -410,7 +411,7 @@ export function LembretesPage() {
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-foreground">
                   Titulo <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -418,47 +419,47 @@ export function LembretesPage() {
                   value={formData.titulo}
                   onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                   placeholder="Ex: Pagar fornecedor"
-                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  className={`${INPUT_CLASS} uppercase`}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Descricao</label>
+                <label className="text-sm font-medium text-foreground">Descricao</label>
                 <textarea
                   value={formData.descricao}
                   onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
                   placeholder="Detalhes adicionais..."
                   rows={2}
-                  className="flex w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  className={`${INPUT_CLASS} uppercase`}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Data <span className="text-red-500">*</span>
                   </label>
                   <DateInput
                     value={formData.data}
                     onChange={(v) => setFormData({ ...formData, data: v })}
-                    className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className={INPUT_CLASS}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Hora</label>
+                  <label className="text-sm font-medium text-foreground">Hora</label>
                   <input
                     type="time"
                     value={formData.hora}
                     onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
-                    className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className={INPUT_TIME_CLASS}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Prioridade</label>
+                <label className="text-sm font-medium text-foreground">Prioridade</label>
                 <div className="flex gap-2">
                   {(['baixa', 'media', 'alta'] as const).map((p) => (
                     <button
@@ -467,9 +468,7 @@ export function LembretesPage() {
                       onClick={() => setFormData({ ...formData, prioridade: p })}
                       className={cn(
                         'flex-1 rounded-lg border-2 py-2 text-sm font-medium transition-all',
-                        formData.prioridade === p
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-slate-200 hover:border-slate-300'
+                        formData.prioridade === p ? OPTION_SELECTED : OPTION_DEFAULT
                       )}
                     >
                       {PRIORIDADE_CONFIG[p].label}
@@ -482,7 +481,7 @@ export function LembretesPage() {
               <button
                 type="button"
                 onClick={handleCloseDialog}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100"
+                className={BTN_CANCEL}
               >
                 Cancelar
               </button>

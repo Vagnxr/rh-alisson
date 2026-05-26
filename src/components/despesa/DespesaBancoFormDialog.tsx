@@ -73,25 +73,25 @@ export function DespesaBancoFormDialog({
               />
             )}
             {selectedBanco && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
                 Banco: <span className="font-medium">{selectedBanco.nome}</span>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="data" className="text-sm font-medium text-slate-700">
+                <label htmlFor="data" className="text-sm font-medium text-foreground">
                   Data <span className="text-red-500">*</span>
                 </label>
                 <DateInput
                   value={formData.data}
                   onChange={(v) => setFormData({ ...formData, data: v })}
-                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="tipo" className="text-sm font-medium text-slate-700">
+                <label htmlFor="tipo" className="text-sm font-medium text-foreground">
                   Tipo <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-1">
@@ -99,7 +99,7 @@ export function DespesaBancoFormDialog({
                     id="tipo"
                     value={formData.tipo}
                     onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                    className="flex h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 uppercase"
+                    className="flex h-10 flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 uppercase"
                     required
                     data-testid="despesa-categoria-tipo"
                   >
@@ -113,7 +113,7 @@ export function DespesaBancoFormDialog({
                   <button
                     type="button"
                     onClick={onOpenTipos}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-emerald-600"
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted/40 hover:text-emerald-600"
                     title="Adicionar ou gerenciar tipos"
                   >
                     <Plus className="h-4 w-4" />
@@ -123,7 +123,7 @@ export function DespesaBancoFormDialog({
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="descricao" className="text-sm font-medium text-slate-700">
+              <label htmlFor="descricao" className="text-sm font-medium text-foreground">
                 Descricao
               </label>
               <input
@@ -134,13 +134,13 @@ export function DespesaBancoFormDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, descricao: e.target.value.toUpperCase() })
                 }
-                className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 uppercase"
+                className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 uppercase"
                 data-testid="despesa-categoria-descricao"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="valor" className="text-sm font-medium text-slate-700">
+              <label htmlFor="valor" className="text-sm font-medium text-foreground">
                 Valor (R$) <span className="text-red-500">*</span>
               </label>
               <CurrencyInput
@@ -148,7 +148,7 @@ export function DespesaBancoFormDialog({
                 placeholder="0,00"
                 value={formData.valor ?? ''}
                 onChange={(valor) => setFormData({ ...formData, valor })}
-                className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 required
                 testId="despesa-categoria-valor"
               />
@@ -160,7 +160,7 @@ export function DespesaBancoFormDialog({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100"
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
               data-testid="despesa-categoria-cancelar"
             >
               Cancelar

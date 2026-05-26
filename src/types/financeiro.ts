@@ -227,6 +227,8 @@ export interface PagoDinheiroRow {
 export interface AReceberRow {
   bandeira: string;
   aReceber: number;
+  /** Operadora/maquininha origem do lancamento (apenas credito/debito; null em voucher). */
+  operadora?: string | null;
 }
 
 /** Outras funcoes - Venda e perda: resumo por tabela */

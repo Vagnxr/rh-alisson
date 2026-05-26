@@ -22,6 +22,7 @@ import type { CreateFornecedorDto } from '@/types/fornecedor';
 import { useFornecedorStore } from '@/stores/fornecedorStore';
 import { FornecedorForm } from '@/components/fornecedor/FornecedorForm';
 import { ExportButtons } from '@/components/ui/export-buttons';
+import { PAGE_TITLE, PAGE_SUBTITLE } from '@/lib/uiClasses';
 import { addOneMonth, formatDateStringToBR, formatDateToLocalYYYYMMDD } from '@/lib/date';
 import {
   EntradaTable,
@@ -623,8 +624,8 @@ export function EntradaPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Entrada</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className={PAGE_TITLE}>Entrada</h1>
+          <p className={PAGE_SUBTITLE}>
             Gerencie suas entradas.
           </p>
         </div>
@@ -633,7 +634,7 @@ export function EntradaPage() {
             <button
               type="button"
               onClick={() => setConfigDialog('modelo')}
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:px-4 sm:py-2.5"
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/40 sm:px-4 sm:py-2.5"
             >
               <Settings2 className="h-4 w-4 shrink-0" />
               <span className="whitespace-nowrap">Modelos nota</span>
@@ -641,7 +642,7 @@ export function EntradaPage() {
             <button
               type="button"
               onClick={() => setConfigDialog('categoria')}
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:px-4 sm:py-2.5"
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/40 sm:px-4 sm:py-2.5"
             >
               <Settings2 className="h-4 w-4 shrink-0" />
               <span className="whitespace-nowrap">Categorias</span>
@@ -649,7 +650,7 @@ export function EntradaPage() {
             <button
               type="button"
               onClick={() => setConfigDialog('forma')}
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:px-4 sm:py-2.5"
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/40 sm:px-4 sm:py-2.5"
             >
               <Settings2 className="h-4 w-4 shrink-0" />
               <span className="whitespace-nowrap">Formas pag.</span>

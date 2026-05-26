@@ -18,6 +18,7 @@ import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { cn } from '@/lib/cn';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { DateInput } from '@/components/ui/date-input';
+import { BTN_CANCEL } from '@/lib/uiClasses';
 
 export interface EntradaFormData {
   data: string;
@@ -117,7 +118,7 @@ export function EntradaFormDialog({
                   CNPJ/CPF dividindo a primeira linha com Modelo da nota + Tipo (3 campos em row). */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     CNPJ ou CPF do fornecedor <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -133,7 +134,7 @@ export function EntradaFormDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Modelo da nota</label>
+                  <label className="text-sm font-medium text-foreground">Modelo da nota</label>
                   <select
                     value={formData.modeloNotaId}
                     onChange={e => setFormData(prev => ({ ...prev, modeloNotaId: e.target.value }))}
@@ -150,7 +151,7 @@ export function EntradaFormDialog({
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Tipo</label>
+                  <label className="text-sm font-medium text-foreground">Tipo</label>
                   <select
                     value={formData.tipoEntradaId}
                     onChange={e => {
@@ -205,7 +206,7 @@ export function EntradaFormDialog({
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Data entrada</label>
+                  <label className="text-sm font-medium text-foreground">Data entrada</label>
                   <DateInput
                     value={formData.data}
                     onChange={v => setFormData(prev => ({ ...prev, data: v }))}
@@ -215,7 +216,7 @@ export function EntradaFormDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Data emissao (nota)</label>
+                  <label className="text-sm font-medium text-foreground">Data emissao (nota)</label>
                   <DateInput
                     value={formData.dataEmissao}
                     onChange={v =>
@@ -226,7 +227,7 @@ export function EntradaFormDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Nº da nota</label>
+                  <label className="text-sm font-medium text-foreground">Nº da nota</label>
                   <input
                     type="text"
                     value={formData.numeroNota}
@@ -237,7 +238,7 @@ export function EntradaFormDialog({
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Valor total da entrada</label>
+                <label className="text-sm font-medium text-foreground">Valor total da entrada</label>
                 <CurrencyInput
                   placeholder="0,00"
                   value={formData.valorTotalNota}
@@ -250,7 +251,7 @@ export function EntradaFormDialog({
               </div>
               <div className="space-y-2">
                 <div className="ml-2 flex items-center justify-between">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Divisão por categoria
                   </label>
                   <button
@@ -262,7 +263,7 @@ export function EntradaFormDialog({
                     Adicionar linha
                   </button>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   A soma dos valores por categoria deve ser igual ao valor total da nota.
                 </p>
                 <div className="max-h-40 space-y-2 overflow-y-auto px-2 py-4">
@@ -274,7 +275,7 @@ export function EntradaFormDialog({
                         className={cn(
                           INPUT_CLASS,
                           'min-w-[180px] flex-1 shrink-0',
-                          !v.categoriaId && 'text-slate-400',
+                          !v.categoriaId && 'text-muted-foreground',
                         )}
                         title={categorias.find(c => c.id === v.categoriaId)?.nome}
                         disabled={restDisabled}
@@ -301,7 +302,7 @@ export function EntradaFormDialog({
                       <button
                         type="button"
                         onClick={() => removeValorLine(i)}
-                        className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                        className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-red-600"
                         title="Remover"
                         disabled={restDisabled}
                       >
@@ -311,13 +312,13 @@ export function EntradaFormDialog({
                   ))}
                 </div>
                 <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
-                  <span className="text-slate-500">
+                  <span className="text-muted-foreground">
                     Soma das categorias: {formatCurrency(totalValores)}
                   </span>
                   {formData.valorTotalNota.trim() && (
                     <>
-                      <span className="text-slate-400">|</span>
-                      <span className="text-slate-500">
+                      <span className="text-muted-foreground">|</span>
+                      <span className="text-muted-foreground">
                         Total da nota: {formatCurrency(valorTotalNotaNum)}
                       </span>
                       {somaCategoriasDiverge && (
@@ -329,7 +330,7 @@ export function EntradaFormDialog({
               </div>
               {!isBonificacao && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Forma de pagamento</label>
+                  <label className="text-sm font-medium text-foreground">Forma de pagamento</label>
                   <select
                     value={formData.formaPagamentoId}
                     onChange={e =>
@@ -364,7 +365,7 @@ export function EntradaFormDialog({
               {!isBonificacao && formaBoleto && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-slate-700">Contas a pagar</label>
+                    <label className="text-sm font-medium text-foreground">Contas a pagar</label>
                     <button
                       type="button"
                       onClick={addContaAPagar}
@@ -374,7 +375,7 @@ export function EntradaFormDialog({
                       Adicionar parcela
                     </button>
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     Vencimento e valor de cada boleto.
                   </p>
                   <div className="max-h-36 space-y-2 overflow-y-auto px-2 py-1">
@@ -407,7 +408,7 @@ export function EntradaFormDialog({
                           <button
                             type="button"
                             onClick={() => removeContaAPagar(i)}
-                            className="shrink-0 rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="shrink-0 rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
                             title={
                               isDisabled
                                 ? 'Parcela já paga não pode ser removida'
@@ -424,7 +425,7 @@ export function EntradaFormDialog({
                   <p
                     className={cn(
                       'text-xs',
-                      somaContasAPagarDiverge ? 'font-medium text-red-600' : 'text-slate-500',
+                      somaContasAPagarDiverge ? 'font-medium text-red-600' : 'text-muted-foreground',
                     )}
                   >
                     {somaContasAPagarDiverge ? 'Ajuste: ' : ''}
@@ -443,7 +444,7 @@ export function EntradaFormDialog({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100"
+              className={BTN_CANCEL}
             >
               Cancelar
             </button>

@@ -9,6 +9,16 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import {
+  PAGE_TITLE,
+  PAGE_SUBTITLE,
+  TABLE_CARD,
+  TABLE_HEAD,
+  TABLE_TH,
+  TABLE_TD,
+  TABLE_ROW_HOVER,
+  TABLE_DIVIDE,
+} from '@/lib/uiClasses';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { useDashboardStore } from '@/stores/dashboardStore';
@@ -34,21 +44,22 @@ function StatCard({
   const isPositive = change >= 0;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+    <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm text-slate-500">{label}</p>
-          <p className="mt-1 text-xl font-bold text-slate-900 sm:mt-2 sm:text-2xl">
+          <p className="truncate text-sm text-muted-foreground">{label}</p>
+          <p className="mt-1 text-xl font-bold text-foreground sm:mt-2 sm:text-2xl">
             {value}
           </p>
         </div>
         <div
           className={cn(
             'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg sm:h-12 sm:w-12',
-            iconBg
+            iconBg,
+            'dark:bg-muted',
           )}
         >
-          <Icon className={cn('h-5 w-5 sm:h-6 sm:w-6', iconColor)} />
+          <Icon className={cn('h-5 w-5 sm:h-6 sm:w-6', iconColor, 'dark:opacity-90')} />
         </div>
       </div>
       <div className="mt-3 flex items-center gap-1 sm:mt-4">
@@ -65,7 +76,7 @@ function StatCard({
         >
           {Math.abs(change).toFixed(1)}%
         </span>
-        <span className="text-sm text-slate-400">vs mes anterior</span>
+        <span className="text-sm text-muted-foreground">vs mes anterior</span>
       </div>
     </div>
   );
@@ -144,12 +155,8 @@ export function DashboardPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
-            Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Visao geral das suas financas
-          </p>
+          <h1 className={PAGE_TITLE}>Dashboard</h1>
+          <p className={PAGE_SUBTITLE}>Visao geral das suas financas</p>
         </div>
         <DateFilter value={dateFilter} onChange={setDateFilter} />
       </div>
@@ -172,51 +179,43 @@ export function DashboardPage() {
             ))}
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white">
-            <div className="border-b border-slate-200 px-4 py-3 sm:px-6 sm:py-4">
-              <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
+          <div className={TABLE_CARD}>
+            <div className="border-b border-border px-4 py-3 sm:px-6 sm:py-4">
+              <h2 className="text-base font-semibold text-foreground sm:text-lg">
                 Transacoes Recentes
               </h2>
             </div>
 
             {isLoadingTransacoes && transacoes.length === 0 ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : transacoes.length === 0 ? (
-              <div className="px-4 py-12 text-center text-sm text-slate-500">
+              <div className="px-4 py-12 text-center text-sm text-muted-foreground">
                 Nenhuma transacao no periodo
               </div>
             ) : (
               <>
                 <div className="hidden sm:block">
                   <table className="w-full">
-                    <thead className="border-b border-slate-200 bg-slate-50">
+                    <thead className={TABLE_HEAD}>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
-                          Descricao
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
-                          Categoria
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
-                          Data
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-700">
-                          Valor
-                        </th>
+                        <th className={cn(TABLE_TH, 'font-bold')}>Descricao</th>
+                        <th className={cn(TABLE_TH, 'font-bold')}>Categoria</th>
+                        <th className={cn(TABLE_TH, 'font-bold')}>Data</th>
+                        <th className={cn(TABLE_TH, 'text-right font-bold')}>Valor</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200">
+                    <tbody className={TABLE_DIVIDE}>
                       {transacoes.map((tx) => (
-                        <tr key={tx.id} className="hover:bg-slate-50">
-                          <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">
+                        <tr key={tx.id} className={TABLE_ROW_HOVER}>
+                          <td className={cn(TABLE_TD, 'font-medium')}>
                             {tx.description}
                           </td>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
+                          <td className={cn(TABLE_TD, 'text-muted-foreground')}>
                             {tx.category}
                           </td>
-                          <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
+                          <td className={cn(TABLE_TD, 'text-muted-foreground')}>
                             {formatDateDisplay(tx.date)}
                           </td>
                           <td
@@ -236,14 +235,14 @@ export function DashboardPage() {
                   </table>
                 </div>
 
-                <div className="divide-y divide-slate-200 sm:hidden">
+                <div className={cn(TABLE_DIVIDE, 'sm:hidden')}>
                   {transacoes.map((tx) => (
                     <div key={tx.id} className="flex items-center justify-between p-4">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-slate-900">
+                        <p className="truncate text-sm font-medium text-foreground">
                           {tx.description}
                         </p>
-                        <p className="mt-0.5 text-xs text-slate-500">
+                        <p className="mt-0.5 text-xs text-muted-foreground">
                           {tx.category} - {formatDateDisplay(tx.date)}
                         </p>
                       </div>

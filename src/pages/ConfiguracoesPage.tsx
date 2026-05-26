@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
+import { PAGE_TITLE, INFO_BANNER } from '@/lib/uiClasses';
 import { filterBySearchTerm } from '@/lib/search';
 import { useConfiguracaoStore } from '@/stores/configuracaoStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -161,21 +162,21 @@ function ColunaItem({
     <div
       className={cn(
         'flex items-center justify-between rounded-lg border px-4 py-3 transition-colors',
-        coluna.isVisible ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50',
+        coluna.isVisible ? 'border-primary/30 bg-primary/10' : 'border-border bg-muted/40',
       )}
     >
       <div className="flex items-center gap-3">
-        <GripVertical className="h-4 w-4 cursor-grab text-slate-400" />
+        <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" />
         <div>
-          <p className="font-medium text-slate-900">{coluna.label}</p>
+          <p className="font-medium text-foreground">{coluna.label}</p>
           {coluna.isRequired && (
-            <p className="flex items-center gap-1 text-xs text-slate-500">
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <Lock className="h-3 w-3" />
               Coluna obrigatória
             </p>
           )}
           {(showSomarNoTotal || showSubtrairNoTotal) && (
-            <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+            <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
               {showSomarNoTotal && onToggleSomarNoTotal && (
                 <span className="flex items-center gap-2">
                   Somar no total:
@@ -192,8 +193,8 @@ function ColunaItem({
                     className={cn(
                       'rounded px-2 py-0.5 text-xs font-medium',
                       coluna.somarNoTotal
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-slate-100 text-slate-600',
+                        ? 'bg-primary/15 text-primary'
+                        : 'bg-muted text-muted-foreground',
                     )}
                   >
                     {coluna.somarNoTotal ? 'Sim' : 'Nao'}
@@ -216,8 +217,8 @@ function ColunaItem({
                     className={cn(
                       'rounded px-2 py-0.5 text-xs font-medium',
                       coluna.subtrairNoTotal
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-slate-100 text-slate-600',
+                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                        : 'bg-muted text-muted-foreground',
                     )}
                   >
                     {coluna.subtrairNoTotal ? 'Sim' : 'Nao'}
@@ -245,10 +246,10 @@ function ColunaItem({
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
             coluna.isRequired
-              ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+              ? 'cursor-not-allowed bg-muted text-muted-foreground'
               : coluna.isVisible
                 ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                : 'bg-slate-200 text-slate-600 hover:bg-slate-300',
+                : 'bg-muted text-muted-foreground hover:bg-accent',
           )}
         >
           {coluna.isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -322,27 +323,27 @@ function TabelaConfigCard({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex cursor-pointer items-center justify-between p-4 hover:bg-slate-50"
+        className="flex cursor-pointer items-center justify-between p-4 hover:bg-muted/40"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
-            <Table2 className="h-5 w-5 text-slate-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+            <Table2 className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
-            <h3 className="font-semibold text-slate-900">{tabela.nome}</h3>
-            <p className="text-sm text-slate-500">{tabela.descricao}</p>
+            <h3 className="font-semibold text-foreground">{tabela.nome}</h3>
+            <p className="text-sm text-muted-foreground">{tabela.descricao}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">
+          <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">
             {colunasVisiveis} de {tabela.colunas.length} colunas
           </span>
           <svg
             className={cn(
-              'h-5 w-5 text-slate-400 transition-transform',
+              'h-5 w-5 text-muted-foreground transition-transform',
               isExpanded && 'rotate-180',
             )}
             fill="none"
@@ -355,9 +356,9 @@ function TabelaConfigCard({
       </div>
 
       {isExpanded && (
-        <div className="border-t border-slate-200 p-4">
+        <div className="border-t border-border p-4">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               {canAddRemoveColunas
                 ? 'Inclua ou remova colunas e marque as que deseja exibir'
                 : 'Marque as colunas que deseja exibir na tabela'}
@@ -380,7 +381,7 @@ function TabelaConfigCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                  className="border-red-200 text-red-700 hover:bg-destructive/10 hover:text-red-800"
                   onClick={() => onDeleteCategoria(tabela.id)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -459,7 +460,7 @@ function TabelaConfigCard({
                   <DialogTitle>Nova coluna</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-muted-foreground">
                     Informe o nome da coluna. Ela aparecera na tabela e no formulario do Caixa.
                   </p>
                   <input
@@ -467,16 +468,16 @@ function TabelaConfigCard({
                     value={novaColunaLabel}
                     onChange={e => setNovaColunaLabel(e.target.value)}
                     placeholder="Ex.: Taxa cartao"
-                    className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="flex h-10 w-full rounded-lg border border-border px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                   {isCaixa && (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-slate-700">No total do dia:</p>
+                      <p className="text-sm font-medium text-foreground">No total do dia:</p>
                       <div className="flex flex-wrap gap-2">
                         {(['soma', 'subtrai', 'neutro'] as const).map(tipo => (
                           <label
                             key={tipo}
-                            className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                            className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm"
                           >
                             <input
                               type="radio"
@@ -713,8 +714,8 @@ export function ConfiguracoesPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Configuracoes</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className={PAGE_TITLE}>Configuracoes</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Personalize a exibicao de colunas por modulo do sistema
           </p>
         </div>
@@ -725,7 +726,7 @@ export function ConfiguracoesPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Criar página de despesa</DialogTitle>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted-foreground">
                 Crie uma nova tela de despesa (ex.: Despesa Marketing). A página aparecerá no menu
                 Despesas após ser criada.
               </p>
@@ -745,11 +746,11 @@ export function ConfiguracoesPage() {
       </div>
 
       {/* Info card */}
-      <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
-        <Settings className="h-5 w-5 shrink-0 text-blue-600" />
+      <div className={INFO_BANNER}>
+        <Settings className="h-5 w-5 shrink-0 text-primary" />
         <div>
-          <p className="font-medium text-blue-900">Configuracoes de Colunas</p>
-          <p className="text-sm text-blue-700">
+          <p className="font-medium text-foreground">Configuracoes de Colunas</p>
+          <p className="text-sm text-muted-foreground">
             Escolha quais colunas deseja visualizar em cada tabela. As configuracoes sao salvas
             automaticamente e aplicadas em todas as suas sessoes.
           </p>
@@ -758,7 +759,7 @@ export function ConfiguracoesPage() {
 
       {/* 5 abas: Despesas, Financeiro, Controle Cartões, Outras Funções, Outros */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4 flex h-11 w-full flex-nowrap gap-1 rounded-lg bg-slate-100 p-1.5">
+        <TabsList className="mb-4 flex h-11 w-full flex-nowrap gap-1 rounded-lg bg-muted p-1.5">
           {CONFIG_CATEGORIES.map(cat => {
             const Icon = cat.icon;
             const count = tabelasByCategory.get(cat.id)?.length ?? 0;
@@ -766,11 +767,11 @@ export function ConfiguracoesPage() {
               <TabsTrigger
                 key={cat.id}
                 value={cat.id}
-                className="group min-w-0 flex-1 gap-2 data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow"
+                className="group min-w-0 flex-1 gap-2 data-[state=active]:bg-card data-[state=active]:text-emerald-700 data-[state=active]:shadow"
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span>{cat.label}</span>
-                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600 group-data-[state=active]:bg-emerald-100 group-data-[state=active]:text-emerald-800">
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground group-data-[state=active]:bg-primary/15 group-data-[state=active]:text-primary">
                   {count}
                 </span>
               </TabsTrigger>
@@ -780,13 +781,13 @@ export function ConfiguracoesPage() {
         {CONFIG_CATEGORIES.map(cat => (
           <TabsContent key={cat.id} value={cat.id} className="mt-0">
             <div className="mb-4 flex items-center gap-2">
-              <Search className="h-4 w-4 shrink-0 text-slate-400" />
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
               <input
                 type="search"
                 placeholder="Pesquisar por nome..."
                 value={searchByTab[cat.id] ?? ''}
                 onChange={e => setSearchByTab(prev => ({ ...prev, [cat.id]: e.target.value }))}
-                className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="flex h-9 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 aria-label={`Pesquisar em ${cat.label}`}
               />
             </div>

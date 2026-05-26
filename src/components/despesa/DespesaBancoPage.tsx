@@ -276,7 +276,7 @@ export function DespesaBancoPageComponent({
           </button>
         ),
         cell: ({ row }) => (
-          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+          <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
             {row.getValue('tipo') || '-'}
           </span>
         ),
@@ -305,7 +305,7 @@ export function DespesaBancoPageComponent({
           </button>
         ),
         cell: ({ row }) => (
-          <span className="font-medium text-slate-900">
+          <span className="font-medium text-foreground">
             {formatCurrency(row.getValue('valor'))}
           </span>
         ),
@@ -327,18 +327,18 @@ export function DespesaBancoPageComponent({
           if (value === 'unica') {
             if (indice) {
               return (
-                <span className="text-sm font-medium text-slate-600" title="Parcela da série">
+                <span className="text-sm font-medium text-muted-foreground" title="Parcela da série">
                   {indice}
                 </span>
               );
             }
-            return <span className="text-slate-400">-</span>;
+            return <span className="text-muted-foreground">-</span>;
           }
           return (
             <span className="inline-flex items-center gap-1.5">
               <RecorrenciaBadge value={value as TipoRecorrencia} />
               {indice ? (
-                <span className="text-xs text-slate-500">{indice}</span>
+                <span className="text-xs text-muted-foreground">{indice}</span>
               ) : null}
             </span>
           );
@@ -350,9 +350,9 @@ export function DespesaBancoPageComponent({
         cell: ({ row }) => {
           const v = row.original.comunicarAgenda;
           return v ? (
-            <span className="text-slate-900">Sim</span>
+            <span className="text-foreground">Sim</span>
           ) : (
-            <span className="text-slate-900">Nao</span>
+            <span className="text-foreground">Nao</span>
           );
         },
       },
@@ -367,14 +367,14 @@ export function DespesaBancoPageComponent({
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
           <button
-            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
             title="Editar"
             onClick={() => handleOpenDialog(row.original)}
           >
             <Pencil className="h-4 w-4" />
           </button>
           <button
-            className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+            className="rounded p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600"
             title="Excluir"
             onClick={() => setDeleteItemId(row.original.id)}
           >

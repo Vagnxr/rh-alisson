@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
@@ -8,11 +9,21 @@ import { TelaBrancaPage } from '@/pages/TelaBrancaPage';
 import { ProtectedRoute, AuthOnlyRoute, AdminRoute } from '@/components/ProtectedRoute';
 import { DynamicProtectedRoutes } from '@/components/DynamicProtectedRoutes';
 import { Toaster } from '@/components/ui/sonner';
+import { useThemeStore } from '@/stores/themeStore';
 import '@/index.css';
+
+function ThemeSync() {
+  const isDark = useThemeStore((s) => s.isDark);
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
+  return null;
+}
 
 function App() {
   return (
     <BrowserRouter>
+      <ThemeSync />
       <Routes>
         {/* Rotas publicas */}
         <Route path="/login" element={<LoginPage />} />

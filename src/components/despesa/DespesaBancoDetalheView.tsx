@@ -54,16 +54,16 @@ export function DespesaBancoDetalheView({
           <button
             type="button"
             onClick={onBack}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted/40"
             aria-label="Voltar para lista de bancos"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl truncate">
+            <h1 className="text-xl font-bold text-foreground sm:text-2xl truncate">
               {selectedBanco.nome}
             </h1>
-            <p className="mt-1 text-sm text-slate-500">Despesas e tarifas deste banco</p>
+            <p className="mt-1 text-sm text-muted-foreground">Despesas e tarifas deste banco</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -76,7 +76,7 @@ export function DespesaBancoDetalheView({
           />
           <button
             onClick={onOpenTipos}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
           >
             <Settings2 className="h-4 w-4" />
             <span>Gerenciar tipos</span>
@@ -92,16 +92,16 @@ export function DespesaBancoDetalheView({
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <div className="rounded-xl border border-border bg-card">
         <div className="hidden overflow-x-auto sm:block">
           <table className="w-full">
-            <thead className="border-b border-slate-200 bg-slate-50">
+            <thead className="border-b border-border bg-muted/40">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-6 py-3 text-left text-xs uppercase tracking-wider text-slate-500"
+                      className="px-6 py-3 text-left text-xs uppercase tracking-wider text-muted-foreground"
                     >
                       {header.isPlaceholder
                         ? null
@@ -111,23 +111,23 @@ export function DespesaBancoDetalheView({
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-border">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
                   <td
                     colSpan={columnsCount}
-                    className="px-6 py-12 text-center text-sm text-slate-500"
+                    className="px-6 py-12 text-center text-sm text-muted-foreground"
                   >
                     Nenhum registro cadastrado
                   </td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50">
+                  <tr key={row.id} className="hover:bg-muted/40">
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="whitespace-nowrap px-6 py-4 text-sm text-slate-600"
+                        className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground"
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
@@ -137,12 +137,12 @@ export function DespesaBancoDetalheView({
               )}
             </tbody>
             {filteredItems.length > 0 && (
-              <tfoot className="border-t border-slate-200 bg-slate-50">
+              <tfoot className="border-t border-border bg-muted/40">
                 <tr>
-                  <td colSpan={4} className="px-6 py-3 text-right text-sm font-medium text-slate-900">
+                  <td colSpan={4} className="px-6 py-3 text-right text-sm font-medium text-foreground">
                     Total:
                   </td>
-                  <td className="px-6 py-3 text-sm font-bold text-slate-900">
+                  <td className="px-6 py-3 text-sm font-bold text-foreground">
                     {formatCurrency(total)}
                   </td>
                   <td></td>
@@ -152,9 +152,9 @@ export function DespesaBancoDetalheView({
           </table>
         </div>
 
-        <div className="divide-y divide-slate-200 sm:hidden">
+        <div className="divide-y divide-border sm:hidden">
           {filteredItems.length === 0 ? (
-            <div className="px-4 py-12 text-center text-sm text-slate-500">
+            <div className="px-4 py-12 text-center text-sm text-muted-foreground">
               Nenhum registro encontrado
             </div>
           ) : (
@@ -170,23 +170,23 @@ export function DespesaBancoDetalheView({
                           <BancoBadge bancoId={item.bancoId} bancos={bancos} />
                         )}
                       </div>
-                      <p className="font-medium text-slate-900">{item.descricao}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{formatDate(item.data)}</p>
+                      <p className="font-medium text-foreground">{item.descricao}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{formatDate(item.data)}</p>
                     </div>
                     <div className="ml-4 flex items-center gap-2">
-                      <span className="font-semibold text-slate-900">
+                      <span className="font-semibold text-foreground">
                         {formatCurrency(item.valor)}
                       </span>
                       <div className="flex gap-1">
                         <button
-                          className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                           title="Editar"
                           onClick={() => onEditItem(item)}
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          className="rounded p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600"
                           title="Excluir"
                           onClick={() => onDeleteItem(item.id)}
                         >
@@ -197,9 +197,9 @@ export function DespesaBancoDetalheView({
                   </div>
                 </div>
               ))}
-              <div className="flex items-center justify-between bg-slate-50 p-4">
-                <span className="font-medium text-slate-700">Total</span>
-                <span className="font-bold text-slate-900">{formatCurrency(total)}</span>
+              <div className="flex items-center justify-between bg-muted/40 p-4">
+                <span className="font-medium text-foreground">Total</span>
+                <span className="font-bold text-foreground">{formatCurrency(total)}</span>
               </div>
             </>
           )}

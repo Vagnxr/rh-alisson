@@ -281,9 +281,9 @@ export function ExportButtons({
         onClick={exportToExcel}
         disabled={isExporting !== null || data.length === 0}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium',
-          'text-slate-700 transition-colors',
-          'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700',
+          'inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium',
+          'text-foreground transition-colors',
+          'hover:border-primary/50 hover:bg-primary/10 hover:text-primary',
           'disabled:opacity-50 disabled:cursor-not-allowed'
         )}
         title="Exportar para Excel (CSV)"
@@ -301,9 +301,9 @@ export function ExportButtons({
         onClick={exportToPDF}
         disabled={isExporting !== null || data.length === 0}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium',
-          'text-slate-700 transition-colors',
-          'hover:border-red-300 hover:bg-red-50 hover:text-red-700',
+          'inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium',
+          'text-foreground transition-colors',
+          'hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive',
           'disabled:opacity-50 disabled:cursor-not-allowed'
         )}
         title="Exportar para PDF"

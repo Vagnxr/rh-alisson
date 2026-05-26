@@ -16,6 +16,18 @@ import { FornecedorForm } from '@/components/fornecedor/FornecedorForm';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
+import {
+  PAGE_TITLE,
+  PAGE_SUBTITLE,
+  TABLE_CARD,
+  TABLE_HEAD,
+  TABLE_TH,
+  TABLE_TD,
+  TABLE_ROW_HOVER,
+  TABLE_EMPTY,
+  TABLE_DIVIDE,
+  INPUT_CLASS,
+} from '@/lib/uiClasses';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import type { CreateFornecedorDto, UpdateFornecedorDto } from '@/types/fornecedor';
 
@@ -312,8 +324,8 @@ export function FornecedoresPage() {
       <header className="min-w-0 space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 shrink-0">
-            <h1 className="truncate text-xl font-bold text-slate-900 sm:text-2xl">Fornecedores</h1>
-            <p className="mt-1 truncate text-sm text-slate-500">Gerencie seus fornecedores</p>
+            <h1 className={cn('truncate', PAGE_TITLE)}>Fornecedores</h1>
+            <p className={cn('truncate', PAGE_SUBTITLE)}>Gerencie seus fornecedores</p>
           </div>
           <button
             onClick={() => handleOpenDialog()}
@@ -325,15 +337,15 @@ export function FornecedoresPage() {
         </div>
         {/* Filtros, tipo e busca em uma linha (quebra em telas pequenas) */}
         <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-          <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+          <div className="flex rounded-lg border border-border bg-muted p-0.5">
             <button
               type="button"
               onClick={() => setViewStatus('ativos')}
               className={cn(
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                 viewStatus === 'ativos'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
             >
               Ativos
@@ -344,15 +356,15 @@ export function FornecedoresPage() {
               className={cn(
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                 viewStatus === 'inativos'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
             >
               Inativos
             </button>
           </div>
           <Tabs value={viewTipo} onValueChange={(v) => setViewTipo(v as 'cnpj' | 'cpf')}>
-            <TabsList className="h-auto rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+            <TabsList className="h-auto rounded-lg border border-border bg-muted p-0.5">
               <TabsTrigger value="cnpj" className="inline-flex items-center rounded-md px-3 py-1.5 text-sm data-[state=active]:shadow-sm">
                 <Building2 className="mr-1.5 h-4 w-4 shrink-0" />
                 CNPJ
@@ -368,7 +380,7 @@ export function FornecedoresPage() {
             placeholder="Buscar fornecedores..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:max-w-xs"
+            className={cn(INPUT_CLASS, 'min-w-0 flex-1 focus:border-ring sm:max-w-xs')}
           />
           <ExportButtons
             data={fornecedores.map((f) => ({
@@ -398,17 +410,17 @@ export function FornecedoresPage() {
       </header>
 
       {/* Tabela */}
-      <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className={TABLE_CARD}>
         {/* Tabela Desktop - scroll horizontal apenas na tabela */}
         <div className="hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[600px]">
-            <thead className="border-b border-slate-200 bg-slate-50">
+            <thead className={TABLE_HEAD}>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-6 py-3 text-left text-xs uppercase tracking-wider text-slate-500"
+                      className={TABLE_TH}
                     >
                       {header.isPlaceholder
                         ? null
@@ -418,12 +430,12 @@ export function FornecedoresPage() {
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className={TABLE_DIVIDE}>
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
                   <td
                     colSpan={columns.length}
-                    className="px-6 py-12 text-center text-sm text-slate-500"
+                    className={TABLE_EMPTY}
                   >
                     {globalFilter
                       ? 'Nenhum fornecedor encontrado'
@@ -442,11 +454,11 @@ export function FornecedoresPage() {
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50">
+                  <tr key={row.id} className={TABLE_ROW_HOVER}>
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="whitespace-nowrap px-6 py-4 text-sm text-slate-600"
+                        className={TABLE_TD}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
@@ -459,9 +471,9 @@ export function FornecedoresPage() {
         </div>
 
         {/* Lista Mobile */}
-        <div className="divide-y divide-slate-200 sm:hidden">
+        <div className={cn(TABLE_DIVIDE, 'sm:hidden')}>
           {table.getRowModel().rows.length === 0 ? (
-            <div className="px-4 py-12 text-center text-sm text-slate-500">
+            <div className="px-4 py-12 text-center text-sm text-muted-foreground">
               {globalFilter
                 ? 'Nenhum fornecedor encontrado'
                 : viewTipo === 'cnpj'
@@ -489,29 +501,29 @@ export function FornecedoresPage() {
                         ) : (
                           <User className="h-4 w-4 text-slate-400" />
                         )}
-                        <p className="font-medium text-slate-900">
+                        <p className="font-medium text-foreground">
                           {fornecedor.tipo === 'cnpj'
                             ? fornecedor.razaoSocial
                             : fornecedor.nomeCompleto}
                         </p>
                       </div>
-                      <div className="mt-1 text-xs text-slate-500">
+                      <div className="mt-1 text-xs text-muted-foreground">
                         {fornecedor.tipo === 'cnpj' ? fornecedor.cnpj : fornecedor.cpf}
                       </div>
-                      <div className="mt-1 text-xs text-slate-500">
+                      <div className="mt-1 text-xs text-muted-foreground">
                         {fornecedor.contatoEmpresa.emailPrincipal}
                       </div>
                     </div>
                     <div className="ml-4 flex gap-1">
                       <button
-                        className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                         title="Editar"
                         onClick={() => handleOpenDialog(fornecedor)}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
-                        className="rounded p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-700"
+                        className="rounded p-1.5 text-muted-foreground hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400"
                         title={fornecedor.isAtivo !== false ? 'Inativar' : 'Reativar'}
                         onClick={() => handleToggleStatus(fornecedor.id, fornecedor.isAtivo !== false)}
                       >

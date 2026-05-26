@@ -7,7 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Loader2, Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import { ArrowUpDown, Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import {
@@ -40,6 +40,7 @@ import { DateInput } from '@/components/ui/date-input';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { parseValorFromInput, formatValorForInput } from '@/lib/formatValor';
 import { MAQUININHAS_PADRAO_LIST, MAQUININHAS_PADRAO_HABILITADAS } from '@/lib/maquininhas';
+import { INPUT_CLASS, PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL } from '@/lib/uiClasses';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -61,8 +62,7 @@ function diaSemanaFromDate(dateStr: string): string {
   return dias[d.getDay()];
 }
 
-const inputClass =
-  'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+const inputClass = INPUT_CLASS;
 
 const BANDEIRAS_CREDITO: { id: BandeiraCartao; label: string }[] = [
   { id: 'amex', label: 'Amex' },
@@ -84,6 +84,7 @@ const BANDEIRAS_VOUCHER: { id: string; label: string }[] = [
   { id: 'ticket', label: 'Ticket' },
   { id: 'vr', label: 'VR' },
   { id: 'verocard', label: 'Verocard' },
+  { id: 'pluxee', label: 'Pluxee' },
 ];
 
 /** Tipos de pagamento configuraveis por maquininha. */
@@ -131,7 +132,7 @@ function slugifyMaq(s: string): string {
     .replace(/[^a-z0-9-]/g, '');
 }
 
-type TabCartao = 'credito' | 'debito' | 'pix' | 'voucher' | 'ifood' | 'outras';
+type TabCartao = 'credito' | 'debito' | 'pix' | 'voucher' | 'ifood';
 type TipoCredito = 'a-vista' | 'parcelado-vista' | 'parcelado-prazo';
 const TIPOS_CREDITO: { id: TipoCredito; label: string }[] = [
   { id: 'a-vista', label: 'A vista' },
@@ -481,7 +482,7 @@ export function ControleCartoesPage() {
           <div className="flex items-center justify-end gap-1">
             <button
               type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
               title="Editar"
               onClick={() => handleOpenDialog(row.original)}
             >
@@ -489,7 +490,7 @@ export function ControleCartoesPage() {
             </button>
             <button
               type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+              className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-red-600"
               title="Excluir"
               onClick={() => setDeleteId(row.original.id)}
             >
@@ -546,9 +547,9 @@ export function ControleCartoesPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Controle Cartoes</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Credito/Debito, PIX, Voucher e outras funcoes. Prazo, taxa, bruto e liquido (a receber calculado pelo sistema).
+          <h1 className={PAGE_TITLE}>Controle Cartoes</h1>
+          <p className={PAGE_SUBTITLE}>
+            Credito/Debito, PIX, Voucher e iFood. Prazo, taxa, bruto e liquido (a receber calculado pelo sistema).
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -586,8 +587,8 @@ export function ControleCartoesPage() {
 
       {/* Seletor de maquininha (operadora): aplica apenas em credito/debito/pix */}
       {(tab === 'credito' || tab === 'debito' || tab === 'pix') && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Maquininha</span>
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-3">
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Maquininha</span>
           {todasMaquininhas
             .filter((m) => maquininhasHabilitadas.includes(m.id))
             .map((m) => (
@@ -599,7 +600,7 @@ export function ControleCartoesPage() {
                   'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                   operadora === m.id
                     ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+                    : 'bg-muted text-foreground hover:bg-accent',
                 )}
               >
                 {m.label}
@@ -608,14 +609,14 @@ export function ControleCartoesPage() {
           <button
             type="button"
             onClick={() => setHabilitarOpen(true)}
-            className="ml-auto rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="ml-auto rounded-lg border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/40"
           >
             + Gerenciar maquininhas
           </button>
         </div>
       )}
 
-      <div className="flex flex-wrap gap-1 border-b border-slate-200">
+      <div className="flex flex-wrap gap-1 border-b border-border">
         {(
           [
             { id: 'credito' as TabCartao, label: 'Credito', visible: tabsDisponiveis.credito },
@@ -623,7 +624,6 @@ export function ControleCartoesPage() {
             { id: 'pix' as TabCartao, label: 'PIX', visible: tabsDisponiveis.pix },
             { id: 'voucher' as TabCartao, label: 'Voucher', visible: true },
             { id: 'ifood' as TabCartao, label: 'iFood', visible: true },
-            { id: 'outras' as TabCartao, label: 'Outras funcoes', visible: true },
           ] as { id: TabCartao; label: string; visible: boolean }[]
         )
           .filter((t) => t.visible)
@@ -645,8 +645,8 @@ export function ControleCartoesPage() {
               className={cn(
                 'rounded-t-lg px-4 py-2 text-sm font-medium transition-colors',
                 tab === t.id
-                  ? 'bg-slate-100 text-slate-900 border border-slate-200 border-b-white -mb-px'
-                  : 'text-slate-600 hover:bg-slate-50',
+                  ? 'bg-muted text-foreground border border-border border-b-background -mb-px'
+                  : 'text-muted-foreground hover:bg-muted/40',
               )}
             >
               {t.label}
@@ -656,7 +656,7 @@ export function ControleCartoesPage() {
 
       {tab === 'credito' && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-slate-600">Tipo:</span>
+          <span className="text-sm font-medium text-muted-foreground">Tipo:</span>
           {tiposCreditoDisponiveis.map((t) => (
             <button
               key={t.id}
@@ -666,7 +666,7 @@ export function ControleCartoesPage() {
                 'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                 tipoCredito === t.id
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'bg-muted text-foreground hover:bg-accent'
               )}
             >
               {t.label}
@@ -675,7 +675,8 @@ export function ControleCartoesPage() {
         </div>
       )}
       {showBandeiras && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Cartões:</span>
           {bandeirasList.map((b) => (
             <button
               key={b.id}
@@ -685,7 +686,7 @@ export function ControleCartoesPage() {
                 'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                 bandeira === b.id
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'bg-muted text-foreground hover:bg-accent'
               )}
             >
               {b.label}
@@ -694,7 +695,8 @@ export function ControleCartoesPage() {
         </div>
       )}
       {tab === 'voucher' && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Vouchers:</span>
           {BANDEIRAS_VOUCHER.map((b) => (
             <button
               key={b.id}
@@ -704,7 +706,7 @@ export function ControleCartoesPage() {
                 'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                 bandeiraVoucher === b.id
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+                  : 'bg-muted text-foreground hover:bg-accent',
               )}
             >
               {b.label}
@@ -713,33 +715,21 @@ export function ControleCartoesPage() {
         </div>
       )}
 
-      {tab === 'outras' && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-3">
-          <Link
-            to="/financeiro/outras-funcoes/a-receber"
-            className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Ver A receber (valores por prazo/bandeira)
-          </Link>
-        </div>
-      )}
-
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
           <table className="w-full min-w-[700px]">
-            <thead className="border-b border-slate-200 bg-slate-50">
+            <thead className="border-b border-border bg-muted/40">
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700"
+                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground"
                     >
                       {header.isPlaceholder
                         ? null
@@ -749,20 +739,20 @@ export function ControleCartoesPage() {
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-border">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-slate-500">
+                  <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-muted-foreground">
                     Nenhum registro no periodo
                   </td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50">
+                  <tr key={row.id} className="hover:bg-muted/40">
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="whitespace-nowrap px-4 py-3 text-sm text-slate-600"
+                        className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground"
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
@@ -788,7 +778,7 @@ export function ControleCartoesPage() {
             <DialogBody>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Data</label>
+                <label className="text-sm font-medium text-foreground">Data</label>
                 <DateInput
                   value={formData.data}
                   onChange={(v) => setFormData({ ...formData, data: v })}
@@ -798,7 +788,7 @@ export function ControleCartoesPage() {
               </div>
               {tab === 'credito' && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Tipo credito</label>
+                  <label className="text-sm font-medium text-foreground">Tipo credito</label>
                   <select
                     value={tipoCredito}
                     onChange={(e) => setTipoCredito(e.target.value as TipoCredito)}
@@ -813,8 +803,8 @@ export function ControleCartoesPage() {
                 </div>
               )}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Valor (R$) {tab === 'ifood' && <span className="text-xs text-slate-400">(bruto iFood)</span>}
+                <label className="text-sm font-medium text-foreground">
+                  Valor (R$) {tab === 'ifood' && <span className="text-xs text-muted-foreground">(bruto iFood)</span>}
                 </label>
                 <CurrencyInput
                   placeholder="0,00"
@@ -826,7 +816,7 @@ export function ControleCartoesPage() {
               </div>
               {tab === 'credito' && tipoCredito === 'parcelado-prazo' && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Numero de parcelas <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -843,14 +833,14 @@ export function ControleCartoesPage() {
                     className={inputClass}
                     required
                   />
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     O comerciante recebe N parcelas a cada 30 dias.
                   </p>
                 </div>
               )}
               {tab === 'ifood' && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Valor recebido na loja (R$)
                   </label>
                   <CurrencyInput
@@ -859,7 +849,7 @@ export function ControleCartoesPage() {
                     onChange={(v) => setFormData({ ...formData, valorLoja: v })}
                     className={inputClass}
                   />
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     Valor pago em dinheiro/maquina na entrega (nao soma no a receber).
                   </p>
                 </div>
@@ -867,14 +857,14 @@ export function ControleCartoesPage() {
               {/* Prazo, taxa e data a receber sao calculados automaticamente pelo backend
                   a partir da configuracao de Taxas e Prazos (bandeira + tipo).
                   Para alterar, vá em "Taxas e prazos". */}
-              <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+              <p className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                 Taxa, prazo e data a receber serao calculados automaticamente
                 conforme a configuracao em <strong>Taxas e prazos</strong>.
               </p>
             </div>
             </DialogBody>
             <DialogFooter>
-              <button type="button" onClick={handleCloseDialog} className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-slate-100">
+              <button type="button" onClick={handleCloseDialog} className={BTN_CANCEL}>
                 Cancelar
               </button>
               <button type="submit" className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700">
@@ -922,7 +912,7 @@ export function ControleCartoesPage() {
               <div className="mt-2 space-y-4">
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       Padrao do sistema
                     </span>
                   </div>
@@ -932,11 +922,11 @@ export function ControleCartoesPage() {
                       return (
                         <div
                           key={m.id}
-                          className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
+                          className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2"
                         >
-                          <span className="text-sm text-slate-800">{m.label}</span>
+                          <span className="text-sm text-foreground">{m.label}</span>
                           <label className="flex cursor-pointer items-center gap-2">
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-muted-foreground">
                               {habilitada ? 'Habilitada' : 'Desabilitada'}
                             </span>
                             <input
@@ -956,7 +946,7 @@ export function ControleCartoesPage() {
                                   return next;
                                 });
                               }}
-                              className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                              className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
                             />
                           </label>
                         </div>
@@ -967,7 +957,7 @@ export function ControleCartoesPage() {
 
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       Suas customizadas
                     </span>
                     <button
@@ -989,7 +979,7 @@ export function ControleCartoesPage() {
                     </button>
                   </div>
                   {maquininhasCustom.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">
+                    <p className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-4 text-center text-xs text-muted-foreground">
                       Nenhuma maquininha customizada. Crie uma se a sua nao esta na lista padrao.
                     </p>
                   ) : (
@@ -999,11 +989,11 @@ export function ControleCartoesPage() {
                         return (
                           <div
                             key={m.id}
-                            className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
+                            className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2"
                           >
                             <div className="flex flex-col">
-                              <span className="text-sm font-medium text-slate-800">{m.label}</span>
-                              <span className="text-xs text-slate-500">
+                              <span className="text-sm font-medium text-foreground">{m.label}</span>
+                              <span className="text-xs text-muted-foreground">
                                 {m.tipos.length} forma(s) | {m.bandeirasCredito.length} bandeira(s) credito
                               </span>
                             </div>
@@ -1025,13 +1015,13 @@ export function ControleCartoesPage() {
                                     return next;
                                   });
                                 }}
-                                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
                                 title={habilitada ? 'Habilitada' : 'Habilitar'}
                               />
                               <button
                                 type="button"
                                 onClick={() => setEditingMaq({ ...m })}
-                                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                                 title="Editar"
                               >
                                 <Pencil className="h-4 w-4" />
@@ -1058,7 +1048,7 @@ export function ControleCartoesPage() {
                                   ).catch(() => {});
                                   toast.success('Maquininha excluida.');
                                 }}
-                                className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-red-600"
                                 title="Excluir"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1152,7 +1142,7 @@ function MaquininhaForm({
   return (
     <div className="mt-2 space-y-5">
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-slate-700">
+        <label className="text-sm font-medium text-foreground">
           Nome da maquininha <span className="text-red-500">*</span>
         </label>
         <input
@@ -1160,13 +1150,13 @@ function MaquininhaForm({
           value={value.label}
           onChange={(e) => onChange({ ...value, label: e.target.value })}
           placeholder="Ex.: Minha SumUp"
-          className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+          className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
           autoFocus
         />
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700">
+        <label className="text-sm font-medium text-foreground">
           Formas de pagamento aceitas <span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -1179,14 +1169,14 @@ function MaquininhaForm({
                   'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
                   ativo
                     ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                    : 'border-border bg-card text-foreground hover:bg-muted/40',
                 )}
               >
                 <input
                   type="checkbox"
                   checked={ativo}
                   onChange={() => onChange({ ...value, tipos: toggle(value.tipos, t.id) })}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
                 />
                 {t.label}
               </label>
@@ -1197,7 +1187,7 @@ function MaquininhaForm({
 
       {value.tipos.some((t) => ['a-vista', 'parcelado-vista', 'parcelado-prazo'].includes(t)) && (
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Bandeiras de credito aceitas</label>
+          <label className="text-sm font-medium text-foreground">Bandeiras de credito aceitas</label>
           <div className="flex flex-wrap gap-2">
             {bandeirasCredito.map((b) => {
               const ativo = value.bandeirasCredito.includes(b.id);
@@ -1212,7 +1202,7 @@ function MaquininhaForm({
                     'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
                     ativo
                       ? 'border-emerald-500 bg-emerald-100 text-emerald-800'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                      : 'border-border bg-card text-muted-foreground hover:bg-muted/40',
                   )}
                 >
                   {b.label}
@@ -1225,7 +1215,7 @@ function MaquininhaForm({
 
       {value.tipos.includes('debito') && (
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Bandeiras de debito aceitas</label>
+          <label className="text-sm font-medium text-foreground">Bandeiras de debito aceitas</label>
           <div className="flex flex-wrap gap-2">
             {bandeirasDebito.map((b) => {
               const ativo = value.bandeirasDebito.includes(b.id);
@@ -1240,7 +1230,7 @@ function MaquininhaForm({
                     'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
                     ativo
                       ? 'border-emerald-500 bg-emerald-100 text-emerald-800'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                      : 'border-border bg-card text-muted-foreground hover:bg-muted/40',
                   )}
                 >
                   {b.label}
@@ -1251,11 +1241,11 @@ function MaquininhaForm({
         </div>
       )}
 
-      <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
+      <div className="flex justify-end gap-2 border-t border-border pt-4">
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100"
+          className={BTN_CANCEL}
         >
           Cancelar
         </button>

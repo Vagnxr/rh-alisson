@@ -69,7 +69,7 @@ export function DespesaBancoGerenciarTiposDialog({
                   if (novoTipoLabel.trim()) handleAdd();
                 }
               }}
-              className="flex flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm uppercase placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              className="flex flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm uppercase placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               data-testid="despesa-categoria-tipo-input-nome"
             />
             <button
@@ -82,14 +82,14 @@ export function DespesaBancoGerenciarTiposDialog({
               Adicionar
             </button>
           </div>
-          <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2" data-testid="despesa-categoria-tipo-lista">
+          <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-border bg-muted/40 p-2" data-testid="despesa-categoria-tipo-lista">
             {tiposParaListar.length === 0 ? (
-              <li className="py-4 text-center text-sm text-slate-500">Nenhum tipo. Adicione acima.</li>
+              <li className="py-4 text-center text-sm text-muted-foreground">Nenhum tipo. Adicione acima.</li>
             ) : (
               tiposParaListar.map((t) => (
                 <li
                   key={t.id ?? t.label}
-                  className="flex items-center justify-between rounded bg-white px-3 py-2 text-sm text-slate-800"
+                  className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground"
                 >
                   <span>{t.label}</span>
                   {t.id ? (
@@ -116,7 +116,7 @@ export function DespesaBancoGerenciarTiposDialog({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/40"
               data-testid="despesa-categoria-tipo-cancelar"
             >
               Fechar

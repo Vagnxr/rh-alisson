@@ -13,6 +13,7 @@ import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components
 import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { cn } from '@/lib/cn';
+import { PAGE_TITLE, OPTION_SELECTED, OPTION_DEFAULT } from '@/lib/uiClasses';
 import { useRelatoriosStore } from '@/stores/relatoriosStore';
 import { useLojaStore } from '@/stores/lojaStore';
 
@@ -40,7 +41,7 @@ const RELATORIOS: RelatorioConfig[] = [
   { id: 'fluxo-caixa', titulo: 'Fluxo de Caixa', descricao: 'Entradas e saidas consolidadas', icon: BarChart3, cor: 'bg-purple-100 text-purple-600' },
   { id: 'por-tipo', titulo: 'Por Tipo de Despesa', descricao: 'Distribuicao por tipo de gasto', icon: PieChart, cor: 'bg-amber-100 text-amber-600' },
   { id: 'por-loja', titulo: 'Por Loja', descricao: 'Comparativo entre unidades', icon: Store, cor: 'bg-cyan-100 text-cyan-600' },
-  { id: 'comparativo', titulo: 'Comparativo Mensal', descricao: 'Comparacao mes a mes', icon: FileText, cor: 'bg-slate-100 text-slate-600' },
+  { id: 'comparativo', titulo: 'Comparativo Mensal', descricao: 'Comparacao mes a mes', icon: FileText, cor: 'bg-muted text-muted-foreground' },
 ];
 
 function formatCurrency(value: number) {
@@ -62,10 +63,10 @@ function BarraHorizontal({
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-sm">
-        <span className="text-slate-600">{label}</span>
-        <span className="font-medium text-slate-900">{formatCurrency(valor)}</span>
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium text-foreground">{formatCurrency(valor)}</span>
       </div>
-      <div className="h-3 w-full rounded-full bg-slate-100">
+      <div className="h-3 w-full rounded-full bg-muted">
         <div className={cn('h-3 rounded-full transition-all', cor)} style={{ width: `${percentual}%` }} />
       </div>
     </div>
@@ -82,7 +83,7 @@ function GraficoBarras({
   const max = dados.length ? Math.max(...dados.map((d) => Math.max(d.valor, d.valor2 || 0))) : 1;
   return (
     <div className="space-y-4">
-      <h4 className="text-sm font-medium text-slate-700">{titulo}</h4>
+      <h4 className="text-sm font-medium text-foreground">{titulo}</h4>
       <div className="flex h-48 items-end justify-between gap-2">
         {dados.map((item, i) => (
           <div key={i} className="flex flex-1 flex-col items-center gap-1">
@@ -100,18 +101,18 @@ function GraficoBarras({
                 />
               )}
             </div>
-            <span className="text-xs text-slate-500">{item.label}</span>
+            <span className="text-xs text-muted-foreground">{item.label}</span>
           </div>
         ))}
       </div>
       <div className="flex justify-center gap-4 text-xs">
         <div className="flex items-center gap-1">
           <div className="h-3 w-3 rounded bg-emerald-500" />
-          <span className="text-slate-600">Entradas</span>
+          <span className="text-muted-foreground">Entradas</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="h-3 w-3 rounded bg-red-400" />
-          <span className="text-slate-600">Saidas</span>
+          <span className="text-muted-foreground">Saidas</span>
         </div>
       </div>
     </div>
@@ -133,15 +134,15 @@ function RelatorioCard({
       onClick={onClick}
       className={cn(
         'flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all hover:shadow-md',
-        isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white hover:border-slate-300'
+        isSelected ? OPTION_SELECTED : cn(OPTION_DEFAULT, 'bg-card hover:shadow-md')
       )}
     >
       <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg', config.cor)}>
         <Icon className="h-5 w-5" />
       </div>
       <div className="flex-1">
-        <h3 className="font-medium text-slate-900">{config.titulo}</h3>
-        <p className="mt-0.5 text-xs text-slate-500">{config.descricao}</p>
+        <h3 className="font-medium text-foreground">{config.titulo}</h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">{config.descricao}</p>
       </div>
     </button>
   );
@@ -263,15 +264,15 @@ export function RelatoriosPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Relatorios</h1>
-          <p className="mt-1 text-sm text-slate-500">Analise detalhada dos dados financeiros</p>
+          <h1 className={PAGE_TITLE}>Relatorios</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Analise detalhada dos dados financeiros</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
           <select
             value={tipoFiltro}
             onChange={(e) => setTipoFiltro(e.target.value)}
-            className="h-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+            className="h-10 rounded-lg border border-border bg-card px-3 py-2 text-sm"
           >
             <option value="">Todos os Tipos</option>
             <option value="despesa-fixa">Despesa Fixa</option>
@@ -293,56 +294,56 @@ export function RelatoriosPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
               <TrendingDown className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Total Despesas</p>
-              <p className="text-lg font-bold text-slate-900">{formatCurrency(totalDespesas)}</p>
+              <p className="text-xs font-medium text-muted-foreground">Total Despesas</p>
+              <p className="text-lg font-bold text-foreground">{formatCurrency(totalDespesas)}</p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
               <TrendingUp className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Total Vendas</p>
-              <p className="text-lg font-bold text-slate-900">{formatCurrency(totalVendas)}</p>
+              <p className="text-xs font-medium text-muted-foreground">Total Vendas</p>
+              <p className="text-lg font-bold text-foreground">{formatCurrency(totalVendas)}</p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
               <DollarSign className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Lucro Liquido</p>
+              <p className="text-xs font-medium text-muted-foreground">Lucro Liquido</p>
               <p className={cn('text-lg font-bold', lucroTotal >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                 {formatCurrency(lucroTotal)}
               </p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
               <BarChart3 className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Margem</p>
-              <p className="text-lg font-bold text-slate-900">{margemPercentual.toFixed(1)}%</p>
+              <p className="text-xs font-medium text-muted-foreground">Margem</p>
+              <p className="text-lg font-bold text-foreground">{margemPercentual.toFixed(1)}%</p>
             </div>
           </div>
         </div>
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-medium text-slate-700">Selecione o Relatorio</h2>
+        <h2 className="mb-3 text-sm font-medium text-foreground">Selecione o Relatorio</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {RELATORIOS.slice(0, 4).map((config) => (
             <RelatorioCard
@@ -356,14 +357,14 @@ export function RelatoriosPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-6">
-          <h3 className="mb-4 text-sm font-semibold uppercase text-slate-900">
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h3 className="mb-4 text-sm font-semibold uppercase text-foreground">
             {RELATORIOS.find((r) => r.id === tipoRelatorio)?.titulo}
           </h3>
 
           {isLoading && !temDadosGrafico ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : tipoRelatorio === 'despesas' && despesasItens.length > 0 ? (
             <div className="space-y-4">
@@ -390,47 +391,47 @@ export function RelatoriosPage() {
           ) : tipoRelatorio === 'lucro' && lucroItens.length > 0 ? (
             <div className="space-y-4">
               {lucroItens.map((item, i) => (
-                <div key={i} className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <span className="text-sm text-slate-600">{item.mes}</span>
+                <div key={i} className="flex items-center justify-between border-b border-border pb-3">
+                  <span className="text-sm text-muted-foreground">{item.mes}</span>
                   <div className="text-right">
                     <p className={cn('font-medium', item.lucro >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                       {formatCurrency(item.lucro)}
                     </p>
-                    <p className="text-xs text-slate-500">{item.margemPercentual.toFixed(1)}% margem</p>
+                    <p className="text-xs text-muted-foreground">{item.margemPercentual.toFixed(1)}% margem</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (tipoRelatorio === 'por-tipo' || tipoRelatorio === 'por-loja' || tipoRelatorio === 'comparativo') ? (
-            <p className="text-sm text-slate-500">Relatorio em breve.</p>
+            <p className="text-sm text-muted-foreground">Relatorio em breve.</p>
           ) : (
-            <p className="text-sm text-slate-500">Nenhum dado no periodo.</p>
+            <p className="text-sm text-muted-foreground">Nenhum dado no periodo.</p>
           )}
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <div className="bg-slate-900 px-4 py-3">
-            <h3 className="text-sm font-semibold uppercase text-white">Detalhamento</h3>
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="bg-muted px-4 py-3">
+            <h3 className="text-sm font-semibold uppercase text-foreground">Detalhamento</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-100">
+              <thead className="bg-muted">
                 <tr>
                   {colunasExportacao.map((col) => (
                     <th
                       key={col.key}
-                      className="px-4 py-2 text-left text-xs font-medium uppercase text-slate-500"
+                      className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground"
                     >
                       {col.label}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border">
                 {dadosExportacao.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50">
+                  <tr key={i} className="hover:bg-muted/40">
                     {colunasExportacao.map((col) => (
-                      <td key={col.key} className="px-4 py-3 text-sm text-slate-700">
+                      <td key={col.key} className="px-4 py-3 text-sm text-foreground">
                         {(row as Record<string, string>)[col.key]}
                       </td>
                     ))}
@@ -440,7 +441,7 @@ export function RelatoriosPage() {
             </table>
           </div>
           {dadosExportacao.length === 0 && (
-            <div className="px-4 py-8 text-center text-sm text-slate-500">Nenhum dado para exibir</div>
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhum dado para exibir</div>
           )}
         </div>
       </div>

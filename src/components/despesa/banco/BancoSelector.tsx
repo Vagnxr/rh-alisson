@@ -11,10 +11,10 @@ interface BancoSelectorProps {
 export function BancoSelector({ value, onChange, bancos }: BancoSelectorProps) {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-slate-700">
-        Banco <span className="text-red-500">*</span>
+      <label className="text-sm font-medium text-foreground">
+        Banco <span className="text-destructive">*</span>
       </label>
-      <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
+      <div className="grid max-h-48 grid-cols-4 gap-2 overflow-y-auto p-1">
         {bancos.map((banco) => (
           <button
             key={banco.id}
@@ -23,12 +23,12 @@ export function BancoSelector({ value, onChange, bancos }: BancoSelectorProps) {
             className={cn(
               'flex flex-col items-center gap-1 rounded-lg border-2 p-2 transition-all hover:shadow-md',
               value === banco.id
-                ? 'border-emerald-500 bg-emerald-50'
-                : 'border-slate-200 bg-white hover:border-slate-300'
+                ? 'border-primary bg-primary/10 dark:bg-primary/15'
+                : 'border-border bg-card hover:border-primary/40',
             )}
           >
             <BancoLogo banco={banco} size="md" />
-            <span className="text-xs font-medium text-slate-700 text-center leading-tight">
+            <span className="text-center text-xs font-medium leading-tight text-foreground">
               {banco.nome.split(' ')[0]}
             </span>
           </button>

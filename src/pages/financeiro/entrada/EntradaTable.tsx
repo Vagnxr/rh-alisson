@@ -60,7 +60,7 @@ export function EntradaTable({
         accessorKey: 'modeloNota',
         header: 'Modelo',
         cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.modeloNota ?? '-'}</span>
+          <span className="text-muted-foreground">{row.original.modeloNota ?? '-'}</span>
         ),
       },
       cnpjCpf: {
@@ -68,14 +68,14 @@ export function EntradaTable({
         id: 'cnpjCpf',
         header: 'CNPJ/CPF',
         cell: ({ row }) => (
-          <span className="text-slate-600">{formatCnpjCpf(row.original.cnpjCpf) ?? '-'}</span>
+          <span className="text-muted-foreground">{formatCnpjCpf(row.original.cnpjCpf) ?? '-'}</span>
         ),
       },
       fornecedor: {
         accessorKey: 'fornecedor',
         header: 'Fornecedor',
         cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.fornecedor ?? '-'}</span>
+          <span className="text-muted-foreground">{row.original.fornecedor ?? '-'}</span>
         ),
       },
       data: {
@@ -103,7 +103,7 @@ export function EntradaTable({
         accessorKey: 'numeroNota',
         header: 'Nº nota',
         cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.numeroNota ?? '-'}</span>
+          <span className="text-muted-foreground">{row.original.numeroNota ?? '-'}</span>
         ),
       },
       valor: {
@@ -122,7 +122,7 @@ export function EntradaTable({
           const labels = valores.map(v => v.categoriaNome ?? v.categoriaId);
           return (
             <span
-              className="text-slate-600"
+              className="text-muted-foreground"
               title={valores.map(v => `${v.categoriaNome ?? v.categoriaId}: ${v.valor}`).join(', ')}
             >
               {labels.join(', ')}
@@ -134,7 +134,7 @@ export function EntradaTable({
         accessorKey: 'formaPagamento',
         header: 'Forma pag.',
         cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.formaPagamento ?? '-'}</span>
+          <span className="text-muted-foreground">{row.original.formaPagamento ?? '-'}</span>
         ),
       },
     }),
@@ -151,7 +151,7 @@ export function EntradaTable({
             <button
               type="button"
               onClick={() => onEdit(row.original)}
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
               title="Editar"
             >
               <Pencil className="h-4 w-4" />
@@ -161,7 +161,7 @@ export function EntradaTable({
             <button
               type="button"
               onClick={() => onDelete(row.original)}
-              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+              className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
               title="Excluir"
             >
               <Trash2 className="h-4 w-4" />
@@ -194,21 +194,21 @@ export function EntradaTable({
   });
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <table className="w-full min-w-[800px]">
-            <thead className="border-b border-slate-200 bg-slate-50">
+            <thead className="border-b border-border bg-muted/40">
               {table.getHeaderGroups().map(hg => (
                 <tr key={hg.id}>
                   {hg.headers.map(header => (
                     <th
                       key={header.id}
-                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700"
+                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground"
                     >
                       {header.isPlaceholder
                         ? null
@@ -218,23 +218,23 @@ export function EntradaTable({
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-border">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
                   <td
                     colSpan={columns.length}
-                    className="px-6 py-12 text-center text-sm text-slate-500"
+                    className="px-6 py-12 text-center text-sm text-muted-foreground"
                   >
                     <p>Nenhum registro no periodo.</p>
                   </td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map(row => (
-                  <tr key={row.id} className="hover:bg-slate-50">
+                  <tr key={row.id} className="hover:bg-muted/40">
                     {row.getVisibleCells().map(cell => (
                       <td
                         key={cell.id}
-                        className="whitespace-nowrap px-4 py-3 text-sm text-slate-600"
+                        className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground"
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>

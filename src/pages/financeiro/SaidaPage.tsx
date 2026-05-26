@@ -27,6 +27,7 @@ import type { SaidaRow, SaidaFormaPagamento } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR } from '@/lib/date';
 import { DateInput } from '@/components/ui/date-input';
+import { INPUT_CLASS, PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL } from '@/lib/uiClasses';
 import { maskCPF, maskCNPJ, onlyNumbers } from '@/lib/masks';
 
 /** Formata CNPJ (14 digitos) ou CPF (11 digitos) com a mascara visual padrao. */
@@ -47,8 +48,7 @@ function parseNum(v: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-const inputClass =
-  'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+const inputClass = INPUT_CLASS;
 
 const CAMPOS_NUMERICOS_ORDEM = [
   'industrializacao',
@@ -217,7 +217,7 @@ export function SaidaPage() {
         header: 'MODELO',
         cell: ({ row }) => {
           const val = row.original.modeloNota ?? '';
-          return <span className="text-slate-600">{val || '-'}</span>;
+          return <span className="text-muted-foreground">{val || '-'}</span>;
         },
       },
       numeroNota: {
@@ -225,7 +225,7 @@ export function SaidaPage() {
         header: 'Nº DA NOTA',
         cell: ({ row }) => {
           const val = row.original.numeroNota ?? '';
-          return <span className="text-slate-600">{val || '-'}</span>;
+          return <span className="text-muted-foreground">{val || '-'}</span>;
         },
       },
       cnpjCpf: {
@@ -233,7 +233,7 @@ export function SaidaPage() {
         header: 'CNPJ/CPF',
         cell: ({ row }) => {
           const val = row.original.cnpjCpf ?? '';
-          return <span className="text-slate-600">{formatCnpjCpf(val)}</span>;
+          return <span className="text-muted-foreground">{formatCnpjCpf(val)}</span>;
         },
       },
       fornecedor: {
@@ -241,7 +241,7 @@ export function SaidaPage() {
         header: 'FORNECEDOR',
         cell: ({ row }) => {
           const val = row.original.fornecedor ?? '';
-          return <span className="text-slate-600">{val || '-'}</span>;
+          return <span className="text-muted-foreground">{val || '-'}</span>;
         },
       },
       dataEntrada: {
@@ -249,7 +249,7 @@ export function SaidaPage() {
         header: 'DATA ENTRADA',
         cell: ({ row }) => {
           const val = row.original.dataEntrada ?? '';
-          return <span className="text-slate-600">{formatDateStringToBR(val) || '-'}</span>;
+          return <span className="text-muted-foreground">{formatDateStringToBR(val) || '-'}</span>;
         },
       },
       formaPagamento: {
@@ -257,7 +257,7 @@ export function SaidaPage() {
         header: 'FORMA DE PAGTO',
         cell: ({ row }) => {
           const val = row.original.formaPagamento ?? '';
-          return <span className="text-slate-600">{val || '-'}</span>;
+          return <span className="text-muted-foreground">{val || '-'}</span>;
         },
       },
       industrializacao: {
@@ -332,8 +332,8 @@ export function SaidaPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Saida</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className={PAGE_TITLE}>Saida</h1>
+          <p className={PAGE_SUBTITLE}>
             Preenchido automaticamente conforme entrada.
           </p>
         </div>
@@ -386,21 +386,21 @@ export function SaidaPage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <table className="w-full min-w-[800px]">
-              <thead className="border-b border-slate-200 bg-slate-50">
+              <thead className="border-b border-border bg-muted/40">
                 {table.getHeaderGroups().map((hg) => (
                   <tr key={hg.id}>
                     {hg.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="px-4 py-3 text-left text-xs font-bold tracking-wider text-slate-700 uppercase"
+                        className="px-4 py-3 text-left text-xs font-bold tracking-wider text-foreground uppercase"
                       >
                         {header.isPlaceholder
                           ? null
@@ -410,23 +410,23 @@ export function SaidaPage() {
                   </tr>
                 ))}
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-border">
                 {table.getRowModel().rows.length === 0 ? (
                   <tr>
                     <td
                       colSpan={columns.length}
-                      className="px-6 py-12 text-center text-sm text-slate-500"
+                      className="px-6 py-12 text-center text-sm text-muted-foreground"
                     >
                       <p>Nenhum registro no periodo.</p>
                     </td>
                   </tr>
                 ) : (
                   table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-slate-50">
+                    <tr key={row.id} className="hover:bg-muted/40">
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
-                          className="px-4 py-3 text-sm whitespace-nowrap text-slate-600"
+                          className="px-4 py-3 text-sm whitespace-nowrap text-muted-foreground"
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
@@ -456,7 +456,7 @@ export function SaidaPage() {
             <DialogBody>
               <div className="mt-4 mb-4 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Data pagamento</label>
+                  <label className="text-sm font-medium text-foreground">Data pagamento</label>
                   <DateInput
                     value={formData.data}
                     onChange={(v) => setFormData({ ...formData, data: v })}
@@ -465,7 +465,7 @@ export function SaidaPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Forma de pagamento</label>
+                  <label className="text-sm font-medium text-foreground">Forma de pagamento</label>
                   <select
                     value={formData.formaPagamento}
                     onChange={(e) =>
@@ -483,12 +483,12 @@ export function SaidaPage() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     Apenas boleto ou cartao sobem para saida.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Fornecedor</label>
+                  <label className="text-sm font-medium text-foreground">Fornecedor</label>
                   <input
                     type="text"
                     value={formData.fornecedor}
@@ -498,7 +498,7 @@ export function SaidaPage() {
                 </div>
                 {CAMPOS_NUMERICOS_ORDEM.map((key) => (
                   <div key={key} className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">
+                    <label className="text-sm font-medium text-foreground">
                       {LABEL_CAMPO[key] ?? `${key.charAt(0).toUpperCase() + key.slice(1)}`} (R$)
                     </label>
                     <input
@@ -517,7 +517,7 @@ export function SaidaPage() {
               <button
                 type="button"
                 onClick={handleCloseDialog}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100"
+                className={BTN_CANCEL}
               >
                 Cancelar
               </button>

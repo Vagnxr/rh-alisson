@@ -84,7 +84,15 @@ function resolveIcon(iconName: string): React.ElementType {
 }
 
 /** Grupos da sidebar (categorias visuais). */
-type SidebarGroup = 'Inicio' | 'Financeiro' | 'Vendas' | 'Compras' | 'Operacional' | 'Analise' | 'Cadastros' | 'Sistema';
+type SidebarGroup =
+  | 'Inicio'
+  | 'Financeiro'
+  | 'Cartões'
+  | 'Compras'
+  | 'Operacional'
+  | 'Analise'
+  | 'Cadastros'
+  | 'Sistema';
 
 /** Configuracao de tema por modulo (grupo + cores Tailwind para icone). */
 interface ModuleTheme {
@@ -157,7 +165,7 @@ const MODULE_THEME: Record<string, ModuleTheme> = {
 
   // Vendas
   'controle-cartoes': {
-    group: 'Vendas',
+    group: 'Cartões',
     bgColor: 'bg-purple-50',
     iconColor: 'text-purple-600',
     activeBg: 'bg-purple-50',
@@ -292,7 +300,7 @@ const MODULE_THEME: Record<string, ModuleTheme> = {
 const GROUP_ORDER: SidebarGroup[] = [
   'Inicio',
   'Financeiro',
-  'Vendas',
+  'Cartões',
   'Compras',
   'Operacional',
   'Analise',
@@ -307,10 +315,69 @@ function getTheme(permissionId: string): ModuleTheme {
   return MODULE_THEME[permissionId] ?? DEFAULT_THEME;
 }
 
+/** Icone legivel no dark mode (pares com iconColor do MODULE_THEME). */
+const ICON_COLOR_DARK: Record<string, string> = {
+  'text-slate-600': 'dark:text-slate-400',
+  'text-slate-500': 'dark:text-slate-400',
+  'text-indigo-600': 'dark:text-indigo-400',
+  'text-blue-600': 'dark:text-blue-400',
+  'text-amber-600': 'dark:text-amber-400',
+  'text-amber-700': 'dark:text-amber-400',
+  'text-violet-600': 'dark:text-violet-400',
+  'text-purple-600': 'dark:text-purple-400',
+  'text-sky-600': 'dark:text-sky-400',
+  'text-rose-600': 'dark:text-rose-400',
+  'text-teal-600': 'dark:text-teal-400',
+  'text-orange-600': 'dark:text-orange-400',
+  'text-red-600': 'dark:text-red-400',
+  'text-fuchsia-600': 'dark:text-fuchsia-400',
+  'text-emerald-600': 'dark:text-emerald-400',
+  'text-yellow-600': 'dark:text-yellow-400',
+  'text-green-600': 'dark:text-green-400',
+  'text-cyan-600': 'dark:text-cyan-400',
+  'text-pink-600': 'dark:text-pink-400',
+};
+
+/** Estado ativo/inativo do item — pastéis no light, tokens no dark. */
+const sidebarLinkActive = (theme: ModuleTheme) =>
+  cn(theme.activeBg, theme.activeText, 'font-semibold dark:bg-accent dark:text-foreground');
+
+const sidebarLinkInactive = 'text-foreground hover:bg-muted/50';
+
+const sidebarSubLinkActive = (theme: ModuleTheme) =>
+  cn(theme.activeBg, theme.activeText, 'font-semibold dark:bg-accent dark:text-foreground');
+
+const sidebarSubLinkInactive =
+  'text-muted-foreground hover:bg-muted/50 hover:text-foreground';
+
 /** Palavras de ligacao (2+ letras) que ficam em minusculo no titulo. */
 const TITLE_CASE_SKIP = new Set([
-  'de', 'da', 'do', 'das', 'dos', 'e', 'a', 'o', 'em', 'no', 'na', 'nos', 'nas',
-  'ao', 'aos', 'à', 'às', 'um', 'uma', 'para', 'por', 'com', 'que', 'se', 'ou', 'mas',
+  'de',
+  'da',
+  'do',
+  'das',
+  'dos',
+  'e',
+  'a',
+  'o',
+  'em',
+  'no',
+  'na',
+  'nos',
+  'nas',
+  'ao',
+  'aos',
+  'à',
+  'às',
+  'um',
+  'uma',
+  'para',
+  'por',
+  'com',
+  'que',
+  'se',
+  'ou',
+  'mas',
 ]);
 
 /**
@@ -322,7 +389,7 @@ function formatSidebarLabel(text: string): string {
   return text
     .trim()
     .split(/\s+/)
-    .map((word) => {
+    .map(word => {
       const lower = word.toLowerCase();
       if (word.length === 1) return lower;
       if (TITLE_CASE_SKIP.has(lower)) return lower;
@@ -333,12 +400,12 @@ function formatSidebarLabel(text: string): string {
 
 /** Converte menu da API (icon como string) em itens com icon como componente. */
 function mapMenuFromApi(menu: MenuItemFromApi[]): MenuItem[] {
-  return menu.map((item) => ({
+  return menu.map(item => ({
     label: formatSidebarLabel(item.label ?? ''),
     icon: resolveIcon(item.icon),
     href: item.href,
     permissionId: item.permissionId,
-    subItems: item.subItems?.map((sub) => ({
+    subItems: item.subItems?.map(sub => ({
       ...sub,
       label: formatSidebarLabel(sub.label ?? ''),
     })),
@@ -376,9 +443,16 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
       className={cn(
         'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
         active ? theme.activeBg : theme.bgColor,
+        active ? 'dark:bg-primary/15' : 'dark:bg-muted',
       )}
     >
-      <item.icon className={cn('h-[18px] w-[18px]', theme.iconColor)} />
+      <item.icon
+        className={cn(
+          'h-[18px] w-[18px]',
+          theme.iconColor,
+          ICON_COLOR_DARK[theme.iconColor],
+        )}
+      />
     </span>
   );
 
@@ -390,7 +464,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
           {/* Barra lateral colorida quando ativo */}
           <span
             className={cn(
-              'absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full transition-opacity',
+              'absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-opacity',
               isSubItemActive ? `${theme.activeBar} opacity-100` : 'opacity-0',
             )}
             aria-hidden
@@ -402,10 +476,10 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
                 onClick={() => close()}
                 className={({ isActive }) =>
                   cn(
-                    'flex flex-1 min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-left transition-all duration-150',
+                    'flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 text-left transition-all duration-150',
                     isActive || isSubItemActive
-                      ? `${theme.activeBg} ${theme.activeText} font-semibold`
-                      : 'text-slate-700 hover:bg-slate-50',
+                      ? sidebarLinkActive(theme)
+                      : sidebarLinkInactive,
                     isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
                   )
                 }
@@ -416,11 +490,16 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
               </NavLink>
               <button
                 type="button"
-                onClick={(e) => { e.preventDefault(); isExpanded && toggleSubmenu(item.label); }}
+                onClick={e => {
+                  e.preventDefault();
+                  isExpanded && toggleSubmenu(item.label);
+                }}
                 aria-label={isOpen ? 'Fechar submenu' : 'Abrir submenu'}
                 className={cn(
                   'flex shrink-0 items-center justify-center rounded-lg p-2 transition-all duration-150',
-                  isSubItemActive ? theme.activeText : 'text-slate-500 hover:bg-slate-100',
+                  isSubItemActive
+                    ? cn(theme.activeText, 'dark:text-foreground')
+                    : 'text-muted-foreground hover:bg-muted',
                   isOpen && 'rotate-180',
                   isExpanded ? 'opacity-100' : 'opacity-0 lg:hidden',
                 )}
@@ -435,9 +514,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
               title={!isExpanded ? item.label : undefined}
               className={cn(
                 'flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-colors duration-150',
-                isSubItemActive
-                  ? `${theme.activeBg} ${theme.activeText} font-semibold`
-                  : 'text-slate-700 hover:bg-slate-50',
+                isSubItemActive ? sidebarLinkActive(theme) : sidebarLinkInactive,
               )}
             >
               <IconChip active={isSubItemActive} />
@@ -466,7 +543,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
             isExpanded && isOpen ? 'max-h-[50vh] opacity-100' : 'max-h-0 overflow-hidden opacity-0',
           )}
         >
-          <ul className="mt-1 ml-10 max-h-[calc(50vh-1rem)] space-y-0.5 overflow-y-auto border-l-2 border-slate-200 pl-3">
+          <ul className="mt-1 ml-10 max-h-[calc(50vh-1rem)] space-y-0.5 overflow-y-auto border-l-2 border-border pl-3">
             {item.subItems.map(subItem => (
               <li key={subItem.href}>
                 <NavLink
@@ -475,9 +552,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
                   className={({ isActive }) =>
                     cn(
                       'block rounded-lg px-3 py-1.5 text-sm transition-colors',
-                      isActive
-                        ? `${theme.activeBg} ${theme.activeText} font-semibold`
-                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
+                      isActive ? sidebarSubLinkActive(theme) : sidebarSubLinkInactive,
                     )
                   }
                 >
@@ -489,9 +564,9 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
         </div>
 
         {!isExpanded && (
-          <div className="absolute top-0 left-full z-50 ml-2 hidden max-h-[70vh] min-w-48 flex-col rounded-lg border border-slate-200 bg-white shadow-lg group-hover:flex">
-            <div className="shrink-0 border-b border-slate-100 px-3 py-2">
-              <span className="text-sm font-semibold text-slate-900">{item.label}</span>
+          <div className="absolute top-0 left-full z-50 ml-2 hidden max-h-[70vh] min-w-48 flex-col overflow-hidden rounded-lg border border-border bg-background shadow-lg group-hover:flex">
+            <div className="shrink-0 border-b border-border px-3 py-2">
+              <span className="text-sm font-semibold text-foreground">{item.label}</span>
             </div>
             <div className="flex-1 overflow-y-auto py-2">
               {item.subItems.map(subItem => (
@@ -502,9 +577,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
                   className={({ isActive }) =>
                     cn(
                       'block px-3 py-1.5 text-sm transition-colors',
-                      isActive
-                        ? `${theme.activeBg} ${theme.activeText} font-semibold`
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                      isActive ? sidebarSubLinkActive(theme) : sidebarSubLinkInactive,
                     )
                   }
                 >
@@ -524,7 +597,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
       {/* Barra lateral colorida quando ativo */}
       <span
         className={cn(
-          'absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full transition-opacity',
+          'absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-r-full transition-opacity',
           isActive ? `${theme.activeBar} opacity-100` : 'opacity-0',
         )}
         aria-hidden
@@ -535,9 +608,7 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
         title={!isExpanded ? item.label : undefined}
         className={cn(
           'flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-all duration-150',
-          isActive
-            ? `${theme.activeBg} ${theme.activeText} font-semibold`
-            : 'text-slate-700 hover:bg-slate-50',
+          isActive ? sidebarLinkActive(theme) : sidebarLinkInactive,
         )}
       >
         <IconChip active={isActive} />
@@ -552,9 +623,9 @@ function MenuItemComponent({ item, isExpanded }: { item: MenuItem; isExpanded: b
       </NavLink>
 
       {!isExpanded && (
-        <div className="absolute top-1/2 left-full z-50 ml-2 hidden -translate-y-1/2 rounded-md bg-slate-900 px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white shadow-lg group-hover:block">
+        <div className="absolute top-1/2 left-full z-50 ml-2 hidden -translate-y-1/2 rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-popover-foreground shadow-lg group-hover:block">
           {item.label}
-          <div className="absolute top-1/2 -left-1 h-2 w-2 -translate-y-1/2 rotate-45 bg-slate-900" />
+          <div className="absolute top-1/2 -left-1 h-2 w-2 -translate-y-1/2 rotate-45 border-b border-l border-border bg-popover" />
         </div>
       )}
     </li>
@@ -590,8 +661,7 @@ export function Sidebar() {
       list.push(item);
       map.set(group, list);
     }
-    return Array.from(map.entries())
-      .filter(([, list]) => list.length > 0);
+    return Array.from(map.entries()).filter(([, list]) => list.length > 0);
   }, [menuItems]);
 
   // Fechar sidebar no mobile ao trocar de rota (evita ficar fixa/aberta)
@@ -621,7 +691,7 @@ export function Sidebar() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white',
+          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-background',
           'transition-all duration-300 ease-out',
           isOpen ? 'translate-x-0' : '-translate-x-full',
           'lg:static lg:translate-x-0',
@@ -630,11 +700,13 @@ export function Sidebar() {
         )}
       >
         {/* Header: logo clicavel -> tela em branco (privacidade) ou voltar ao dashboard */}
-        <div className="flex h-16 items-center border-b border-slate-200 px-3">
+        <div className="flex h-16 items-center border-b border-border px-3">
           <Link
             to={location.pathname === '/tela-branca' ? '/dashboard' : '/tela-branca'}
             title={location.pathname === '/tela-branca' ? 'Voltar' : 'Tela em branco (privacidade)'}
-            className={cn('flex shrink-0 items-center justify-around overflow-hidden rounded-lg transition-opacity hover:opacity-90')}
+            className={cn(
+              'flex shrink-0 items-center justify-around overflow-hidden rounded-lg transition-opacity hover:opacity-90',
+            )}
           >
             {isExpanded ? (
               <img
@@ -661,8 +733,8 @@ export function Sidebar() {
             className={cn(
               'ml-auto hidden rounded-lg p-1.5 transition-all lg:block',
               isPinned
-                ? 'text-emerald-600 hover:bg-emerald-50'
-                : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600',
+                ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
               isExpanded ? 'opacity-100' : 'w-0 overflow-hidden opacity-0',
             )}
           >
@@ -672,7 +744,7 @@ export function Sidebar() {
           {/* Botao Fechar (mobile) */}
           <button
             onClick={close}
-            className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 lg:hidden"
+            className="ml-auto rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
           >
             <X className="h-5 w-5" />
           </button>
@@ -686,21 +758,17 @@ export function Sidebar() {
                 <div
                   className={cn(
                     'flex items-center px-3 transition-all duration-150',
-                    isExpanded ? 'opacity-100' : 'lg:opacity-0 lg:h-0 lg:overflow-hidden',
+                    isExpanded ? 'opacity-100' : 'lg:h-0 lg:overflow-hidden lg:opacity-0',
                   )}
                 >
-                  <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400">
+                  <span className="text-[10px] font-bold tracking-[0.08em] text-muted-foreground uppercase">
                     {group}
                   </span>
                 </div>
               )}
               <ul className="space-y-0.5">
                 {items.map(item => (
-                  <MenuItemComponent
-                    key={item.permissionId}
-                    item={item}
-                    isExpanded={isExpanded}
-                  />
+                  <MenuItemComponent key={item.permissionId} item={item} isExpanded={isExpanded} />
                 ))}
               </ul>
             </div>
@@ -708,10 +776,10 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-slate-200 p-3">
+        <div className="border-t border-border p-3">
           <p
             className={cn(
-              'text-center text-xs whitespace-nowrap text-slate-400 transition-opacity duration-150',
+              'text-center text-xs whitespace-nowrap text-muted-foreground transition-opacity duration-150',
               isExpanded ? 'opacity-100' : 'w-0 overflow-hidden opacity-0',
             )}
           >

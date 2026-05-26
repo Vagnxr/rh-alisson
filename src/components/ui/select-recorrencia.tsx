@@ -24,7 +24,7 @@ export function SelectRecorrencia({
   return (
     <div className={cn('space-y-1.5', className)}>
       {label && (
-        <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+        <label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
           <Repeat className="h-4 w-4" />
           {label}
         </label>
@@ -35,9 +35,9 @@ export function SelectRecorrencia({
         onChange={(e) => onChange?.(e.target.value as TipoRecorrencia)}
         disabled={disabled}
         className={cn(
-          'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900',
-          'focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500',
-          'disabled:bg-slate-50 disabled:text-slate-500'
+          'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground',
+          'focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring',
+          'disabled:bg-muted disabled:text-muted-foreground'
         )}
       >
         {Object.values(RECORRENCIAS).map((config) => (
@@ -48,7 +48,7 @@ export function SelectRecorrencia({
       </select>
 
       {showDescription && selectedConfig && (
-        <p className="flex items-center gap-1.5 text-xs text-slate-500">
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <CalendarClock className="h-3.5 w-3.5" />
           {selectedConfig.descricao}
         </p>
@@ -73,7 +73,7 @@ export function RecorrenciaBadge({ value, className }: RecorrenciaBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700',
+        'inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
         className
       )}
     >

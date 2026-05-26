@@ -8,7 +8,7 @@ interface BancoBadgeProps {
 
 export function BancoBadge({ bancoId, bancos }: BancoBadgeProps) {
   const banco = bancos.find((b) => b.id === bancoId);
-  if (!banco) return <span className="text-slate-400">-</span>;
+  if (!banco) return <span className="text-muted-foreground">-</span>;
 
   return (
     <div className="flex items-center gap-2">

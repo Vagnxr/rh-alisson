@@ -38,6 +38,7 @@ import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { DataValorList, type DataValorItem } from '@/components/ui/data-valor-list';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { DateInput } from '@/components/ui/date-input';
+import { INPUT_CLASS, PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL, ICON_BTN_DANGER } from '@/lib/uiClasses';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -47,8 +48,7 @@ function toCentavos(value: number) {
   return Math.round(value * 100);
 }
 
-const inputClass =
-  'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+const inputClass = INPUT_CLASS;
 
 export function AtivoImobilizadoPage() {
   const [sorting1, setSorting1] = useState<SortingState>([]);
@@ -386,7 +386,7 @@ export function AtivoImobilizadoPage() {
         accessorKey: 'valor',
         header: 'Valor',
         cell: ({ row }) => (
-          <span className="font-medium text-slate-900">
+          <span className="font-medium text-foreground">
             {formatCurrency(row.getValue('valor'))}
           </span>
         ),
@@ -396,7 +396,7 @@ export function AtivoImobilizadoPage() {
         header: 'Parcela',
         cell: ({ row }) => {
           const indice = row.original.recorrenciaIndice;
-          return indice ? <span className="text-slate-600">{indice}</span> : null;
+          return indice ? <span className="text-muted-foreground">{indice}</span> : null;
         },
       },
       {
@@ -406,7 +406,7 @@ export function AtivoImobilizadoPage() {
           <div className="flex items-center justify-end gap-1">
             <button
               type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
               title="Editar"
               onClick={() => handleOpenDialogEntrada(row.original)}
             >
@@ -414,7 +414,7 @@ export function AtivoImobilizadoPage() {
             </button>
             <button
               type="button"
-              className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+              className={ICON_BTN_DANGER}
               title="Excluir"
               onClick={() => setDeleteEntradaId(row.original.id)}
             >
@@ -448,7 +448,7 @@ export function AtivoImobilizadoPage() {
         accessorKey: 'valor',
         header: 'Valor',
         cell: ({ row }) => (
-          <span className="font-medium text-slate-900">
+          <span className="font-medium text-foreground">
             {formatCurrency(row.getValue('valor'))}
           </span>
         ),
@@ -458,7 +458,7 @@ export function AtivoImobilizadoPage() {
         header: 'Parcela',
         cell: ({ row }) => {
           const indice = row.original.recorrenciaIndice;
-          return indice ? <span className="text-slate-600">{indice}</span> : null;
+          return indice ? <span className="text-muted-foreground">{indice}</span> : null;
         },
       },
     ],
@@ -495,13 +495,13 @@ export function AtivoImobilizadoPage() {
     return (
       <div className="overflow-x-auto">
         <table className="w-full min-w-[500px]">
-          <thead className="border-b border-slate-200 bg-slate-50">
+          <thead className="border-b border-border bg-muted/40">
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
                 {hg.headers.map(header => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-xs font-bold tracking-wider text-slate-700 uppercase"
+                    className="px-4 py-3 text-left text-xs font-bold tracking-wider text-foreground uppercase"
                   >
                     {header.isPlaceholder
                       ? null
@@ -511,20 +511,20 @@ export function AtivoImobilizadoPage() {
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-border">
             {table.getRowModel().rows.length === 0 ? (
               <tr>
-                <td colSpan={colCount} className="px-6 py-8 text-center text-sm text-slate-500">
+                <td colSpan={colCount} className="px-6 py-8 text-center text-sm text-muted-foreground">
                   Nenhum registro
                 </td>
               </tr>
             ) : (
               table.getRowModel().rows.map(row => (
-                <tr key={row.id} className="hover:bg-slate-50">
+                <tr key={row.id} className="hover:bg-muted/40">
                   {row.getVisibleCells().map(cell => (
                     <td
                       key={cell.id}
-                      className="px-4 py-3 text-sm whitespace-nowrap text-slate-600"
+                      className="px-4 py-3 text-sm whitespace-nowrap text-muted-foreground"
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
@@ -534,15 +534,15 @@ export function AtivoImobilizadoPage() {
             )}
           </tbody>
           {hasRows && (
-            <tfoot className="border-t border-slate-200 bg-slate-50">
+            <tfoot className="border-t border-border bg-muted/40">
               <tr>
                 <td
                   colSpan={colCount - 2}
-                  className="px-4 py-3 text-right text-sm font-medium text-slate-900"
+                  className="px-4 py-3 text-right text-sm font-medium text-foreground"
                 >
                   Total:
                 </td>
-                <td className="px-4 py-3 text-sm font-bold text-slate-900">
+                <td className="px-4 py-3 text-sm font-bold text-foreground">
                   {formatCurrency(total)}
                 </td>
                 <td></td>
@@ -558,8 +558,8 @@ export function AtivoImobilizadoPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Ativo Imobilizado</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className={PAGE_TITLE}>Ativo Imobilizado</h1>
+          <p className={PAGE_SUBTITLE}>
             Entrada e saida: data, N.F., descricao/fornecedor e valor
           </p>
         </div>
@@ -569,9 +569,9 @@ export function AtivoImobilizadoPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2">
-            <h2 className="text-sm font-semibold text-slate-800">Ativo Imobilizado - Entrada</h2>
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted px-4 py-2">
+            <h2 className="text-sm font-semibold text-foreground">Ativo Imobilizado - Entrada</h2>
             <div className="flex items-center gap-2">
               <ExportButtons
                 data={entradas.map(r => ({
@@ -601,17 +601,17 @@ export function AtivoImobilizadoPage() {
           </div>
           {loading1 ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
             renderTable(tableEntrada, totalEntrada, entradas.length > 0, columnsWithActions.length)
           )}
         </div>
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2">
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted px-4 py-2">
             <div>
-              <h2 className="text-sm font-semibold text-slate-800">Ativo Imobilizado - Saida</h2>
-              <p className="mt-0.5 text-xs text-slate-500">
+              <h2 className="text-sm font-semibold text-foreground">Ativo Imobilizado - Saida</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Preenchido automaticamente conforme Entrada e pagamentos na Agenda.
               </p>
             </div>
@@ -634,7 +634,7 @@ export function AtivoImobilizadoPage() {
           </div>
           {loading2 ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
             renderTable(tableSaida, totalSaida, saidas.length > 0, columnsSaida.length)
@@ -656,7 +656,7 @@ export function AtivoImobilizadoPage() {
             <DialogBody>
               <div className="mt-4 mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Data <span className="text-red-500">*</span>
                   </label>
                   <DateInput
@@ -670,7 +670,7 @@ export function AtivoImobilizadoPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Numero da nota <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -682,7 +682,7 @@ export function AtivoImobilizadoPage() {
                   />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Descricao <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -700,7 +700,7 @@ export function AtivoImobilizadoPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Valor (R$) <span className="text-red-500">*</span>
                   </label>
                   <CurrencyInput
@@ -715,7 +715,7 @@ export function AtivoImobilizadoPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Forma de pagamento <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -804,7 +804,7 @@ export function AtivoImobilizadoPage() {
                         }}
                       />
                       <p
-                        className={`text-xs ${exibirErroBoletoTempoReal ? 'text-red-600 font-medium' : 'text-slate-500'}`}
+                        className={`text-xs ${exibirErroBoletoTempoReal ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}
                       >
                         {exibirErroBoletoTempoReal ? 'Ajuste: ' : ''}
                         Total parcelas: {formatCurrency(somaParcelasBoleto)}
@@ -822,7 +822,7 @@ export function AtivoImobilizadoPage() {
               <button
                 type="button"
                 onClick={() => setDialogEntrada(false)}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100"
+                className={BTN_CANCEL}
               >
                 Cancelar
               </button>

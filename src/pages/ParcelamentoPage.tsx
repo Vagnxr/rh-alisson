@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { DateInput } from '@/components/ui/date-input';
+import { PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL, ICON_BTN_DANGER } from '@/lib/uiClasses';
 
 const PARCELAMENTO_TABLE_DEFAULT_ORDER = ['data', 'descricao', 'parcela', 'valor', 'comunicarAgenda'];
 
@@ -243,7 +244,7 @@ export function ParcelamentoPage() {
           </button>
         ),
         cell: ({ row }) => (
-          <span className="font-medium text-slate-900">
+          <span className="font-medium text-foreground">
             {formatCurrency(row.getValue('valor'))}
           </span>
         ),
@@ -256,7 +257,7 @@ export function ParcelamentoPage() {
           return (
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                v ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                v ? 'bg-emerald-50 text-emerald-700' : 'bg-muted text-muted-foreground'
               }`}
             >
               {v ? 'SIM' : 'NAO'}
@@ -280,14 +281,14 @@ export function ParcelamentoPage() {
           cell: ({ row }) => (
             <div className="flex items-center justify-end gap-1">
               <button
-                className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                 title="Editar"
                 onClick={() => handleOpenDialog(row.original)}
               >
                 <Pencil className="h-4 w-4" />
               </button>
               <button
-                className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                className={ICON_BTN_DANGER}
                 title="Excluir"
                 onClick={() => setDeleteItemId(row.original.id)}
               >
@@ -327,12 +328,10 @@ export function ParcelamentoPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+          <h1 className={PAGE_TITLE}>
             Parcelamentos
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Gerencie seus parcelamentos
-          </p>
+          <p className={PAGE_SUBTITLE}>Gerencie seus parcelamentos</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
@@ -347,17 +346,17 @@ export function ParcelamentoPage() {
       </div>
 
       {/* Tabela */}
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <div className="rounded-xl border border-border bg-card">
         {/* Tabela Desktop */}
         <div className="hidden overflow-x-auto sm:block">
           <table className="w-full">
-            <thead className="border-b border-slate-200 bg-slate-50">
+            <thead className="border-b border-border bg-muted/40">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-6 py-3 text-left text-xs uppercase tracking-wider text-slate-500"
+                      className="px-6 py-3 text-left text-xs uppercase tracking-wider text-muted-foreground"
                     >
                       {header.isPlaceholder
                         ? null
@@ -370,23 +369,23 @@ export function ParcelamentoPage() {
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-border">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
                   <td
                     colSpan={columns.length}
-                    className="px-6 py-12 text-center text-sm text-slate-500"
+                    className="px-6 py-12 text-center text-sm text-muted-foreground"
                   >
                     Nenhum registro cadastrado
                   </td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50">
+                  <tr key={row.id} className="hover:bg-muted/40">
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="whitespace-nowrap px-6 py-4 text-sm text-slate-600"
+                        className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground"
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
@@ -399,15 +398,15 @@ export function ParcelamentoPage() {
               )}
             </tbody>
             {filteredItems.length > 0 && (
-              <tfoot className="border-t border-slate-200 bg-slate-50">
+              <tfoot className="border-t border-border bg-muted/40">
                 <tr>
                   <td
                     colSpan={Math.max(1, columns.length - 2)}
-                    className="px-6 py-3 text-right text-sm font-medium text-slate-900"
+                    className="px-6 py-3 text-right text-sm font-medium text-foreground"
                   >
                     Total:
                   </td>
-                  <td className="px-6 py-3 text-sm font-bold text-slate-900">
+                  <td className="px-6 py-3 text-sm font-bold text-foreground">
                     {formatCurrency(total)}
                   </td>
                   <td></td>
@@ -418,9 +417,9 @@ export function ParcelamentoPage() {
         </div>
 
         {/* Lista Mobile */}
-        <div className="divide-y divide-slate-200 sm:hidden">
+        <div className="divide-y divide-border sm:hidden">
           {filteredItems.length === 0 ? (
-            <div className="px-4 py-12 text-center text-sm text-slate-500">
+            <div className="px-4 py-12 text-center text-sm text-muted-foreground">
               Nenhum registro encontrado
             </div>
           ) : (
@@ -429,11 +428,11 @@ export function ParcelamentoPage() {
                 <div key={item.id} className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-900">
+                      <p className="font-medium text-foreground">
                         {item.descricao}
                       </p>
                       <div className="mt-1 flex items-center gap-2">
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-muted-foreground">
                           {formatDateStringToBR(item.data)}
                         </span>
                         <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
@@ -442,19 +441,19 @@ export function ParcelamentoPage() {
                       </div>
                     </div>
                     <div className="ml-4 flex items-center gap-2">
-                      <span className="font-semibold text-slate-900">
+                      <span className="font-semibold text-foreground">
                         {formatCurrency(item.valor)}
                       </span>
                       <div className="flex gap-1">
                         <button
-                          className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                           title="Editar"
                           onClick={() => handleOpenDialog(item)}
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          className={ICON_BTN_DANGER}
                           title="Excluir"
                           onClick={() => setDeleteItemId(item.id)}
                         >
@@ -466,9 +465,9 @@ export function ParcelamentoPage() {
                 </div>
               ))}
               {/* Total Mobile */}
-              <div className="flex items-center justify-between bg-slate-50 p-4">
-                <span className="font-medium text-slate-700">Total</span>
-                <span className="font-bold text-slate-900">
+              <div className="flex items-center justify-between bg-muted/40 p-4">
+                <span className="font-medium text-foreground">Total</span>
+                <span className="font-bold text-foreground">
                   {formatCurrency(total)}
                 </span>
               </div>
@@ -495,7 +494,7 @@ export function ParcelamentoPage() {
               <div className="space-y-2">
                 <label
                   htmlFor="data"
-                  className="text-sm font-medium text-slate-700"
+                  className="text-sm font-medium text-foreground"
                 >
                   Data <span className="text-red-500">*</span>
                 </label>
@@ -504,14 +503,14 @@ export function ParcelamentoPage() {
                   onChange={(v) =>
                     setFormData({ ...formData, data: v })
                   }
-                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   required
                 />
               </div>
               <div className="space-y-2">
                 <label
                   htmlFor="descricao"
-                  className="text-sm font-medium text-slate-700"
+                  className="text-sm font-medium text-foreground"
                 >
                   Descricao <span className="text-red-500">*</span>
                 </label>
@@ -523,7 +522,7 @@ export function ParcelamentoPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, descricao: e.target.value.toUpperCase() })
                   }
-                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
+                  className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
                   required
                 />
               </div>
@@ -531,7 +530,7 @@ export function ParcelamentoPage() {
                 <div className="space-y-2">
                   <label
                     htmlFor="parcela"
-                    className="text-sm font-medium text-slate-700"
+                    className="text-sm font-medium text-foreground"
                   >
                     Parcela <span className="text-red-500">*</span>
                   </label>
@@ -543,16 +542,16 @@ export function ParcelamentoPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, parcela: e.target.value })
                     }
-                    className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     required
                   />
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-foreground">
                     Parcela
                   </label>
-                  <div className="flex h-10 items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  <div className="flex h-10 items-center rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
                     {editingItem.parcela}
                   </div>
                 </div>
@@ -560,7 +559,7 @@ export function ParcelamentoPage() {
               <div className="space-y-2">
                 <label
                   htmlFor="valor"
-                  className="text-sm font-medium text-slate-700"
+                  className="text-sm font-medium text-foreground"
                 >
                   Valor (R$) <span className="text-red-500">*</span>
                 </label>
@@ -568,7 +567,7 @@ export function ParcelamentoPage() {
                   id="valor"
                   value={formData.valor ?? ''}
                   onChange={(v) => setFormData({ ...formData, valor: v })}
-                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   required
                 />
               </div>
@@ -580,9 +579,9 @@ export function ParcelamentoPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, comunicarAgenda: e.target.checked })
                   }
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
                 />
-                <label htmlFor="comunicarAgenda" className="text-sm font-medium text-slate-700">
+                <label htmlFor="comunicarAgenda" className="text-sm font-medium text-foreground">
                   Comunicar Agenda
                 </label>
               </div>
@@ -591,14 +590,14 @@ export function ParcelamentoPage() {
               <button
                 type="button"
                 onClick={handleCloseDialog}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 ring-offset-white transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                className={BTN_CANCEL}
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white ring-offset-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white ring-offset-background transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
               >
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {editingItem ? 'Salvar' : 'Adicionar'}
@@ -620,17 +619,17 @@ export function ParcelamentoPage() {
           {ajustarItem && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <label htmlFor="ajustarData" className="text-sm font-medium text-slate-700">
+                <label htmlFor="ajustarData" className="text-sm font-medium text-foreground">
                   Data
                 </label>
                 <DateInput
                   value={ajustarData}
                   onChange={(v) => setAjustarData(v)}
-                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="ajustarParcela" className="text-sm font-medium text-slate-700">
+                <label htmlFor="ajustarParcela" className="text-sm font-medium text-foreground">
                   Parcela
                 </label>
                 <input
@@ -639,7 +638,7 @@ export function ParcelamentoPage() {
                   placeholder="Ex: 3/12"
                   value={ajustarParcela}
                   onChange={(e) => setAjustarParcela(e.target.value)}
-                  className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </div>
@@ -648,7 +647,7 @@ export function ParcelamentoPage() {
             <button
               type="button"
               onClick={() => setAjustarItem(null)}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className={BTN_CANCEL}
             >
               Cancelar
             </button>

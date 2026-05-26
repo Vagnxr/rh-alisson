@@ -7,6 +7,7 @@ import { formatDateToLocalYYYYMMDD, addOneMonth } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { DateInput } from '@/components/ui/date-input';
+import { PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL } from '@/lib/uiClasses';
 import { DataValorList } from '@/components/ui/data-valor-list';
 import {
   Dialog,
@@ -389,10 +390,8 @@ export function AgendaPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Agenda</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Visualize entradas e saidas por dia e marque itens como pagos
-          </p>
+          <h1 className={PAGE_TITLE}>Agenda</h1>
+          <p className={PAGE_SUBTITLE}>Visualize entradas e saidas por dia e marque itens como pagos</p>
         </div>
         <button
           type="button"
@@ -406,7 +405,7 @@ export function AgendaPage() {
       </div>
 
       {error && (
-        <div className="flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" data-testid="agenda-mensagem-erro">
+        <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" data-testid="agenda-mensagem-erro">
           <span>{error}</span>
           <button type="button" onClick={clearError} className="text-red-500 underline">
             Fechar
@@ -414,42 +413,42 @@ export function AgendaPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="rounded-xl border border-border bg-card p-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative" ref={monthYearRef}>
               <button
                 type="button"
                 onClick={() => setOpenMonthYear(v => !v)}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-lg font-semibold text-slate-800 capitalize hover:bg-slate-50"
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-2 text-left text-lg font-semibold text-foreground capitalize hover:bg-muted/40"
                 data-testid="agenda-filtro-periodo-mes"
               >
                 {monthTitle}
                 <ChevronDown
-                  className={`h-5 w-5 text-slate-500 transition-transform ${openMonthYear ? 'rotate-180' : ''}`}
+                  className={`h-5 w-5 text-muted-foreground transition-transform ${openMonthYear ? 'rotate-180' : ''}`}
                 />
               </button>
               {openMonthYear && (
-                <div className="absolute top-full left-0 z-10 mt-1 w-[min(320px,calc(100vw-2rem))] rounded-lg border border-slate-200 bg-white p-4 shadow-lg">
+                <div className="absolute top-full left-0 z-10 mt-1 w-[min(320px,calc(100vw-2rem))] rounded-lg border border-border bg-card p-4 shadow-lg">
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium whitespace-nowrap text-slate-600">
+                    <span className="text-sm font-medium whitespace-nowrap text-muted-foreground">
                       Ano
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setYear(y => y - 1)}
-                        className="rounded border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50"
+                        className="rounded border border-border p-1.5 text-muted-foreground hover:bg-muted/40"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
-                      <span className="min-w-[4ch] text-center font-medium text-slate-800">
+                      <span className="min-w-[4ch] text-center font-medium text-foreground">
                         {year}
                       </span>
                       <button
                         type="button"
                         onClick={() => setYear(y => y + 1)}
-                        className="rounded border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50"
+                        className="rounded border border-border p-1.5 text-muted-foreground hover:bg-muted/40"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </button>
@@ -466,8 +465,8 @@ export function AgendaPage() {
                         }}
                         className={`min-w-0 rounded px-3 py-2 text-left text-sm whitespace-nowrap ${
                           i === month
-                            ? 'bg-emerald-100 font-semibold text-emerald-800'
-                            : 'text-slate-700 hover:bg-slate-100'
+                            ? 'bg-primary/15 font-semibold text-primary'
+                            : 'text-foreground hover:bg-muted'
                         }`}
                       >
                         {name}
@@ -477,9 +476,9 @@ export function AgendaPage() {
                 </div>
               )}
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2" data-testid="agenda-total-mes">
-              <span className="block text-xs font-medium text-slate-500">Total do mes</span>
-              <span className="text-lg font-bold text-slate-900">{formatCurrency(totalMes)}</span>
+            <div className="rounded-lg border border-border bg-muted/40 px-4 py-2" data-testid="agenda-total-mes">
+              <span className="block text-xs font-medium text-muted-foreground">Total do mes</span>
+              <span className="text-lg font-bold text-foreground">{formatCurrency(totalMes)}</span>
             </div>
           </div>
           <div className="flex gap-1">
@@ -493,7 +492,7 @@ export function AgendaPage() {
                   setMonth(m => m - 1);
                 }
               }}
-              className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-border p-2 text-muted-foreground hover:bg-muted/40"
               data-testid="agenda-filtro-prev"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -508,7 +507,7 @@ export function AgendaPage() {
                   setMonth(m => m + 1);
                 }
               }}
-              className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-border p-2 text-muted-foreground hover:bg-muted/40"
               data-testid="agenda-filtro-next"
             >
               <ChevronRight className="h-5 w-5" />
@@ -516,7 +515,7 @@ export function AgendaPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-slate-500">
+        <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground">
           {WEEKDAYS.map(w => (
             <div key={w} className="py-1">
               {w}
@@ -539,14 +538,14 @@ export function AgendaPage() {
                 className={`flex min-h-[80px] flex-col items-stretch rounded-lg border p-2 text-left transition-colors ${
                   isCurrentMonth
                     ? temValor
-                      ? 'cursor-pointer border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/50'
-                      : 'cursor-pointer border-slate-100 bg-slate-50/50 hover:bg-slate-100'
+                      ? 'cursor-pointer border-primary/30 bg-primary/10 hover:bg-primary/15'
+                      : 'cursor-pointer border-border bg-muted/40 hover:bg-muted/50'
                     : 'cursor-pointer border-transparent bg-transparent'
                 }`}
               >
                 <span
                   className={`self-start text-sm font-medium ${
-                    isCurrentMonth ? 'text-slate-800' : 'text-slate-400'
+                    isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'
                   }`}
                 >
                   {date.getDate()}
@@ -554,7 +553,7 @@ export function AgendaPage() {
                 {temValor && (
                   <div
                     className={`mt-1.5 flex w-full justify-center font-semibold ${
-                      isCurrentMonth ? 'text-base text-slate-900' : 'text-[10px] text-slate-400'
+                      isCurrentMonth ? 'text-base text-foreground' : 'text-[10px] text-muted-foreground'
                     }`}
                   >
                     {formatCurrency(somaDia)}
@@ -603,13 +602,13 @@ export function AgendaPage() {
             <div className="space-y-4 py-4">
               {diaSelecionado && (
                 <>
-                  <div className="text-sm font-medium text-slate-900">
+                  <div className="text-sm font-medium text-foreground">
                     Total do dia (soma):{' '}
                     {formatCurrency(diaSelecionado.totalEntradas + diaSelecionado.totalSaidas)}
                   </div>
-                  <ul className="max-h-[60vh] min-h-[280px] space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2" data-testid="agenda-dia-itens">
+                  <ul className="max-h-[60vh] min-h-[280px] space-y-2 overflow-y-auto rounded-lg border border-border bg-muted/40 p-2" data-testid="agenda-dia-itens">
                     {(diaSelecionado.itens ?? []).length === 0 ? (
-                      <li className="py-4 text-center text-sm text-slate-500">
+                      <li className="py-4 text-center text-sm text-muted-foreground">
                         Nenhum item neste dia
                       </li>
                     ) : (
@@ -665,18 +664,18 @@ export function AgendaPage() {
           </DialogHeader>
           <form onSubmit={handleLancarDirectSubmit} className="space-y-4 py-4">
             <div className="space-y-2">
-              <label htmlFor="direct-data" className="text-sm font-medium text-slate-700">
+              <label htmlFor="direct-data" className="text-sm font-medium text-foreground">
                 Data <span className="text-red-500">*</span>
               </label>
               <DateInput
                 value={formDirect.data}
                 onChange={v => setFormDirect({ ...formDirect, data: v })}
-                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring"
                 required
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="direct-descricao" className="text-sm font-medium text-slate-700">
+              <label htmlFor="direct-descricao" className="text-sm font-medium text-foreground">
                 Descrição <span className="text-red-500">*</span>
               </label>
               <input
@@ -686,20 +685,20 @@ export function AgendaPage() {
                 onChange={e =>
                   setFormDirect({ ...formDirect, descricao: e.target.value.toUpperCase() })
                 }
-                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring"
                 required
                 data-testid="agenda-descricao"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="direct-valor" className="text-sm font-medium text-slate-700">
+              <label htmlFor="direct-valor" className="text-sm font-medium text-foreground">
                 Valor (R$) <span className="text-red-500">*</span>
               </label>
               <CurrencyInput
                 id="direct-valor"
                 value={formDirect.valor}
                 onChange={(v) => setFormDirect({ ...formDirect, valor: v })}
-                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring"
                 required={!formDirect.recorrente}
                 testId="agenda-valor"
               />
@@ -720,9 +719,9 @@ export function AgendaPage() {
                       : undefined,
                   }));
                 }}
-                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
               />
-              <label htmlFor="direct-recorrente" className="text-sm font-medium text-slate-700">
+              <label htmlFor="direct-recorrente" className="text-sm font-medium text-foreground">
                 Recorrente
               </label>
             </div>
@@ -749,7 +748,7 @@ export function AgendaPage() {
               <button
                 type="button"
                 onClick={() => setOpenLancarDirect(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className={BTN_CANCEL}
                 data-testid="agenda-cancelar"
               >
                 Cancelar
@@ -777,18 +776,18 @@ export function AgendaPage() {
           </DialogHeader>
           <form onSubmit={handleSubmitEditDirect} className="space-y-4 py-4">
             <div className="space-y-2">
-              <label htmlFor="edit-direct-data" className="text-sm font-medium text-slate-700">
+              <label htmlFor="edit-direct-data" className="text-sm font-medium text-foreground">
                 Data <span className="text-red-500">*</span>
               </label>
               <DateInput
                 value={formEditDirect.data}
                 onChange={v => setFormEditDirect({ ...formEditDirect, data: v })}
-                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring"
                 required
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="edit-direct-descricao" className="text-sm font-medium text-slate-700">
+              <label htmlFor="edit-direct-descricao" className="text-sm font-medium text-foreground">
                 Descricao <span className="text-red-500">*</span>
               </label>
               <input
@@ -796,20 +795,20 @@ export function AgendaPage() {
                 type="text"
                 value={formEditDirect.descricao}
                 onChange={e => setFormEditDirect({ ...formEditDirect, descricao: e.target.value })}
-                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring"
                 required
                 data-testid="agenda-edit-descricao"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="edit-direct-valor" className="text-sm font-medium text-slate-700">
+              <label htmlFor="edit-direct-valor" className="text-sm font-medium text-foreground">
                 Valor (R$) <span className="text-red-500">*</span>
               </label>
               <CurrencyInput
                 id="edit-direct-valor"
                 value={formEditDirect.valor}
                 onChange={(v) => setFormEditDirect({ ...formEditDirect, valor: v })}
-                className="flex h-10 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
+                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:ring-2 focus:ring-ring"
                 required
                 testId="agenda-edit-valor"
               />
@@ -818,7 +817,7 @@ export function AgendaPage() {
               <button
                 type="button"
                 onClick={() => setEditingDirectItem(null)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className={BTN_CANCEL}
                 data-testid="agenda-edit-cancelar"
               >
                 Cancelar
@@ -898,46 +897,46 @@ function ItemRow({
   onDesmarcarPago?: () => void;
 }) {
   return (
-    <li className="flex items-center gap-2 rounded bg-white px-3 py-2 text-sm" data-testid="agenda-dia-item">
+    <li className="flex items-center gap-2 rounded bg-card px-3 py-2 text-sm" data-testid="agenda-dia-item">
       {!item.pago ? (
         <input
           type="checkbox"
           checked={selected}
           onChange={onToggleSelect}
-          className="h-4 w-4 rounded border-slate-300 text-emerald-600"
+          className="h-4 w-4 rounded border-border text-emerald-600"
           data-testid="agenda-dia-item-checkbox"
         />
       ) : (
-        <span className="flex h-4 w-4 items-center justify-center rounded bg-emerald-100 text-emerald-600">
+        <span className="flex h-4 w-4 items-center justify-center rounded bg-primary/15 text-primary">
           <Check className="h-3 w-3" />
         </span>
       )}
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex flex-wrap items-center gap-1.5">
           {item.origem && (
-            <span className="inline-block rounded bg-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-700">
+            <span className="inline-block rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-foreground">
               {item.origem}
             </span>
           )}
           {item.parcela && (
-            <span className="inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
+            <span className="inline-block rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
               Parcela {item.parcela}
             </span>
           )}
         </div>
-        <span className="block font-medium text-slate-800">
+        <span className="block font-medium text-foreground">
           {item.descricao || 'Sem descricao'}
         </span>
         {item.tipoDespesa && (
-          <span className="block text-xs text-slate-500">{item.tipoDespesa}</span>
+          <span className="block text-xs text-muted-foreground">{item.tipoDespesa}</span>
         )}
       </div>
-      <span className="font-medium text-slate-900">{formatCurrency(item.valor)}</span>
+      <span className="font-medium text-foreground">{formatCurrency(item.valor)}</span>
       {editavel && onEdit && (
         <button
           type="button"
           onClick={onEdit}
-          className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
           title="Editar"
           data-testid="agenda-dia-item-editar"
         >
@@ -948,7 +947,7 @@ function ItemRow({
         <button
           type="button"
           onClick={onExcluir}
-          className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+          className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-red-600"
           title="Excluir da agenda"
           data-testid="agenda-dia-item-excluir"
         >
@@ -959,7 +958,7 @@ function ItemRow({
         <button
           type="button"
           onClick={onDesmarcarPago}
-          className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-200"
+          className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted"
           title="Desmarcar como pago"
           data-testid="agenda-dia-item-desmarcar-pago"
         >
@@ -967,7 +966,7 @@ function ItemRow({
         </button>
       )}
       {item.pago && !onDesmarcarPago && (
-        <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Pago</span>
+        <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">Pago</span>
       )}
     </li>
   );

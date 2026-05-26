@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api';
 import { DateInput } from '@/components/ui/date-input';
+import { cn } from '@/lib/cn';
+import { PAGE_TITLE, PAGE_SUBTITLE, INPUT_CLASS } from '@/lib/uiClasses';
 
 export interface ItemPedido {
   id: string;
@@ -96,8 +98,7 @@ function defaultPedido(): PedidoVenda {
   };
 }
 
-const inputClass =
-  'flex h-9 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500';
+const inputClass = cn(INPUT_CLASS, 'h-9 px-2 py-1.5');
 
 export function PedidoVendaPage() {
   const [pedidos, setPedidos] = useState<PedidoVenda[]>([]);
@@ -212,8 +213,8 @@ export function PedidoVendaPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Pedido de Venda</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className={PAGE_TITLE}>Pedido de Venda</h1>
+          <p className={PAGE_SUBTITLE}>
             Formulario de pedido com dados do fornecedor e itens. Salve para listar; edite ou exclua na lista.
           </p>
         </div>
@@ -221,7 +222,7 @@ export function PedidoVendaPage() {
           <button
             type="button"
             onClick={handleNovo}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/40"
           >
             <Plus className="h-4 w-4" />
             Novo
@@ -236,11 +237,11 @@ export function PedidoVendaPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="p-6 space-y-6 max-w-5xl">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-xs font-medium text-slate-500 uppercase">Nome da empresa</label>
+              <label className="block text-xs font-medium text-muted-foreground uppercase">Nome da empresa</label>
               <input
                 type="text"
                 value={form.nomeEmpresa}
@@ -251,16 +252,16 @@ export function PedidoVendaPage() {
             </div>
             <div className="flex flex-wrap items-center gap-4 justify-end">
               <div>
-                <label className="block text-xs text-slate-500">Numero do Pedido</label>
+                <label className="block text-xs text-muted-foreground">Numero do Pedido</label>
                 <input
                   type="text"
                   value={form.numeroPedido}
                   onChange={(e) => updateForm({ numeroPedido: e.target.value })}
-                  className="w-20 rounded border border-slate-200 px-2 py-1 text-sm font-semibold"
+                  className="w-20 rounded border border-border px-2 py-1 text-sm font-semibold"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-500">Data do Pedido</label>
+                <label className="block text-xs text-muted-foreground">Data do Pedido</label>
                 <DateInput
                   value={form.dataPedido}
                   onChange={(v) => updateForm({ dataPedido: v })}
@@ -271,25 +272,25 @@ export function PedidoVendaPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-xs font-medium text-slate-500 uppercase">Comprador</label>
+              <label className="block text-xs font-medium text-muted-foreground uppercase">Comprador</label>
               <input type="text" value={form.comprador} onChange={(e) => updateForm({ comprador: e.target.value })} className={inputClass} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 uppercase">Comercio</label>
+              <label className="block text-xs font-medium text-muted-foreground uppercase">Comercio</label>
               <input type="text" value={form.comercio} onChange={(e) => updateForm({ comercio: e.target.value })} className={inputClass} />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 uppercase">Escopo</label>
+            <label className="block text-xs font-medium text-muted-foreground uppercase">Escopo</label>
             <input type="text" value={form.escopo} onChange={(e) => updateForm({ escopo: e.target.value })} className={inputClass} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 uppercase">Forma PGTO</label>
+            <label className="block text-xs font-medium text-muted-foreground uppercase">Forma PGTO</label>
             <input type="text" value={form.formaPgto} onChange={(e) => updateForm({ formaPgto: e.target.value })} className={inputClass} />
           </div>
 
-          <div className="border-t border-slate-200 pt-4">
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Dados do Fornecedor</h3>
+          <div className="border-t border-border pt-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Dados do Fornecedor</h3>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm md:grid-cols-4">
               {[
                 { key: 'codigo', label: 'Codigo' },
@@ -307,7 +308,7 @@ export function PedidoVendaPage() {
                 { key: 'obs', label: 'OBS' },
               ].map(({ key, label }) => (
                 <div key={key} className={key === 'razaoSocial' || key === 'endereco' || key === 'obs' ? 'col-span-2 md:col-span-3' : ''}>
-                  <label className="block text-xs text-slate-500">{label}</label>
+                  <label className="block text-xs text-muted-foreground">{label}</label>
                   <input
                     type="text"
                     value={form[key as keyof PedidoVenda] as string}
@@ -319,48 +320,48 @@ export function PedidoVendaPage() {
             </div>
           </div>
 
-          <div className="border-t border-slate-200 pt-4">
+          <div className="border-t border-border pt-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-slate-800">Itens</h3>
+              <h3 className="text-sm font-semibold text-foreground">Itens</h3>
               <button type="button" onClick={addItem} className="text-xs text-emerald-600 hover:underline">
                 + Adicionar item
               </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[700px]">
-                <thead className="bg-slate-100">
+                <thead className="bg-muted">
                   <tr>
-                    <th className="px-2 py-2 text-left text-xs font-medium uppercase text-slate-500 w-12">ITEM</th>
-                    <th className="px-2 py-2 text-left text-xs font-medium uppercase text-slate-500 w-20">QTDE</th>
-                    <th className="px-2 py-2 text-left text-xs font-medium uppercase text-slate-500 w-14">UND</th>
-                    <th className="px-2 py-2 text-left text-xs font-medium uppercase text-slate-500">DESCRICAO</th>
-                    <th className="px-2 py-2 text-right text-xs font-medium uppercase text-slate-500 w-24">UNIT (R$)</th>
-                    <th className="px-2 py-2 text-right text-xs font-medium uppercase text-slate-500 w-24">TOTAL (R$)</th>
-                    <th className="px-2 py-2 text-right text-xs font-medium uppercase text-slate-500 w-16">%</th>
+                    <th className="px-2 py-2 text-left text-xs font-medium uppercase text-muted-foreground w-12">ITEM</th>
+                    <th className="px-2 py-2 text-left text-xs font-medium uppercase text-muted-foreground w-20">QTDE</th>
+                    <th className="px-2 py-2 text-left text-xs font-medium uppercase text-muted-foreground w-14">UND</th>
+                    <th className="px-2 py-2 text-left text-xs font-medium uppercase text-muted-foreground">DESCRICAO</th>
+                    <th className="px-2 py-2 text-right text-xs font-medium uppercase text-muted-foreground w-24">UNIT (R$)</th>
+                    <th className="px-2 py-2 text-right text-xs font-medium uppercase text-muted-foreground w-24">TOTAL (R$)</th>
+                    <th className="px-2 py-2 text-right text-xs font-medium uppercase text-muted-foreground w-16">%</th>
                     <th className="w-10"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-border">
                   {form.itens.map((item, idx) => (
-                    <tr key={item.id} className="hover:bg-slate-50">
-                      <td className="px-2 py-2 font-medium text-slate-900">{idx + 1}</td>
+                    <tr key={item.id} className="hover:bg-muted/40">
+                      <td className="px-2 py-2 font-medium text-foreground">{idx + 1}</td>
                       <td className="px-2 py-2">
-                        <input type="text" value={item.qtde} onChange={(e) => updateItem(idx, { qtde: e.target.value })} className="w-full rounded border border-slate-200 px-1.5 py-1 text-sm" />
+                        <input type="text" value={item.qtde} onChange={(e) => updateItem(idx, { qtde: e.target.value })} className="w-full rounded border border-border px-1.5 py-1 text-sm" />
                       </td>
                       <td className="px-2 py-2">
-                        <input type="text" value={item.und} onChange={(e) => updateItem(idx, { und: e.target.value })} className="w-full rounded border border-slate-200 px-1.5 py-1 text-sm" />
+                        <input type="text" value={item.und} onChange={(e) => updateItem(idx, { und: e.target.value })} className="w-full rounded border border-border px-1.5 py-1 text-sm" />
                       </td>
                       <td className="px-2 py-2">
-                        <input type="text" value={item.descricao} onChange={(e) => updateItem(idx, { descricao: e.target.value })} className="w-full rounded border border-slate-200 px-1.5 py-1 text-sm" />
+                        <input type="text" value={item.descricao} onChange={(e) => updateItem(idx, { descricao: e.target.value })} className="w-full rounded border border-border px-1.5 py-1 text-sm" />
                       </td>
                       <td className="px-2 py-2">
-                        <input type="text" value={item.unit} onChange={(e) => updateItem(idx, { unit: e.target.value })} className="w-full rounded border border-slate-200 px-1.5 py-1 text-sm text-right" />
+                        <input type="text" value={item.unit} onChange={(e) => updateItem(idx, { unit: e.target.value })} className="w-full rounded border border-border px-1.5 py-1 text-sm text-right" />
                       </td>
                       <td className="px-2 py-2">
-                        <input type="text" value={item.total} onChange={(e) => updateItem(idx, { total: e.target.value })} className="w-full rounded border border-slate-200 px-1.5 py-1 text-sm text-right" />
+                        <input type="text" value={item.total} onChange={(e) => updateItem(idx, { total: e.target.value })} className="w-full rounded border border-border px-1.5 py-1 text-sm text-right" />
                       </td>
                       <td className="px-2 py-2">
-                        <input type="text" value={item.percent} onChange={(e) => updateItem(idx, { percent: e.target.value })} className="w-full rounded border border-slate-200 px-1.5 py-1 text-sm text-right" />
+                        <input type="text" value={item.percent} onChange={(e) => updateItem(idx, { percent: e.target.value })} className="w-full rounded border border-border px-1.5 py-1 text-sm text-right" />
                       </td>
                       <td className="px-2 py-2">
                         <button type="button" onClick={() => removeItem(idx)} className="text-red-500 hover:text-red-700 text-xs" title="Remover item">
@@ -370,10 +371,10 @@ export function PedidoVendaPage() {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-slate-100">
+                <tfoot className="bg-muted">
                   <tr>
-                    <td colSpan={5} className="px-2 py-2 text-right text-sm font-semibold text-slate-900">Total:</td>
-                    <td className="px-2 py-2 text-right font-bold text-slate-900">{formatCurrency(totalGeral)}</td>
+                    <td colSpan={5} className="px-2 py-2 text-right text-sm font-semibold text-foreground">Total:</td>
+                    <td className="px-2 py-2 text-right font-bold text-foreground">{formatCurrency(totalGeral)}</td>
                     <td colSpan={2}></td>
                   </tr>
                 </tfoot>
@@ -383,43 +384,43 @@ export function PedidoVendaPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-        <div className="border-b border-slate-200 bg-slate-50 px-4 py-2">
-          <h2 className="text-sm font-semibold text-slate-800">Pedidos salvos</h2>
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="border-b border-border bg-muted/40 px-4 py-2">
+          <h2 className="text-sm font-semibold text-foreground">Pedidos salvos</h2>
         </div>
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : pedidos.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-slate-500">Nenhum pedido salvo.</p>
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nenhum pedido salvo.</p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50">
+              <thead className="border-b border-border bg-muted/40">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium uppercase text-slate-500">Numero</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium uppercase text-slate-500">Data</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium uppercase text-slate-500">Comprador</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium uppercase text-slate-500">Total</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium uppercase text-slate-500 w-24">Acoes</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Numero</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Data</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Comprador</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium uppercase text-muted-foreground">Total</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium uppercase text-muted-foreground w-24">Acoes</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-border">
                 {pedidos.map((p) => {
                   const total = (p.itens ?? []).reduce((acc, i) => acc + parseNum(i.total), 0);
                   return (
-                    <tr key={p.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-2 font-medium text-slate-900">{p.numeroPedido}</td>
-                      <td className="px-4 py-2 text-slate-700">{p.dataPedido?.slice?.(0, 10) ?? p.dataPedido}</td>
-                      <td className="px-4 py-2 text-slate-700">{p.comprador || '-'}</td>
-                      <td className="px-4 py-2 text-right font-medium text-slate-900">{formatCurrency(total)}</td>
+                    <tr key={p.id} className="hover:bg-muted/40">
+                      <td className="px-4 py-2 font-medium text-foreground">{p.numeroPedido}</td>
+                      <td className="px-4 py-2 text-foreground">{p.dataPedido?.slice?.(0, 10) ?? p.dataPedido}</td>
+                      <td className="px-4 py-2 text-foreground">{p.comprador || '-'}</td>
+                      <td className="px-4 py-2 text-right font-medium text-foreground">{formatCurrency(total)}</td>
                       <td className="px-4 py-2">
                         <div className="flex items-center justify-end gap-1">
-                          <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Editar" onClick={() => handleEditar(p)}>
+                          <button type="button" className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground" title="Editar" onClick={() => handleEditar(p)}>
                             <Pencil className="h-4 w-4" />
                           </button>
-                          <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Excluir" onClick={() => setDeleteId(p.id)}>
+                          <button type="button" className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-red-600" title="Excluir" onClick={() => setDeleteId(p.id)}>
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>

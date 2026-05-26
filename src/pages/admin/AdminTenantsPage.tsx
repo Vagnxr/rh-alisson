@@ -43,6 +43,7 @@ import { useAdminTenantsStore } from '@/stores/adminTenantsStore';
 import { useAuthStore } from '@/stores/authStore';
 import type { AdminTenant, AdminTenantFormData } from '@/types/admin';
 import { cn } from '@/lib/cn';
+import { PAGE_TITLE, INPUT_CLASS } from '@/lib/uiClasses';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { InputCNPJ, InputTelefone } from '@/components/ui/input-masked';
 import { PAGINAS_PERMISSAO, fetchAdminPaginas } from '@/lib/paginasPermissao';
@@ -113,9 +114,9 @@ export function AdminTenantsPage() {
         ),
         cell: ({ row }) => (
           <div>
-            <p className="font-medium text-slate-900">{row.original.name}</p>
+            <p className="font-medium text-foreground">{row.original.name}</p>
             {row.original.cnpj && (
-              <p className="text-sm text-slate-500">CNPJ: {row.original.cnpj}</p>
+              <p className="text-sm text-muted-foreground">CNPJ: {row.original.cnpj}</p>
             )}
           </div>
         ),
@@ -125,23 +126,23 @@ export function AdminTenantsPage() {
         header: 'Responsavel',
         cell: ({ row }) => (
           <div>
-            <p className="text-slate-600">{row.original.responsavel || '-'}</p>
-            {row.original.email && <p className="text-sm text-slate-500">{row.original.email}</p>}
+            <p className="text-muted-foreground">{row.original.responsavel || '-'}</p>
+            {row.original.email && <p className="text-sm text-muted-foreground">{row.original.email}</p>}
           </div>
         ),
       },
       telefone: {
         accessorKey: 'telefone',
         header: 'Telefone',
-        cell: ({ row }) => <span className="text-slate-600">{row.original.telefone || '-'}</span>,
+        cell: ({ row }) => <span className="text-muted-foreground">{row.original.telefone || '-'}</span>,
       },
       usersCount: {
         accessorKey: 'usersCount',
         header: 'Usuarios',
         cell: ({ row }) => (
           <div className="flex items-center gap-1.5">
-            <Users className="h-4 w-4 text-slate-400" />
-            <span className="text-slate-600">{row.original.usersCount || 0}</span>
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">{row.original.usersCount || 0}</span>
           </div>
         ),
       },
@@ -204,7 +205,7 @@ export function AdminTenantsPage() {
               </button>
               <button
                 onClick={() => handleDeleteClick(row.original)}
-                className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
+                className="rounded-lg p-2 text-red-600 transition-colors hover:bg-destructive/10"
                 title="Excluir"
                 disabled={(row.original.usersCount ?? 0) > 0}
               >
@@ -396,8 +397,8 @@ export function AdminTenantsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Empresas</h1>
-          <p className="text-sm text-slate-500">Gerencie as empresas do sistema</p>
+          <h1 className={PAGE_TITLE}>Empresas</h1>
+          <p className="text-sm text-muted-foreground">Gerencie as empresas do sistema</p>
         </div>
         <button
           onClick={handleAdd}
@@ -410,38 +411,38 @@ export function AdminTenantsPage() {
 
       {/* Filtro */}
       <div className="relative">
-        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           placeholder="Buscar por nome, CNPJ ou responsavel..."
           value={globalFilter}
           onChange={e => setGlobalFilter(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pr-4 pl-10 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none sm:max-w-xs"
+          className="w-full rounded-lg border border-input bg-background py-2.5 pr-4 pl-10 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:ring-1 focus:ring-ring focus:outline-none sm:max-w-xs"
         />
       </div>
 
       {/* Tabela */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
           </div>
         ) : tenants.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <Building2 className="h-12 w-12 text-slate-300" />
-            <p className="mt-4 font-medium text-slate-900">Nenhuma empresa cadastrada</p>
-            <p className="mt-1 text-sm text-slate-500">Clique em "Nova Empresa" para adicionar</p>
+            <Building2 className="h-12 w-12 text-muted-foreground/50" />
+            <p className="mt-4 font-medium text-foreground">Nenhuma empresa cadastrada</p>
+            <p className="mt-1 text-sm text-muted-foreground">Clique em "Nova Empresa" para adicionar</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 {table.getHeaderGroups().map(headerGroup => (
-                  <tr key={headerGroup.id} className="border-b border-slate-200 bg-slate-50">
+                  <tr key={headerGroup.id} className="border-b border-border bg-muted/40">
                     {headerGroup.headers.map(header => (
                       <th
                         key={header.id}
-                        className="px-4 py-3 text-left text-sm font-semibold text-slate-600"
+                        className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground"
                       >
                         {header.isPlaceholder
                           ? null
@@ -455,10 +456,10 @@ export function AdminTenantsPage() {
                 {table.getRowModel().rows.map(row => (
                   <tr
                     key={row.id}
-                    className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50"
+                    className="border-b border-border transition-colors last:border-0 hover:bg-muted/40"
                   >
                     {row.getVisibleCells().map(cell => (
-                      <td key={cell.id} className="px-4 py-3 text-sm text-slate-600">
+                      <td key={cell.id} className="px-4 py-3 text-sm text-muted-foreground">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
@@ -471,8 +472,8 @@ export function AdminTenantsPage() {
 
         {/* Footer */}
         {tenants.length > 0 && (
-          <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-sm text-slate-600">
+          <div className="border-t border-border bg-muted/40 px-4 py-3">
+            <p className="text-sm text-muted-foreground">
               Total: <span className="font-medium">{tenants.length}</span> empresas
             </p>
           </div>
@@ -489,26 +490,26 @@ export function AdminTenantsPage() {
             <DialogBody className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                  <label className="mb-1 block text-sm font-medium text-foreground">
                     Nome da Empresa *
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    className={INPUT_CLASS}
                     placeholder="Razao Social da Empresa"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                  <label className="mb-1 block text-sm font-medium text-foreground">
                     Logo / Imagem da empresa
                   </label>
                   <input
                     type="file"
                     accept="image/*"
-                    className="block w-full text-sm text-slate-600 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-emerald-700"
+                    className="block w-full text-sm text-muted-foreground file:mr-2 file:rounded file:border-0 file:bg-primary/15 file:px-3 file:py-1.5 file:text-primary"
                     onChange={e => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -523,7 +524,7 @@ export function AdminTenantsPage() {
                       <img
                         src={formData.logo}
                         alt="Logo"
-                        className="h-14 w-14 rounded border border-slate-200 bg-white object-contain"
+                        className="h-14 w-14 rounded border border-border bg-card object-contain"
                       />
                       <button
                         type="button"
@@ -544,32 +545,32 @@ export function AdminTenantsPage() {
                     onBlur={handleCnpjBlur}
                   />
                   {loadingCnpj && (
-                    <div className="absolute right-3 top-9 flex items-center text-slate-400">
+                    <div className="absolute right-3 top-9 flex items-center text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" />
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                  <label className="mb-1 block text-sm font-medium text-foreground">
                     Responsavel
                   </label>
                   <input
                     type="text"
                     value={formData.responsavel}
                     onChange={e => setFormData({ ...formData, responsavel: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    className={INPUT_CLASS}
                     placeholder="Nome do responsavel"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Email</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    className={INPUT_CLASS}
                     placeholder="contato@empresa.com"
                   />
                 </div>
@@ -581,12 +582,12 @@ export function AdminTenantsPage() {
                 />
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Endereco</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Endereco</label>
                   <input
                     type="text"
                     value={formData.endereco}
                     onChange={e => setFormData({ ...formData, endereco: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    className={INPUT_CLASS}
                     placeholder="Endereco completo"
                   />
                 </div>
@@ -599,9 +600,9 @@ export function AdminTenantsPage() {
                     id="isActive"
                     checked={formData.isActive}
                     onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
                   />
-                  <label htmlFor="isActive" className="text-sm text-slate-700">
+                  <label htmlFor="isActive" className="text-sm text-foreground">
                     Empresa ativa
                   </label>
                 </div>
@@ -611,31 +612,31 @@ export function AdminTenantsPage() {
                     id="isMultiloja"
                     checked={formData.isMultiloja ?? false}
                     onChange={e => setFormData({ ...formData, isMultiloja: e.target.checked })}
-                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
                   />
-                  <label htmlFor="isMultiloja" className="text-sm text-slate-700">
+                  <label htmlFor="isMultiloja" className="text-sm text-foreground">
                     Multiloja (acesso à tela Lojas)
                   </label>
                 </div>
               </div>
 
-              <div className="border-t border-slate-200 pt-4">
-                <p className="mb-2 text-sm font-medium text-slate-700">
+              <div className="border-t border-border pt-4">
+                <p className="mb-2 text-sm font-medium text-foreground">
                   Telas permitidas para esta empresa
                 </p>
-                <p className="mb-3 text-xs text-slate-500">
+                <p className="mb-3 text-xs text-muted-foreground">
                   Selecione quais paginas todos os usuarios desta empresa poderao acessar. Deixe em
                   branco para permitir todas (conforme backend).
                 </p>
-                {loadingPaginas && <p className="text-xs text-slate-500">Carregando paginas...</p>}
-                <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+                {loadingPaginas && <p className="text-xs text-muted-foreground">Carregando paginas...</p>}
+                <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-muted/40 p-3">
                   <div className="grid gap-2 sm:grid-cols-2">
                     {paginasList.map(pagina => {
                       const checked = (formData.paginasPermitidas ?? []).includes(pagina.id);
                       return (
                         <label
                           key={pagina.id}
-                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-100"
+                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-muted"
                         >
                           <input
                             type="checkbox"
@@ -646,9 +647,9 @@ export function AdminTenantsPage() {
                                 : (formData.paginasPermitidas ?? []).filter(id => id !== pagina.id);
                               setFormData({ ...formData, paginasPermitidas: next });
                             }}
-                            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                            className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
                           />
-                          <span className="text-sm text-slate-700">{pagina.label}</span>
+                          <span className="text-sm text-foreground">{pagina.label}</span>
                         </label>
                       );
                     })}
@@ -657,7 +658,7 @@ export function AdminTenantsPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, paginasPermitidas: [] })}
-                  className="mt-2 text-xs text-slate-500 underline hover:text-slate-700"
+                  className="mt-2 text-xs text-muted-foreground underline hover:text-foreground"
                 >
                   Limpar seleção
                 </button>
@@ -667,7 +668,7 @@ export function AdminTenantsPage() {
               <button
                 type="button"
                 onClick={() => setIsDialogOpen(false)}
-                className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
               >
                 Cancelar
               </button>

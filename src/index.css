@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* dark: variant usa classe .dark no ancestral (nao prefers-color-scheme) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Fonte carregada via <link> no index.html para evitar erro de @import no bundle */
 
 /* ===================================
@@ -169,6 +172,14 @@
     background: oklch(0.7 0.002 247);
   }
 
+  .dark ::-webkit-scrollbar-thumb {
+    background: oklch(0.35 0.015 256);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.45 0.015 256);
+  }
+
   /* Focus styles */
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -202,5 +213,191 @@ table thead th {
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .page-heading {
+    @apply text-xl font-bold text-foreground sm:text-2xl;
+  }
+
+  .page-subheading {
+    @apply mt-1 text-sm text-muted-foreground;
+  }
+}
+
+/* Compatibilidade dark mode para utilitarios slate/white hardcoded em paginas legadas */
+@layer base {
+  .dark .text-slate-900,
+  .dark .text-slate-800 {
+    color: var(--foreground);
+  }
+
+  .dark .text-slate-700,
+  .dark .text-slate-600,
+  .dark .text-slate-500,
+  .dark .text-slate-400 {
+    color: var(--muted-foreground);
+  }
+
+  .dark .bg-white {
+    background-color: var(--card);
+  }
+
+  .dark .bg-slate-50,
+  .dark .bg-slate-100 {
+    background-color: var(--muted);
+  }
+
+  .dark .border-slate-200,
+  .dark .border-slate-300 {
+    border-color: var(--border);
+  }
+
+  .dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--border);
+  }
+
+  .dark .hover\:bg-slate-50:hover,
+  .dark .hover\:bg-slate-100:hover {
+    background-color: var(--accent);
+  }
+
+  .dark .hover\:text-slate-600:hover,
+  .dark .hover\:text-slate-700:hover,
+  .dark .hover\:text-slate-900:hover {
+    color: var(--foreground);
+  }
+
+  .dark .ring-offset-white {
+    --tw-ring-offset-color: var(--background);
+  }
+
+  .dark .placeholder\:text-slate-400::placeholder,
+  .dark .placeholder\:text-slate-500::placeholder {
+    color: var(--muted-foreground);
+  }
+
+  /* Chips da sidebar e badges coloridos (fundos *-50 / textos *-900) */
+  .dark .bg-indigo-50 { background-color: oklch(0.22 0.04 277 / 0.45); }
+  .dark .bg-blue-50 { background-color: oklch(0.22 0.04 250 / 0.45); }
+  .dark .bg-amber-50 { background-color: oklch(0.24 0.05 75 / 0.45); }
+  .dark .bg-violet-50 { background-color: oklch(0.22 0.05 300 / 0.45); }
+  .dark .bg-purple-50 { background-color: oklch(0.22 0.05 305 / 0.45); }
+  .dark .bg-sky-50 { background-color: oklch(0.22 0.04 230 / 0.45); }
+  .dark .bg-rose-50 { background-color: oklch(0.22 0.05 15 / 0.45); }
+  .dark .bg-teal-50 { background-color: oklch(0.22 0.04 180 / 0.45); }
+  .dark .bg-orange-50 { background-color: oklch(0.24 0.06 55 / 0.45); }
+  .dark .bg-red-50 { background-color: oklch(0.22 0.06 25 / 0.45); }
+  .dark .bg-fuchsia-50 { background-color: oklch(0.22 0.05 320 / 0.45); }
+  .dark .bg-emerald-50 { background-color: oklch(0.22 0.05 160 / 0.45); }
+  .dark .bg-yellow-50 { background-color: oklch(0.24 0.05 95 / 0.45); }
+  .dark .bg-green-50 { background-color: oklch(0.22 0.05 145 / 0.45); }
+  .dark .bg-cyan-50 { background-color: oklch(0.22 0.04 200 / 0.45); }
+  .dark .bg-pink-50 { background-color: oklch(0.22 0.05 350 / 0.45); }
+
+  .dark .text-indigo-900,
+  .dark .text-blue-900,
+  .dark .text-amber-900,
+  .dark .text-violet-900,
+  .dark .text-purple-900,
+  .dark .text-sky-900,
+  .dark .text-rose-900,
+  .dark .text-teal-900,
+  .dark .text-orange-900,
+  .dark .text-red-900,
+  .dark .text-fuchsia-900,
+  .dark .text-emerald-900,
+  .dark .text-yellow-900,
+  .dark .text-green-900,
+  .dark .text-cyan-900,
+  .dark .text-pink-900 {
+    color: var(--foreground);
+  }
+
+  .dark .text-indigo-600 { @apply text-indigo-400; }
+  .dark .text-blue-600 { @apply text-blue-400; }
+  .dark .text-amber-600,
+  .dark .text-amber-700 { @apply text-amber-400; }
+  .dark .text-violet-600 { @apply text-violet-400; }
+  .dark .text-purple-600 { @apply text-purple-400; }
+  .dark .text-sky-600 { @apply text-sky-400; }
+  .dark .text-rose-600 { @apply text-rose-400; }
+  .dark .text-teal-600 { @apply text-teal-400; }
+  .dark .text-orange-600 { @apply text-orange-400; }
+  .dark .text-red-600 { @apply text-red-400; }
+  .dark .text-fuchsia-600 { @apply text-fuchsia-400; }
+  .dark .text-emerald-600 { @apply text-emerald-400; }
+  .dark .text-yellow-600 { @apply text-yellow-400; }
+  .dark .text-green-600 { @apply text-green-400; }
+  .dark .text-cyan-600 { @apply text-cyan-400; }
+  .dark .text-pink-600 { @apply text-pink-400; }
+
+  .dark .text-purple-700 {
+    color: oklch(0.82 0.1 305);
+  }
+
+  .dark .hover\:bg-purple-100:hover {
+    background-color: oklch(0.28 0.06 305 / 0.55);
+  }
+
+  .dark .hover\:bg-emerald-50:hover {
+    background-color: oklch(0.28 0.06 160 / 0.45);
+  }
+
+  .dark .hover\:bg-red-50:hover {
+    background-color: oklch(0.28 0.06 25 / 0.45);
+  }
+
+  /* Calendario (react-day-picker) — tokens alinhados ao tema */
+  .dark [data-slot='calendar'] {
+    --rdp-accent-color: var(--primary);
+    --rdp-accent-background-color: oklch(0.696 0.17 162 / 0.2);
+    --rdp-range_middle-background-color: oklch(0.696 0.17 162 / 0.2);
+    --rdp-range_start-color: var(--primary-foreground);
+    --rdp-range_end-color: var(--primary-foreground);
+  }
+
+  [data-slot='calendar'] {
+    --rdp-accent-color: var(--primary);
+    --rdp-accent-background-color: oklch(0.596 0.145 163 / 0.15);
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: var(--primary);
+  }
+
+  /* Inputs nativos (hora, data) legiveis no dark mode */
+  .dark input[type='time'],
+  .dark input[type='date'],
+  .dark input[type='datetime-local'] {
+    color-scheme: dark;
+  }
+
+  input[type='time'],
+  input[type='date'],
+  input[type='datetime-local'] {
+    color-scheme: light;
+  }
+
+  /* Autofill do Chrome — sem fundo amarelo; preserva o background do input */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  textarea:-webkit-autofill:active,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus,
+  select:-webkit-autofill:active {
+    background-color: transparent !important;
+    -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+    box-shadow: 0 0 0 1000px transparent inset !important;
+    -webkit-text-fill-color: inherit !important;
+    color: inherit !important;
+    caret-color: inherit;
+    transition: background-color 99999s ease-out 0s;
   }
 }

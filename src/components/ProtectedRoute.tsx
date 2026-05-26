@@ -29,7 +29,7 @@ export function ProtectedRoute() {
   // Apos refresh, espera o primeiro GET /auth/acessos para ter permissoes e menu sincronizados
   if (!acessosFetchedAtMount) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-600" aria-hidden />
       </div>
     );
@@ -97,7 +97,7 @@ export function SuperAdminRoute() {
   // Apos refresh, espera o primeiro GET /auth/acessos para ter menu (sidebar) sincronizado
   if (!acessosFetchedAtMount) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-600" aria-hidden />
       </div>
     );
@@ -130,7 +130,7 @@ export function AdminRoute() {
 
   if (!acessosFetchedAtMount) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-600" aria-hidden />
       </div>
     );

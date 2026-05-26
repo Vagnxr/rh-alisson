@@ -140,8 +140,8 @@ export function DespesaBancoGerenciarBancosDialog({
           </DialogHeader>
           <DialogBody>
             <div className="space-y-4 py-4">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
-                <p className="text-sm font-medium text-slate-700">
+              <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-3">
+                <p className="text-sm font-medium text-foreground">
                   {editingBanco ? 'Editar banco' : 'Novo banco'}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -150,31 +150,31 @@ export function DespesaBancoGerenciarBancosDialog({
                     placeholder="Nome"
                     value={bancoForm.nome}
                     onChange={(e) => setBancoForm((f) => ({ ...f, nome: e.target.value.toUpperCase() }))}
-                    className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm"
+                    className="flex h-9 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-sm"
                   />
                   <input
                     type="text"
                     placeholder="Codigo (opcional)"
                     value={bancoForm.codigo}
                     onChange={(e) => setBancoForm((f) => ({ ...f, codigo: e.target.value }))}
-                    className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm"
+                    className="flex h-9 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-sm"
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-sm text-slate-600">Cor:</label>
+                  <label className="text-sm text-muted-foreground">Cor:</label>
                   <input
                     type="color"
                     value={bancoForm.cor}
                     onChange={(e) => setBancoForm((f) => ({ ...f, cor: e.target.value }))}
-                    className="h-8 w-14 cursor-pointer rounded border border-slate-200"
+                    className="h-8 w-14 cursor-pointer rounded border border-border"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm text-slate-600">Logo (upload):</label>
+                  <label className="text-sm text-muted-foreground">Logo (upload):</label>
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,image/gif"
-                    className="block w-full text-sm text-slate-600 file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-emerald-700"
+                    className="block w-full text-sm text-muted-foreground file:mr-2 file:rounded file:border-0 file:bg-emerald-50 file:px-3 file:py-1.5 file:text-emerald-700"
                     onChange={(e) => onPickLogo(e.target.files?.[0])}
                   />
                   {logoPreview && (
@@ -182,7 +182,7 @@ export function DespesaBancoGerenciarBancosDialog({
                       <img
                         src={logoPreview}
                         alt=""
-                        className="h-10 w-10 rounded object-contain bg-white border"
+                        className="h-10 w-10 rounded border border-border bg-card object-contain"
                       />
                       <button
                         type="button"
@@ -241,7 +241,7 @@ export function DespesaBancoGerenciarBancosDialog({
                           setBancoForm({ nome: '', codigo: '', cor: '#64748B' });
                           setLogoPreview('');
                         }}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/40"
                       >
                         Cancelar
                       </button>
@@ -285,7 +285,7 @@ export function DespesaBancoGerenciarBancosDialog({
               </div>
               <div className="max-h-48 overflow-y-auto space-y-1">
                 {bancosFromApi.length === 0 ? (
-                  <p className="text-sm text-slate-500">Nenhum banco cadastrado. Adicione um acima.</p>
+                  <p className="text-sm text-muted-foreground">Nenhum banco cadastrado. Adicione um acima.</p>
                 ) : (
                   bancosFromApi.map((b) => {
                     const isActive = b.isActive !== false;
@@ -294,18 +294,18 @@ export function DespesaBancoGerenciarBancosDialog({
                       <div
                         key={b.id}
                         className={cn(
-                          'flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2',
-                          !isActive && 'border-slate-150 bg-slate-50 opacity-90',
+                          'flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2',
+                          !isActive && 'border-border bg-muted/40 opacity-90',
                         )}
                       >
                         <div className="flex items-center gap-2">
                           <BancoLogo banco={b} size="sm" />
                           <span className="text-sm font-medium">{b.nome}</span>
-                          {b.codigo && <span className="text-xs text-slate-500">({b.codigo})</span>}
+                          {b.codigo && <span className="text-xs text-muted-foreground">({b.codigo})</span>}
                         </div>
                         <div className="flex items-center gap-2">
                           {isToggling ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                           ) : (
                             <Switch
                               checked={isActive}
@@ -323,7 +323,7 @@ export function DespesaBancoGerenciarBancosDialog({
                               }}
                             />
                           )}
-                          <span className="min-w-16 text-sm text-slate-600">
+                          <span className="min-w-16 text-sm text-muted-foreground">
                             {isActive ? 'Ativo' : 'Inativo'}
                           </span>
                           <button
@@ -331,7 +331,7 @@ export function DespesaBancoGerenciarBancosDialog({
                             onClick={() => {
                               setEditingBanco(b);
                             }}
-                            className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                             title="Editar"
                           >
                             <Pencil className="h-4 w-4" />
@@ -339,7 +339,7 @@ export function DespesaBancoGerenciarBancosDialog({
                           <button
                             type="button"
                             onClick={() => setDeleteBancoId(b.id)}
-                            className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                            className="rounded p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600"
                             title="Excluir"
                           >
                             <Trash2 className="h-4 w-4" />

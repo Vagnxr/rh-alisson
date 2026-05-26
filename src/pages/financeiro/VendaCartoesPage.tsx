@@ -17,6 +17,7 @@ import { buildTableColumns } from '@/lib/buildTableColumns';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import type { VendaCartoesRow } from '@/types/financeiro';
 import { formatDateStringToBR } from '@/lib/date';
+import { PAGE_TITLE, PAGE_SUBTITLE, TABLE_CARD } from '@/lib/uiClasses';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -84,7 +85,7 @@ const COLUMN_DEFS_BY_KEY: Record<string, ColumnDef<VendaCartoesRowFlex>> = {
     accessorKey: 'totalDia',
     header: 'Total dia',
     cell: ({ row }) => (
-      <span className="font-semibold text-slate-900">
+      <span className="font-semibold text-foreground">
         {formatCurrency(Number(row.getValue('totalDia') ?? 0))}
       </span>
     ),
@@ -178,8 +179,8 @@ export function VendaCartoesPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Venda Cartoes</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className={PAGE_TITLE}>Venda Cartoes</h1>
+          <p className={PAGE_SUBTITLE}>
             Colunas definidas pela API conforme periodo selecionado
           </p>
         </div>
@@ -200,23 +201,23 @@ export function VendaCartoesPage() {
           />
         </div>
       </div>
-      <p className="text-sm text-slate-500">Pagina somente de visualizacao (reflexo do caixa).</p>
+      <p className="text-sm text-muted-foreground">Pagina somente de visualizacao (reflexo do caixa).</p>
 
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
           <table className="w-full min-w-[700px]">
-            <thead className="border-b border-slate-200 bg-slate-50">
+            <thead className="border-b border-border bg-muted/40">
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700"
+                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground"
                     >
                       {header.isPlaceholder
                         ? null
@@ -226,20 +227,20 @@ export function VendaCartoesPage() {
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-border">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-slate-500">
+                  <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-muted-foreground">
                     Nenhum registro no periodo
                   </td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50">
+                  <tr key={row.id} className="hover:bg-muted/40">
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="whitespace-nowrap px-4 py-3 text-sm text-slate-600"
+                        className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground"
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
@@ -249,12 +250,12 @@ export function VendaCartoesPage() {
               )}
             </tbody>
             {items.length > 0 && (
-              <tfoot className="border-t border-slate-200 bg-slate-50">
+              <tfoot className="border-t border-border bg-muted/40">
                 <tr>
-                  <td colSpan={columns.length - 1} className="px-4 py-3 text-right text-sm font-medium text-slate-900">
+                  <td colSpan={columns.length - 1} className="px-4 py-3 text-right text-sm font-medium text-foreground">
                     Total:
                   </td>
-                  <td className="px-4 py-3 text-sm font-bold text-slate-900">
+                  <td className="px-4 py-3 text-sm font-bold text-foreground">
                     {formatCurrency(totalGeral)}
                   </td>
                 </tr>

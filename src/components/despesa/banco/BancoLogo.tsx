@@ -13,7 +13,7 @@ export function BancoLogo({ banco, size = 'md' }: BancoLogoProps) {
       <img
         src={banco.logo}
         alt=""
-        className={cn('rounded-lg object-contain bg-white shrink-0', sizeClass)}
+        className={cn('shrink-0 rounded-lg border border-border bg-card object-contain', sizeClass)}
       />
     );
   }

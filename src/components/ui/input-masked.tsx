@@ -1,6 +1,7 @@
 import { forwardRef, useState, useCallback, type InputHTMLAttributes } from 'react';
 import { Check, X, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { INPUT_CLASS } from '@/lib/uiClasses';
 import {
   applyMask,
   onlyNumbers,
@@ -108,7 +109,7 @@ const InputMasked = forwardRef<HTMLInputElement, InputMaskedProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="block text-sm font-medium text-foreground">
             {label}
             {props.required && <span className="ml-0.5 text-red-500">*</span>}
           </label>
@@ -125,16 +126,15 @@ const InputMasked = forwardRef<HTMLInputElement, InputMaskedProps>(
             onBlur={handleBlur}
             placeholder={props.placeholder || getPlaceholder()}
             className={cn(
-              'w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 transition-colors',
-              'placeholder:text-slate-400',
-              'focus:outline-none focus:ring-1',
+              INPUT_CLASS,
+              'h-auto py-2 focus-visible:ring-1',
               error
-                ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                ? 'border-destructive focus-visible:ring-destructive'
                 : validation?.status === 'invalid'
-                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                  ? 'border-destructive focus-visible:ring-destructive'
                   : validation?.status === 'valid'
-                    ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500'
-                    : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-500',
+                    ? 'border-primary/50 focus-visible:ring-primary'
+                    : undefined,
               showValidation && 'pr-10',
               className
             )}
@@ -151,7 +151,7 @@ const InputMasked = forwardRef<HTMLInputElement, InputMaskedProps>(
                 <X className="h-4 w-4 text-red-500" />
               )}
               {validation.status === 'typing' && (
-                <div className="h-4 w-4 animate-pulse rounded-full bg-slate-300" />
+                <div className="h-4 w-4 animate-pulse rounded-full bg-muted-foreground/40" />
               )}
             </div>
           )}
@@ -159,7 +159,7 @@ const InputMasked = forwardRef<HTMLInputElement, InputMaskedProps>(
 
         {/* Mensagem de erro ou hint */}
         {(error || hint) && (
-          <p className={cn('text-xs', error ? 'text-red-500' : 'text-slate-500')}>
+          <p className={cn('text-xs', error ? 'text-destructive' : 'text-muted-foreground')}>
             {error || hint}
           </p>
         )}

@@ -39,6 +39,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
 import { DateInput } from '@/components/ui/date-input';
+import { CARD_INTERACTIVE } from '@/lib/uiClasses';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -99,7 +100,7 @@ function SocioCard({ resumo, onClick, onEdit }: SocioCardProps) {
   return (
     <div
       onClick={onClick}
-      className="cursor-pointer rounded-xl border border-slate-200 bg-white p-5 transition-all hover:border-emerald-300 hover:shadow-lg"
+      className={cn(CARD_INTERACTIVE, 'hover:border-primary/40')}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -107,12 +108,12 @@ function SocioCard({ resumo, onClick, onEdit }: SocioCardProps) {
             <User className="h-6 w-6 text-emerald-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-slate-900">{socio.nome}</h3>
-            <p className="text-sm text-slate-500">{formatCpf(socio.cpf)}</p>
+            <h3 className="font-semibold text-foreground">{socio.nome}</h3>
+            <p className="text-sm text-muted-foreground">{formatCpf(socio.cpf)}</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <div className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+          <div className="flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
             <Percent className="h-3 w-3" />
             {socio.percentualSociedade}%
           </div>
@@ -120,7 +121,7 @@ function SocioCard({ resumo, onClick, onEdit }: SocioCardProps) {
             <button
               type="button"
               onClick={onEdit}
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
               title="Editar socio"
             >
               <Pencil className="h-4 w-4" />
@@ -129,9 +130,9 @@ function SocioCard({ resumo, onClick, onEdit }: SocioCardProps) {
         </div>
       </div>
 
-      <div className="mt-4 rounded-lg bg-slate-100 p-3">
-        <p className="text-xs text-slate-600">{'Total lançado'}</p>
-        <p className="text-lg font-semibold text-slate-900">
+      <div className="mt-4 rounded-lg bg-muted p-3">
+        <p className="text-xs text-muted-foreground">{'Total lançado'}</p>
+        <p className="text-lg font-semibold text-foreground">
           {formatCurrencySocios(saldoTotal).text}
         </p>
       </div>
@@ -181,7 +182,7 @@ function MovimentacoesTable({
       descricao: {
         accessorKey: 'descricao',
         header: 'Descricao',
-        cell: ({ row }) => <span className="text-slate-700">{row.original.descricao}</span>,
+        cell: ({ row }) => <span className="text-foreground">{row.original.descricao}</span>,
       },
       valor: {
         accessorKey: 'valor',
@@ -211,13 +212,13 @@ function MovimentacoesTable({
               <div className="flex items-center justify-center gap-2">
                 <button
                   onClick={() => onEdit(mov)}
-                  className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => onDelete(mov.id)}
-                  className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -237,24 +238,24 @@ function MovimentacoesTable({
 
   if (movimentacoes.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-        <p className="text-slate-500">Nenhuma movimentacao encontrada</p>
+      <div className="rounded-xl border border-border bg-card p-8 text-center">
+        <p className="text-muted-foreground">Nenhuma movimentacao encontrada</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-slate-100">
+          <thead className="bg-muted">
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map(header => (
                   <th
                     key={header.id}
                     className={cn(
-                      'px-4 py-3 text-xs font-medium text-slate-500 uppercase',
+                      'px-4 py-3 text-xs font-medium text-muted-foreground uppercase',
                       header.column.id === 'valor' ? 'text-right' : 'text-left',
                     )}
                   >
@@ -268,7 +269,7 @@ function MovimentacoesTable({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {table.getRowModel().rows.map(row => (
-              <tr key={row.id} className="hover:bg-slate-50">
+              <tr key={row.id} className="hover:bg-muted/40">
                 {row.getVisibleCells().map(cell => (
                   <td
                     key={cell.id}
@@ -597,8 +598,8 @@ export function SociosPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Socios</h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <h1 className="text-xl font-bold text-foreground sm:text-2xl">Socios</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               Cadastre socios e acompanhe movimentacoes. Clique em um card para ver detalhes.
             </p>
           </div>
@@ -623,14 +624,14 @@ export function SociosPage() {
 
         {/* Card de total geral (apenas na lista de ativos) */}
         {!showInativos && (
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100">
-                <Users className="h-6 w-6 text-slate-600" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+                <Users className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-900">Total Geral - Todos os Socios</p>
-                <p className="text-2xl font-bold text-slate-900">
+                <p className="text-sm font-medium text-foreground">Total Geral - Todos os Socios</p>
+                <p className="text-2xl font-bold text-foreground">
                   {formatCurrencySocios(totalGeral).text}
                 </p>
               </div>
@@ -641,10 +642,10 @@ export function SociosPage() {
         {/* Grid de socios ativos ou lista de inativos */}
         {showInativos ? (
           resumosInativos.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
-              <Users className="mx-auto h-12 w-12 text-slate-400" />
-              <p className="mt-3 text-sm font-medium text-slate-600">Nenhum socio inativo</p>
-              <p className="mt-1 text-sm text-slate-500">
+            <div className="rounded-xl border border-dashed border-border bg-muted/40 p-12 text-center">
+              <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+              <p className="mt-3 text-sm font-medium text-muted-foreground">Nenhum socio inativo</p>
+              <p className="mt-1 text-sm text-muted-foreground">
                 Socios desativados aparecem aqui e podem ser reativados.
               </p>
               <Button className="mt-4" variant="outline" onClick={() => setShowInativos(false)}>
@@ -656,12 +657,12 @@ export function SociosPage() {
               {resumosInativos.map(resumo => (
                 <div
                   key={resumo.socio.id}
-                  className="flex flex-col rounded-xl border border-slate-200 bg-slate-50 p-5"
+                  className="flex flex-col rounded-xl border border-border bg-muted/40 p-5"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-slate-700">{resumo.socio.nome}</h3>
-                      <p className="text-sm text-slate-500">{formatCpf(resumo.socio.cpf)}</p>
+                      <h3 className="font-semibold text-foreground">{resumo.socio.nome}</h3>
+                      <p className="text-sm text-muted-foreground">{formatCpf(resumo.socio.cpf)}</p>
                     </div>
                     <Button size="sm" onClick={() => handleAtivarSocio(resumo.socio)}>
                       Ativar
@@ -672,10 +673,10 @@ export function SociosPage() {
             </div>
           )
         ) : resumosAtivos.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
-            <Users className="mx-auto h-12 w-12 text-slate-400" />
-            <p className="mt-3 text-sm font-medium text-slate-600">Nenhum socio cadastrado</p>
-            <p className="mt-1 text-sm text-slate-500">
+          <div className="rounded-xl border border-dashed border-border bg-muted/40 p-12 text-center">
+            <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+            <p className="mt-3 text-sm font-medium text-muted-foreground">Nenhum socio cadastrado</p>
+            <p className="mt-1 text-sm text-muted-foreground">
               Cadastre o primeiro socio para comecar a registrar movimentacoes.
             </p>
             <Button className="mt-4" onClick={() => handleOpenSocioDialog()}>
@@ -718,8 +719,8 @@ export function SociosPage() {
               className="space-y-4"
             >
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Nome <span className="text-slate-500">*</span>
+                <label className="mb-1 block text-sm font-medium text-foreground">
+                  Nome <span className="text-muted-foreground">*</span>
                 </label>
                 <input
                   type="text"
@@ -728,13 +729,13 @@ export function SociosPage() {
                     setSocioFormData({ ...socioFormData, nome: e.target.value.toUpperCase() })
                   }
                   placeholder="Nome completo"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm"
                   required
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  CPF <span className="text-slate-500">*</span>
+                <label className="mb-1 block text-sm font-medium text-foreground">
+                  CPF <span className="text-muted-foreground">*</span>
                 </label>
                 <input
                   ref={cpfInputRef}
@@ -755,13 +756,13 @@ export function SociosPage() {
                     setSocioFormData(prev => ({ ...prev, cpf: newVal }));
                   }}
                   placeholder="000.000.000-00"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm"
                   required
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Percentual de participacao (%) <span className="text-slate-500">*</span>
+                <label className="mb-1 block text-sm font-medium text-foreground">
+                  Percentual de participacao (%) <span className="text-muted-foreground">*</span>
                 </label>
                 <input
                   type="text"
@@ -771,7 +772,7 @@ export function SociosPage() {
                     setSocioFormData({ ...socioFormData, percentualSociedade: e.target.value })
                   }
                   placeholder="Ex: 50"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm"
                   required
                 />
               </div>
@@ -781,9 +782,9 @@ export function SociosPage() {
                   id="socio-ativo"
                   checked={socioFormData.isAtivo}
                   onChange={e => setSocioFormData({ ...socioFormData, isAtivo: e.target.checked })}
-                  className="h-4 w-4 rounded border-slate-300"
+                  className="h-4 w-4 rounded border-border"
                 />
-                <label htmlFor="socio-ativo" className="text-sm font-medium text-slate-700">
+                <label htmlFor="socio-ativo" className="text-sm font-medium text-foreground">
                   Socio ativo
                 </label>
               </div>
@@ -813,13 +814,13 @@ export function SociosPage() {
               fetchResumo();
               fetchMovimentacoes(undefined, movimentacoesFiltros);
             }}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted/40"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">{selectedSocio.nome}</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="text-xl font-bold text-foreground sm:text-2xl">{selectedSocio.nome}</h1>
+            <p className="text-sm text-muted-foreground">
               {formatCpf(selectedSocio.cpf)} - {selectedSocio.percentualSociedade}% de participacao
             </p>
           </div>
@@ -859,25 +860,25 @@ export function SociosPage() {
           <div className="space-y-4 pb-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Data <span className="text-slate-500">*</span>
+                <label className="mb-1 block text-sm font-medium text-foreground">
+                  Data <span className="text-muted-foreground">*</span>
                 </label>
                 <DateInput
                   value={formData.data}
                   onChange={v => setFormData({ ...formData, data: v })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm"
                   required
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Tipo <span className="text-slate-500">*</span>
+                <label className="mb-1 block text-sm font-medium text-foreground">
+                  Tipo <span className="text-muted-foreground">*</span>
                 </label>
                 <div className="flex gap-1">
                   <select
                     value={formData.tipo}
                     onChange={e => setFormData({ ...formData, tipo: e.target.value })}
-                    className="flex h-10 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase"
+                    className="flex h-10 flex-1 rounded-lg border border-border px-3 py-2 text-sm uppercase"
                     required
                   >
                     {TIPOS_FIXOS.map(key => (
@@ -897,7 +898,7 @@ export function SociosPage() {
                       setNovoTipoLabel('');
                       setIsTiposDialogOpen(true);
                     }}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-emerald-600"
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted/40 hover:text-emerald-600"
                     title="Adicionar ou gerenciar tipos"
                   >
                     <Plus className="h-4 w-4" />
@@ -907,7 +908,7 @@ export function SociosPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Descricao</label>
+              <label className="mb-1 block text-sm font-medium text-foreground">Descricao</label>
               <input
                 type="text"
                 value={formData.descricao}
@@ -915,24 +916,24 @@ export function SociosPage() {
                   setFormData({ ...formData, descricao: e.target.value.toUpperCase() })
                 }
                 placeholder="Ex: Pro-labore Janeiro"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm uppercase"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Valor <span className="text-slate-500">*</span>
+              <label className="mb-1 block text-sm font-medium text-foreground">
+                Valor <span className="text-muted-foreground">*</span>
               </label>
               <CurrencyInput
                 value={formData.valor}
                 onChange={(v) => setFormData({ ...formData, valor: v })}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm"
                 required
               />
             </div>
           </div>
 
-          <DialogFooter className="border-t border-slate-200 pt-4">
+          <DialogFooter className="border-t border-border pt-4">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancelar
             </Button>
@@ -972,7 +973,7 @@ export function SociosPage() {
                       );
                   }
                 }}
-                className="flex flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm uppercase"
+                className="flex flex-1 rounded-lg border border-border px-3 py-2 text-sm uppercase"
               />
               <Button
                 disabled={!novoTipoLabel.trim() || isLoadingTipos}
@@ -993,14 +994,14 @@ export function SociosPage() {
                 {isLoadingTipos ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Adicionar'}
               </Button>
             </div>
-            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2">
+            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-border bg-muted/40 p-2">
               {tiposParaListar.length === 0 ? (
-                <li className="py-4 text-center text-sm text-slate-500">Nenhum tipo.</li>
+                <li className="py-4 text-center text-sm text-muted-foreground">Nenhum tipo.</li>
               ) : (
                 tiposParaListar.map(t => (
                   <li
                     key={t.id ?? t.key}
-                    className="flex items-center justify-between rounded bg-white px-3 py-2 text-sm text-slate-800"
+                    className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground"
                   >
                     <span>{t.label}</span>
                     {t.id ? (
@@ -1013,7 +1014,7 @@ export function SociosPage() {
                               toast.error(err instanceof Error ? err.message : 'Erro ao remover'),
                             );
                         }}
-                        className="rounded p-1 text-slate-600 hover:bg-slate-100"
+                        className="rounded p-1 text-muted-foreground hover:bg-muted"
                         title="Excluir tipo"
                       >
                         <Trash2 className="h-4 w-4" />

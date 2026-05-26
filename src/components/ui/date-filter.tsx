@@ -147,21 +147,21 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
   }, [filter]);
 
   const triggerFieldClass =
-    'flex h-9 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-left text-sm text-slate-800 transition-colors hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1';
+    'flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-2.5 py-1.5 text-left text-sm text-foreground ring-offset-background transition-colors hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1';
 
   return (
     <div className={cn('relative', className)}>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverAnchor asChild>
           <div
-            className="flex min-w-0 items-center gap-1 rounded-lg border border-slate-200 bg-white p-1"
+            className="flex min-w-0 items-center gap-1 rounded-lg border border-border bg-card p-1"
             data-testid="despesa-categoria-filtro-mes"
           >
             <button
               type="button"
               onClick={() => navigate('prev')}
               disabled={filter.period === 'custom'}
-              className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
               data-testid="despesa-categoria-filtro-prev"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -170,7 +170,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
             <PopoverTrigger asChild>
               <button
                 type="button"
-                className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded px-2 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
                 data-testid="despesa-categoria-filtro-periodo-mes"
               >
                 <CalendarIcon className="h-4 w-4 shrink-0" />
@@ -182,7 +182,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
               type="button"
               onClick={() => navigate('next')}
               disabled={filter.period === 'custom'}
-              className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
               data-testid="despesa-categoria-filtro-next"
             >
               <ChevronRight className="h-4 w-4" />
@@ -199,18 +199,18 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
           updatePositionStrategy="always"
           collisionPadding={{ top: 10, bottom: 16, left: 12, right: 12 }}
           className={cn(
-            'flex min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-xl',
+            'flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-popover p-0 text-popover-foreground shadow-xl',
             'w-max min-w-[20.25rem] max-w-[min(22rem,calc(var(--radix-popper-available-width,100vw)-16px))]',
             'max-h-[calc(var(--radix-popper-available-height,100dvh)-12px)]',
           )}
         >
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-2.5">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="text-sm font-medium text-slate-700">Periodo</span>
+                <span className="text-sm font-medium text-foreground">Periodo</span>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -229,7 +229,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                       'rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors',
                       filter.period === p
                         ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+                        : 'bg-muted text-foreground hover:bg-accent',
                     )}
                   >
                     {p === 'day' ? 'Dia' : p === 'month' ? 'Mes' : 'Ano'}
@@ -237,11 +237,11 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                 ))}
               </div>
 
-              <div className="mt-2.5 border-t border-slate-200 pt-2.5">
-                <p className="mb-2 text-xs font-medium text-slate-500">Periodo personalizado</p>
+              <div className="mt-2.5 border-t border-border pt-2.5">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Periodo personalizado</p>
                 <div className="flex flex-col gap-3">
                   <div className="min-w-0">
-                    <label htmlFor="date-filter-start" className="mb-1 block text-xs text-slate-500">
+                    <label htmlFor="date-filter-start" className="mb-1 block text-xs text-muted-foreground">
                       Inicio
                     </label>
                     <button
@@ -260,7 +260,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                     {customFieldOpen === 'start' && (
                       <div
                         ref={startCalendarWrapRef}
-                        className="mt-1.5 overflow-hidden rounded-md border border-slate-200 bg-slate-50/90"
+                        className="mt-1.5 overflow-hidden rounded-md border border-border bg-card text-card-foreground"
                       >
                         <Calendar
                           mode="single"
@@ -279,7 +279,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                           }}
                           initialFocus
                           className={cn(
-                            'mx-auto border-0 bg-transparent shadow-none',
+                            'mx-auto border-0 bg-card text-card-foreground shadow-none',
                             FILTER_CALENDAR_CLASS,
                           )}
                         />
@@ -288,7 +288,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                   </div>
 
                   <div className="min-w-0">
-                    <label htmlFor="date-filter-end" className="mb-1 block text-xs text-slate-500">
+                    <label htmlFor="date-filter-end" className="mb-1 block text-xs text-muted-foreground">
                       Fim
                     </label>
                     <button
@@ -307,7 +307,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                     {customFieldOpen === 'end' && (
                       <div
                         ref={endCalendarWrapRef}
-                        className="mt-1.5 overflow-hidden rounded-md border border-slate-200 bg-slate-50/90"
+                        className="mt-1.5 overflow-hidden rounded-md border border-border bg-card text-card-foreground"
                       >
                         <Calendar
                           mode="single"
@@ -326,7 +326,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                           }}
                           initialFocus
                           className={cn(
-                            'mx-auto border-0 bg-transparent shadow-none',
+                            'mx-auto border-0 bg-card text-card-foreground shadow-none',
                             FILTER_CALENDAR_CLASS,
                           )}
                         />

@@ -23,6 +23,7 @@ import type {
 } from '@/types/fornecedor';
 import { fetchCNPJReceitaWS, onlyDigitsCnpj } from '@/lib/receitaws';
 import { isValidCPF } from '@/lib/masks';
+import { BTN_CANCEL } from '@/lib/uiClasses';
 
 interface FornecedorFormProps {
   open: boolean;
@@ -368,7 +369,7 @@ export function FornecedorForm({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Tipo de Fornecedor */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label className="mb-2 block text-sm font-medium text-foreground">
               Tipo de Fornecedor <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-4">
@@ -381,7 +382,7 @@ export function FornecedorForm({
                   onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoFornecedor })}
                   className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="text-sm text-slate-700">Pessoa Jurídica (CNPJ)</span>
+                <span className="text-sm text-foreground">Pessoa Jurídica (CNPJ)</span>
               </label>
               <label className="flex cursor-pointer items-center gap-2">
                 <input
@@ -392,7 +393,7 @@ export function FornecedorForm({
                   onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoFornecedor })}
                   className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="text-sm text-slate-700">Pessoa Física (CPF)</span>
+                <span className="text-sm text-foreground">Pessoa Física (CPF)</span>
               </label>
             </div>
           </div>
@@ -412,7 +413,7 @@ export function FornecedorForm({
                 />
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   {loadingCnpj && (
-                    <span className="flex items-center gap-1.5 text-sm text-slate-500">
+                    <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
                       Consultando...
                     </span>
@@ -428,7 +429,7 @@ export function FornecedorForm({
                   )}
                 </div>
                 {loadingCnpj && (
-                  <span className="absolute right-3 top-9 flex items-center text-slate-400">
+                  <span className="absolute right-3 top-9 flex items-center text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
                   </span>
                 )}
@@ -498,7 +499,7 @@ export function FornecedorForm({
 
           {/* Endereço - complemento opcional */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Endereço</h3>
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Endereço</h3>
             <InputEnderecoFornecedor
               value={formData.endereco}
               onChange={(endereco) => setFormData({ ...formData, endereco })}
@@ -516,7 +517,7 @@ export function FornecedorForm({
 
           {/* Contato Empresa - telefone principal opcional */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Contato Empresa</h3>
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Contato Empresa</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <InputTelefone
                 label="Telefone Principal (opcional)"
@@ -571,7 +572,7 @@ export function FornecedorForm({
 
           {/* Contato Vendedor */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Contato Vendedor (Opcional)</h3>
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Contato Vendedor (Opcional)</h3>
             <div className="grid gap-4 sm:grid-cols-3">
               <InputUppercase
                 label="Nome"
@@ -610,7 +611,7 @@ export function FornecedorForm({
 
           {/* Status Ativo/Inativo */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label className="mb-2 block text-sm font-medium text-foreground">
               Status <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-6">
@@ -622,7 +623,7 @@ export function FornecedorForm({
                   onChange={() => setFormData({ ...formData, isAtivo: true })}
                   className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="text-sm text-slate-700">Ativo</span>
+                <span className="text-sm text-foreground">Ativo</span>
               </label>
               <label className="flex cursor-pointer items-center gap-2">
                 <input
@@ -632,10 +633,10 @@ export function FornecedorForm({
                   onChange={() => setFormData({ ...formData, isAtivo: false })}
                   className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="text-sm text-slate-700">Inativo</span>
+                <span className="text-sm text-foreground">Inativo</span>
               </label>
             </div>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               Inativos nao aparecem na lista principal e ficam na aba Inativos.
             </p>
           </div>
@@ -655,7 +656,7 @@ export function FornecedorForm({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-slate-100"
+              className={BTN_CANCEL}
             >
               Cancelar
             </button>

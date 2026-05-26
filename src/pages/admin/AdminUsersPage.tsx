@@ -41,6 +41,7 @@ import { useAdminTenantsStore } from '@/stores/adminTenantsStore';
 import type { AdminUser, AdminUserFormData } from '@/types/admin';
 import { ROLE_LABELS, ROLE_COLORS } from '@/types/admin';
 import { cn } from '@/lib/cn';
+import { PAGE_TITLE, INPUT_CLASS } from '@/lib/uiClasses';
 import { buildTableColumns } from '@/lib/buildTableColumns';
 import { InputCelular } from '@/components/ui/input-masked';
 import { InputPassword } from '@/components/ui/input-password';
@@ -93,8 +94,8 @@ export function AdminUsersPage() {
         ),
         cell: ({ row }) => (
           <div>
-            <p className="font-medium text-slate-900">{row.original.nome}</p>
-            <p className="text-sm text-slate-500">{row.original.email}</p>
+            <p className="font-medium text-foreground">{row.original.nome}</p>
+            <p className="text-sm text-muted-foreground">{row.original.email}</p>
           </div>
         ),
       },
@@ -102,7 +103,7 @@ export function AdminUsersPage() {
         accessorKey: 'tenantName',
         header: 'Empresa',
         cell: ({ row }) => (
-          <span className="text-slate-600">{row.original.tenantName || '-'}</span>
+          <span className="text-muted-foreground">{row.original.tenantName || '-'}</span>
         ),
       },
       role: {
@@ -170,7 +171,7 @@ export function AdminUsersPage() {
               </button>
               <button
                 onClick={() => handleDeleteClick(row.original)}
-                className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
+                className="rounded-lg p-2 text-red-600 transition-colors hover:bg-destructive/10"
                 title="Excluir"
               >
                 <Trash2 className="h-4 w-4" />
@@ -307,8 +308,8 @@ export function AdminUsersPage() {
       {/* Header fixo com botao Criar sempre visivel */}
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Usuarios</h1>
-          <p className="text-sm text-slate-500">Gerencie os usuarios do sistema</p>
+          <h1 className={PAGE_TITLE}>Usuarios</h1>
+          <p className="text-sm text-muted-foreground">Gerencie os usuarios do sistema</p>
         </div>
         <button
           type="button"
@@ -322,27 +323,27 @@ export function AdminUsersPage() {
 
       {/* Filtro */}
       <div className="relative shrink-0">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           placeholder="Buscar por nome, email ou empresa..."
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:max-w-xs"
+          className="w-full rounded-lg border border-input bg-background py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring sm:max-w-xs"
         />
       </div>
 
       {/* Tabela com scroll */}
-      <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-border bg-card shadow-sm">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
           </div>
         ) : users.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <Users className="h-12 w-12 text-slate-300" />
-            <p className="mt-4 font-medium text-slate-900">Nenhum usuario cadastrado</p>
-            <p className="mt-1 text-sm text-slate-500">
+            <Users className="h-12 w-12 text-muted-foreground/50" />
+            <p className="mt-4 font-medium text-foreground">Nenhum usuario cadastrado</p>
+            <p className="mt-1 text-sm text-muted-foreground">
               Clique em "Novo Usuario" para adicionar
             </p>
           </div>
@@ -351,11 +352,11 @@ export function AdminUsersPage() {
             <table className="w-full">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id} className="border-b border-slate-200 bg-slate-50">
+                  <tr key={headerGroup.id} className="border-b border-border bg-muted/40">
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="px-4 py-3 text-left text-sm font-semibold text-slate-600"
+                        className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground"
                       >
                         {header.isPlaceholder
                           ? null
@@ -369,10 +370,10 @@ export function AdminUsersPage() {
                 {table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50"
+                    className="border-b border-border transition-colors last:border-0 hover:bg-muted/40"
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-3 text-sm text-slate-600">
+                      <td key={cell.id} className="px-4 py-3 text-sm text-muted-foreground">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
@@ -385,8 +386,8 @@ export function AdminUsersPage() {
 
         {/* Footer */}
         {users.length > 0 && (
-          <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-sm text-slate-600">
+          <div className="border-t border-border bg-muted/40 px-4 py-3">
+            <p className="text-sm text-muted-foreground">
               Total: <span className="font-medium">{users.length}</span> usuarios
             </p>
           </div>
@@ -404,27 +405,27 @@ export function AdminUsersPage() {
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Nome *
               </label>
               <input
                 type="text"
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className={INPUT_CLASS}
                 placeholder="Nome completo"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Email *
               </label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className={INPUT_CLASS}
                 placeholder="email@empresa.com"
               />
             </div>
@@ -436,7 +437,7 @@ export function AdminUsersPage() {
             />
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Empresa *
               </label>
               <select
@@ -456,7 +457,7 @@ export function AdminUsersPage() {
                     permissoes: permissoesValidas,
                   });
                 }}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className={INPUT_CLASS}
               >
                 <option value="">Selecione uma empresa</option>
                 {tenants.map((tenant) => (
@@ -468,7 +469,7 @@ export function AdminUsersPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Perfil *
               </label>
               <select
@@ -476,7 +477,7 @@ export function AdminUsersPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, role: e.target.value as AdminUserFormData['role'] })
                 }
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className={INPUT_CLASS}
               >
                 <option value="user">Usuario</option>
                 <option value="manager">Gerente</option>
@@ -484,26 +485,26 @@ export function AdminUsersPage() {
               </select>
             </div>
 
-            <div className="border-t border-slate-200 pt-4">
-              <p className="mb-1 text-sm font-medium text-slate-700">
+            <div className="border-t border-border pt-4">
+              <p className="mb-1 text-sm font-medium text-foreground">
                 Paginas que o usuario pode acessar
               </p>
-              <p className="mb-3 text-xs text-slate-500">
+              <p className="mb-3 text-xs text-muted-foreground">
                 {selectedTenant?.paginasPermitidas?.length
                   ? 'Apenas as telas permitidas para a empresa estao listadas. O usuario so vera o que estiver marcado.'
                   : 'Selecione as telas para este usuario. Se a empresa nao tiver restricao, todas aparecem aqui.'}
               </p>
               {loadingPaginas && (
-                <p className="text-xs text-slate-500">Carregando paginas...</p>
+                <p className="text-xs text-muted-foreground">Carregando paginas...</p>
               )}
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-muted/40 p-3">
                 <div className="grid gap-2 sm:grid-cols-2">
                   {paginasDisponiveisParaUsuario.map((pagina) => {
                     const checked = (formData.permissoes ?? []).includes(pagina.id);
                     return (
                       <label
                         key={pagina.id}
-                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-slate-100"
+                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-muted"
                       >
                         <input
                           type="checkbox"
@@ -514,9 +515,9 @@ export function AdminUsersPage() {
                               : (formData.permissoes ?? []).filter((id) => id !== pagina.id);
                             setFormData({ ...formData, permissoes: next });
                           }}
-                          className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
                         />
-                        <span className="text-sm text-slate-700">{pagina.label}</span>
+                        <span className="text-sm text-foreground">{pagina.label}</span>
                       </label>
                     );
                   })}
@@ -542,9 +543,9 @@ export function AdminUsersPage() {
                 id="isActive"
                 checked={formData.isActive}
                 onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
               />
-              <label htmlFor="isActive" className="text-sm text-slate-700">
+              <label htmlFor="isActive" className="text-sm text-foreground">
                 Usuario ativo
               </label>
             </div>
@@ -554,7 +555,7 @@ export function AdminUsersPage() {
               <button
                 type="button"
                 onClick={() => setIsDialogOpen(false)}
-                className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
               >
                 Cancelar
               </button>

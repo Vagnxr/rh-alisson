@@ -1,6 +1,7 @@
 import { forwardRef, useState, useMemo, type InputHTMLAttributes } from 'react';
 import { Eye, EyeOff, Check, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { INPUT_CLASS } from '@/lib/uiClasses';
 import { checkPasswordStrength } from '@/lib/masks';
 
 export interface InputPasswordProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -48,7 +49,7 @@ const InputPassword = forwardRef<HTMLInputElement, InputPasswordProps>(
     return (
       <div className="space-y-2">
         {label && (
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="block text-sm font-medium text-foreground">
             {label}
             {props.required && <span className="ml-0.5 text-red-500">*</span>}
           </label>
@@ -63,12 +64,9 @@ const InputPassword = forwardRef<HTMLInputElement, InputPasswordProps>(
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             className={cn(
-              'w-full rounded-lg border bg-white px-3 py-2 pr-10 text-sm text-slate-900 transition-colors',
-              'placeholder:text-slate-400',
-              'focus:outline-none focus:ring-1',
-              error
-                ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                : 'border-slate-200 focus:border-emerald-500 focus:ring-emerald-500',
+              INPUT_CLASS,
+              'pr-10 focus-visible:ring-1',
+              error && 'border-destructive focus-visible:ring-destructive',
               className
             )}
             {...props}
@@ -77,7 +75,7 @@ const InputPassword = forwardRef<HTMLInputElement, InputPasswordProps>(
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             tabIndex={-1}
           >
             {showPassword ? (
@@ -97,7 +95,7 @@ const InputPassword = forwardRef<HTMLInputElement, InputPasswordProps>(
                   key={i}
                   className={cn(
                     'h-1.5 flex-1 rounded-full transition-colors',
-                    i < strength.score ? strength.color : 'bg-slate-200'
+                    i < strength.score ? strength.color : 'bg-muted'
                   )}
                 />
               ))}
@@ -110,15 +108,15 @@ const InputPassword = forwardRef<HTMLInputElement, InputPasswordProps>(
 
         {/* Requisitos */}
         {showRequirements && (isFocused || value) && (
-          <div className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-medium text-slate-600">Requisitos da senha:</p>
+          <div className="space-y-1 rounded-lg border border-border bg-muted/40 p-3">
+            <p className="text-xs font-medium text-muted-foreground">Requisitos da senha:</p>
             <ul className="grid gap-1 sm:grid-cols-2">
               {requirements.map((req) => (
                 <li
                   key={req.key}
                   className={cn(
                     'flex items-center gap-1.5 text-xs transition-colors',
-                    req.met ? 'text-emerald-600' : 'text-slate-400'
+                    req.met ? 'text-primary' : 'text-muted-foreground'
                   )}
                 >
                   {req.met ? (
@@ -135,7 +133,7 @@ const InputPassword = forwardRef<HTMLInputElement, InputPasswordProps>(
 
         {/* Mensagem de erro ou hint */}
         {(error || hint) && !showRequirements && (
-          <p className={cn('text-xs', error ? 'text-red-500' : 'text-slate-500')}>
+          <p className={cn('text-xs', error ? 'text-destructive' : 'text-muted-foreground')}>
             {error || hint}
           </p>
         )}

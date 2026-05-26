@@ -106,7 +106,7 @@ export function EntradaConfigDialogs({
                   return (
                     <li
                       key={m}
-                      className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
+                      className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2"
                     >
                       <span className="text-sm">{m}</span>
                       <button
@@ -118,8 +118,8 @@ export function EntradaConfigDialogs({
                         className={cn(
                           'rounded p-1.5',
                           isPadrao
-                            ? 'cursor-not-allowed text-slate-300'
-                            : 'text-slate-400 hover:bg-red-50 hover:text-red-600',
+                            ? 'cursor-not-allowed text-muted-foreground/50'
+                            : 'text-muted-foreground hover:bg-destructive/10 hover:text-red-600',
                         )}
                         title={isPadrao ? 'Padrao do sistema nao pode ser removido' : 'Remover'}
                       >
@@ -176,7 +176,7 @@ export function EntradaConfigDialogs({
                   return (
                     <li
                       key={c.id}
-                      className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
+                      className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2"
                     >
                       <span className="text-sm">{c.nome}</span>
                       <button
@@ -188,8 +188,8 @@ export function EntradaConfigDialogs({
                         className={cn(
                           'rounded p-1.5',
                           isPadrao
-                            ? 'cursor-not-allowed text-slate-300'
-                            : 'text-slate-400 hover:bg-red-50 hover:text-red-600',
+                            ? 'cursor-not-allowed text-muted-foreground/50'
+                            : 'text-muted-foreground hover:bg-destructive/10 hover:text-red-600',
                         )}
                         title={isPadrao ? 'Padrao do sistema nao pode ser removido' : 'Remover'}
                       >
@@ -222,7 +222,7 @@ export function EntradaConfigDialogs({
                 onChange={e => setNovaForma(e.target.value)}
                 className={INPUT_CLASS}
               />
-              <label className="flex items-center gap-2 text-xs text-slate-600">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <input
                   type="checkbox"
                   checked={novaFormaComunicarAgenda}
@@ -230,7 +230,7 @@ export function EntradaConfigDialogs({
                 />
                 <span>
                   Comunicar agenda{' '}
-                  <span className="text-slate-400">(modo Boleto: gera agenda, saida ao pagar)</span>
+                  <span className="text-muted-foreground">(modo Boleto: gera agenda, saida ao pagar)</span>
                 </span>
               </label>
               <button
@@ -254,7 +254,7 @@ export function EntradaConfigDialogs({
             </div>
             {loadingFormas && formasPagamento.length === 0 ? (
               <div className="flex items-center justify-center py-6">
-                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
               <ul className="max-h-40 space-y-1 overflow-y-auto">
@@ -266,7 +266,7 @@ export function EntradaConfigDialogs({
                     return (
                       <li
                         key={f.id}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                        className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2"
                       >
                         {isEditing ? (
                           <>
@@ -296,7 +296,7 @@ export function EntradaConfigDialogs({
                                 setEditingFormaId(null);
                                 setEditingFormaNome('');
                               }}
-                              className="shrink-0 rounded border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                              className="shrink-0 rounded border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/40"
                             >
                               Cancelar
                             </button>
@@ -307,10 +307,10 @@ export function EntradaConfigDialogs({
                               <span className="text-sm">
                                 {f.nome}
                                 {isDefault && (
-                                  <span className="ml-1.5 text-xs text-slate-400">(padrao)</span>
+                                  <span className="ml-1.5 text-xs text-muted-foreground">(padrao)</span>
                                 )}
                               </span>
-                              <span className="text-xs text-slate-500">
+                              <span className="text-xs text-muted-foreground">
                                 {f.comunicarAgenda
                                   ? 'Modo Boleto (gera agenda, saida ao marcar pago)'
                                   : 'Modo PIX/Dinheiro (saida imediata)'}
@@ -329,8 +329,8 @@ export function EntradaConfigDialogs({
                                 className={cn(
                                   'rounded p-1.5',
                                   isDefault
-                                    ? 'cursor-not-allowed text-slate-300'
-                                    : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600',
+                                    ? 'cursor-not-allowed text-muted-foreground/50'
+                                    : 'text-muted-foreground hover:bg-muted hover:text-muted-foreground',
                                 )}
                                 title={isDefault ? 'Forma padrao nao pode ser editada' : 'Editar'}
                               >
@@ -345,8 +345,8 @@ export function EntradaConfigDialogs({
                                 className={cn(
                                   'rounded p-1.5',
                                   isDefault
-                                    ? 'cursor-not-allowed text-slate-300'
-                                    : 'text-slate-400 hover:bg-red-50 hover:text-red-600',
+                                    ? 'cursor-not-allowed text-muted-foreground/50'
+                                    : 'text-muted-foreground hover:bg-destructive/10 hover:text-red-600',
                                 )}
                                 title={isDefault ? 'Forma padrao nao pode ser excluida' : 'Excluir'}
                               >

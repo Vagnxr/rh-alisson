@@ -37,6 +37,7 @@ import { formatDateStringToBR } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { DateInput } from '@/components/ui/date-input';
+import { INPUT_CLASS, PAGE_TITLE, PAGE_SUBTITLE, TABLE_CARD, BTN_CANCEL } from '@/lib/uiClasses';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -65,8 +66,7 @@ function diaSemanaFromDate(dateStr: string): string {
   return dias[date.getDay()];
 }
 
-const inputClass =
-  'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+const inputClass = INPUT_CLASS;
 
 export function ControleDepositoPage() {
   const [sorting1, setSorting1] = useState<SortingState>([]);
@@ -276,10 +276,10 @@ export function ControleDepositoPage() {
         header: () => <span className="sr-only">Acoes</span>,
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-1">
-            <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Editar" onClick={() => handleOpenDialogDeposito(row.original)}>
+            <button type="button" className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground" title="Editar" onClick={() => handleOpenDialogDeposito(row.original)}>
               <Pencil className="h-4 w-4" />
             </button>
-            <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Excluir" onClick={() => setDeleteDepositoId(row.original.id)}>
+            <button type="button" className="rounded p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600" title="Excluir" onClick={() => setDeleteDepositoId(row.original.id)}>
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
@@ -314,10 +314,10 @@ export function ControleDepositoPage() {
         header: () => <span className="sr-only">Acoes</span>,
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-1">
-            <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Editar" onClick={() => handleOpenDialogValor(row.original)}>
+            <button type="button" className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground" title="Editar" onClick={() => handleOpenDialogValor(row.original)}>
               <Pencil className="h-4 w-4" />
             </button>
-            <button type="button" className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600" title="Excluir" onClick={() => setDeleteValorId(row.original.id)}>
+            <button type="button" className="rounded p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600" title="Excluir" onClick={() => setDeleteValorId(row.original.id)}>
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
@@ -355,8 +355,8 @@ export function ControleDepositoPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Controle Deposito</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className={PAGE_TITLE}>Controle Deposito</h1>
+          <p className={PAGE_SUBTITLE}>
             Tabela Deposito: reflexo da parte de deposito do caixa. Valor depositado: valor efetivamente depositado.
           </p>
         </div>
@@ -366,9 +366,9 @@ export function ControleDepositoPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="border-b border-slate-200 bg-slate-100 px-4 py-2 flex items-center justify-between flex-wrap gap-2">
-            <h2 className="text-sm font-semibold text-slate-800">Depósito</h2>
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="border-b border-border bg-muted px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-sm font-semibold text-foreground">Depósito</h2>
             <div className="flex items-center gap-2">
               <ExportButtons
                 data={depositos.map((r) => ({
@@ -399,33 +399,33 @@ export function ControleDepositoPage() {
           <div className="overflow-x-auto">
             {loading1 ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : (
             <table className="w-full min-w-[400px]">
-              <thead className="border-b border-slate-200 bg-slate-50">
+              <thead className="border-b border-border bg-muted/40">
                 {table1.getHeaderGroups().map((hg) => (
                   <tr key={hg.id}>
                     {hg.headers.map((header) => (
-                      <th key={header.id} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
+                      <th key={header.id} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground">
                         {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </th>
                     ))}
                   </tr>
                 ))}
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-border">
                 {table1.getRowModel().rows.length === 0 ? (
                   <tr>
-                    <td colSpan={columnsDeposito.length} className="px-6 py-8 text-center text-sm text-slate-500">
+                    <td colSpan={columnsDeposito.length} className="px-6 py-8 text-center text-sm text-muted-foreground">
                       Nenhum registro
                     </td>
                   </tr>
                 ) : (
                   table1.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-slate-50">
+                    <tr key={row.id} className="hover:bg-muted/40">
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="whitespace-nowrap px-4 py-3 text-sm text-slate-600">
+                        <td key={cell.id} className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
@@ -434,12 +434,12 @@ export function ControleDepositoPage() {
                 )}
               </tbody>
               {depositos.length > 0 && (
-                <tfoot className="border-t border-slate-200 bg-slate-50">
+                <tfoot className="border-t border-border bg-muted/40">
                   <tr>
-                    <td colSpan={columnsDeposito.length - 2} className="px-4 py-3 text-right text-sm font-medium text-slate-900">
+                    <td colSpan={columnsDeposito.length - 2} className="px-4 py-3 text-right text-sm font-medium text-foreground">
                       Total:
                     </td>
-                    <td className="px-4 py-3 text-sm font-bold text-slate-900">
+                    <td className="px-4 py-3 text-sm font-bold text-foreground">
                       {formatCurrency(totalDeposito)}
                     </td>
                     <td></td>
@@ -450,9 +450,9 @@ export function ControleDepositoPage() {
             )}
           </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="border-b border-slate-200 bg-slate-100 px-4 py-2 flex items-center justify-between flex-wrap gap-2">
-            <h2 className="text-sm font-semibold text-slate-800">Valor depositado</h2>
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="border-b border-border bg-muted px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-sm font-semibold text-foreground">Valor depositado</h2>
             <div className="flex items-center gap-2">
               <ExportButtons
                 data={valoresDepositados.map((r) => ({
@@ -481,33 +481,33 @@ export function ControleDepositoPage() {
           <div className="overflow-x-auto">
             {loading2 ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : (
             <table className="w-full min-w-[300px]">
-              <thead className="border-b border-slate-200 bg-slate-50">
+              <thead className="border-b border-border bg-muted/40">
                 {table2.getHeaderGroups().map((hg) => (
                   <tr key={hg.id}>
                     {hg.headers.map((header) => (
-                      <th key={header.id} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700">
+                      <th key={header.id} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground">
                         {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </th>
                     ))}
                   </tr>
                 ))}
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-border">
                 {table2.getRowModel().rows.length === 0 ? (
                   <tr>
-                    <td colSpan={columnsValor.length} className="px-6 py-8 text-center text-sm text-slate-500">
+                    <td colSpan={columnsValor.length} className="px-6 py-8 text-center text-sm text-muted-foreground">
                       Nenhum registro
                     </td>
                   </tr>
                 ) : (
                   table2.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-slate-50">
+                    <tr key={row.id} className="hover:bg-muted/40">
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="whitespace-nowrap px-4 py-3 text-sm text-slate-600">
+                        <td key={cell.id} className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
@@ -516,12 +516,12 @@ export function ControleDepositoPage() {
                 )}
               </tbody>
               {valoresDepositados.length > 0 && (
-                <tfoot className="border-t border-slate-200 bg-slate-50">
+                <tfoot className="border-t border-border bg-muted/40">
                   <tr>
-                    <td colSpan={columnsValor.length - 2} className="px-4 py-3 text-right text-sm font-medium text-slate-900">
+                    <td colSpan={columnsValor.length - 2} className="px-4 py-3 text-right text-sm font-medium text-foreground">
                       Total:
                     </td>
-                    <td className="px-4 py-3 text-sm font-bold text-slate-900">
+                    <td className="px-4 py-3 text-sm font-bold text-foreground">
                       {formatCurrency(totalValorDepositado)}
                     </td>
                     <td></td>
@@ -544,25 +544,25 @@ export function ControleDepositoPage() {
             <DialogBody>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Data</label>
+                <label className="text-sm font-medium text-foreground">Data</label>
                 <DateInput value={formDeposito.data} onChange={(v) => setFormDeposito((prev) => ({ ...prev, data: v, dia: diaSemanaFromDate(v).toUpperCase() }))} className={inputClass} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Dia</label>
-                <input type="text" readOnly value={formDeposito.dia} className={inputClass + ' bg-slate-50 uppercase'} aria-label="Dia da semana (preenchido pela data)" />
+                <label className="text-sm font-medium text-foreground">Dia</label>
+                <input type="text" readOnly value={formDeposito.dia} className={inputClass + ' bg-muted/40 uppercase'} aria-label="Dia da semana (preenchido pela data)" />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Dinheiro (R$)</label>
+                <label className="text-sm font-medium text-foreground">Dinheiro (R$)</label>
                 <CurrencyInput value={formDeposito.dinheiro} onChange={(v) => setFormDeposito({ ...formDeposito, dinheiro: v })} className={inputClass} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Responsável pelo Depósito</label>
+                <label className="text-sm font-medium text-foreground">Responsável pelo Depósito</label>
                 <input type="text" placeholder="Nome de quem foi depositar" value={formDeposito.responsavelDeposito} onChange={(e) => setFormDeposito({ ...formDeposito, responsavelDeposito: e.target.value.toUpperCase() })} className={inputClass + ' uppercase'} required />
               </div>
             </div>
             </DialogBody>
             <DialogFooter>
-              <button type="button" onClick={() => setDialogDeposito(false)} className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100">Cancelar</button>
+              <button type="button" onClick={() => setDialogDeposito(false)} className={BTN_CANCEL}>Cancelar</button>
               <button type="submit" className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">{editingDeposito ? 'Salvar' : 'Adicionar'}</button>
             </DialogFooter>
           </form>
@@ -579,21 +579,21 @@ export function ControleDepositoPage() {
             <DialogBody>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 mb-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Data</label>
+                <label className="text-sm font-medium text-foreground">Data</label>
                 <DateInput value={formValor.data} onChange={(v) => setFormValor((prev) => ({ ...prev, data: v, dia: diaSemanaFromDate(v).toUpperCase() }))} className={inputClass} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Dia</label>
-                <input type="text" readOnly value={formValor.dia} className={inputClass + ' bg-slate-50 uppercase'} aria-label="Dia da semana (preenchido pela data)" />
+                <label className="text-sm font-medium text-foreground">Dia</label>
+                <input type="text" readOnly value={formValor.dia} className={inputClass + ' bg-muted/40 uppercase'} aria-label="Dia da semana (preenchido pela data)" />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Dinheiro (R$)</label>
+                <label className="text-sm font-medium text-foreground">Dinheiro (R$)</label>
                 <CurrencyInput value={formValor.dinheiro} onChange={(v) => setFormValor({ ...formValor, dinheiro: v })} className={inputClass} />
               </div>
             </div>
             </DialogBody>
             <DialogFooter>
-              <button type="button" onClick={() => setDialogValor(false)} className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100">Cancelar</button>
+              <button type="button" onClick={() => setDialogValor(false)} className={BTN_CANCEL}>Cancelar</button>
               <button type="submit" className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">{editingValor ? 'Salvar' : 'Adicionar'}</button>
             </DialogFooter>
           </form>

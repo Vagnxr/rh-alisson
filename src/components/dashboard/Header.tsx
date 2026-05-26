@@ -1,18 +1,21 @@
 import { createPortal } from 'react-dom';
-import { LogOut, User, Bell, Menu, Building2, ChevronDown, Users, Settings, Store } from 'lucide-react';
+import { LogOut, User, Bell, Menu, Building2, ChevronDown, Users, Settings, Store, Sun, Moon } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useTenantStore } from '@/stores/tenantStore';
 import { useLojaStore } from '@/stores/lojaStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { clearTenantCache } from '@/lib/clearTenantCache';
 import { useNavigate, Link } from 'react-router-dom';
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/cn';
 
 export function Header() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const toggleSidebar = useSidebarStore((s) => s.toggle);
   const currentTenant = useTenantStore((s) => s.currentTenant);
+  const { isDark, toggle: toggleTheme } = useThemeStore();
   const clearTenant = useTenantStore((s) => s.clearTenant);
   const { lojas, lojaAtual, setLojaAtual, fetchLojas } = useLojaStore();
   const navigate = useNavigate();
@@ -109,14 +112,14 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:h-16 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-4 sm:h-16 sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
         {/* Botao menu mobile - shrink-0 garante area de toque em telas pequenas */}
         <button
           type="button"
           onClick={toggleSidebar}
           aria-label="Abrir menu"
-          className="shrink-0 rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
+          className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -126,19 +129,19 @@ export function Header() {
           <div className="relative" ref={tenantMenuRef}>
             <button
               onClick={() => user?.isSuperAdmin && setShowTenantMenu(!showTenantMenu)}
-              className={`flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm ${
-                user?.isSuperAdmin 
-                  ? 'cursor-pointer hover:bg-slate-50' 
+              className={`flex items-center gap-2 overflow-hidden rounded-lg border border-border px-3 py-1.5 text-sm ${
+                user?.isSuperAdmin
+                  ? 'cursor-pointer hover:bg-muted'
                   : 'cursor-default'
               }`}
             >
               <Building2 className="h-4 w-4 text-emerald-600" />
-              <span className="hidden text-slate-500 sm:inline">Empresa:</span>
-              <span className="hidden font-medium text-slate-700 sm:inline">
+              <span className="hidden text-muted-foreground sm:inline">Empresa:</span>
+              <span className="hidden font-medium text-foreground sm:inline">
                 {currentTenant.nomeFantasia || currentTenant.name}
               </span>
               {user?.isSuperAdmin && (
-                <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${showTenantMenu ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${showTenantMenu ? 'rotate-180' : ''}`} />
               )}
             </button>
 
@@ -150,20 +153,20 @@ export function Header() {
           <div className="relative" ref={lojaMenuRef}>
             <button
               onClick={() => setShowLojaMenu(!showLojaMenu)}
-              className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm cursor-pointer hover:bg-slate-50"
+              className="flex cursor-pointer items-center gap-2 overflow-hidden rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted"
             >
               <Store className="h-4 w-4 text-blue-600" />
-              <span className="hidden text-slate-500 sm:inline">Loja:</span>
-              <span className="hidden font-medium text-slate-700 sm:inline">
+              <span className="hidden text-muted-foreground sm:inline">Loja:</span>
+              <span className="hidden font-medium text-foreground sm:inline">
                 {lojaAtual?.apelido || 'Selecione'}
               </span>
-              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${showLojaMenu ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${showLojaMenu ? 'rotate-180' : ''}`} />
             </button>
 
           </div>
         )}
 
-        <h2 className="hidden text-lg font-semibold text-slate-800 lg:block">
+        <h2 className="hidden text-lg font-semibold text-foreground lg:block">
           Plataforma Financeira
         </h2>
       </div>
@@ -174,7 +177,7 @@ export function Header() {
           <div className="relative" ref={adminMenuRef}>
             <button
               onClick={() => setShowAdminMenu(!showAdminMenu)}
-              className="flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 transition-colors hover:bg-purple-100"
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground dark:border-purple-800/50 dark:bg-purple-950/40 dark:text-purple-200 dark:hover:bg-purple-900/50"
             >
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Admin</span>
@@ -184,31 +187,40 @@ export function Header() {
           </div>
         )}
 
+        {/* Toggle dark mode */}
+        <button
+          onClick={toggleTheme}
+          className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+          title={isDark ? 'Modo claro' : 'Modo escuro'}
+        >
+          {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </button>
+
         {/* Notificacoes */}
-        <button className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+        <button className="relative rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground">
           <Bell className="h-5 w-5" />
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
         </button>
 
         {/* Usuario */}
-        <div className="flex items-center gap-2 border-l border-slate-200 pl-2 sm:gap-3 sm:pl-4">
+        <div className="flex items-center gap-2 border-l border-border pl-2 sm:gap-3 sm:pl-4">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 sm:h-9 sm:w-9">
             <User className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-medium text-slate-700">
+            <p className="text-sm font-medium text-foreground">
               {user?.nome}
               {user?.isSuperAdmin && (
-                <span className="ml-1.5 rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700">
+                <span className="ml-1.5 rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
                   Super
                 </span>
               )}
             </p>
-            <p className="text-xs text-slate-500">{user?.email}</p>
+            <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
           <button
             onClick={handleLogout}
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
             title="Sair"
           >
             <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -221,7 +233,7 @@ export function Header() {
         createPortal(
           <div
             ref={dropdownPortalRef}
-            className="fixed z-[9999] rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+            className="fixed z-[9999] overflow-hidden rounded-lg border border-border bg-background py-1 shadow-lg"
             style={{
               top: portalDropdown.top,
               left: portalDropdown.left,
@@ -231,7 +243,7 @@ export function Header() {
             {portalDropdown.type === 'tenant' && (
               <button
                 onClick={handleChangeTenant}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                className="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-md px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
               >
                 <Building2 className="h-4 w-4" />
                 Trocar empresa
@@ -239,18 +251,19 @@ export function Header() {
             )}
             {portalDropdown.type === 'loja' && (
               <>
-                <div className="border-b border-slate-100 px-3 py-2">
-                  <span className="text-xs font-medium uppercase text-slate-500">Selecione a loja</span>
+                <div className="border-b border-border px-3 py-2">
+                  <span className="text-xs font-medium uppercase text-muted-foreground">Selecione a loja</span>
                 </div>
                 {lojasDoTenant.map((loja) => (
                   <button
                     key={loja.id}
                     onClick={() => handleSelectLoja(loja.id)}
-                    className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                    className={cn(
+                      'mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
                       lojaAtual?.id === loja.id
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'text-slate-600 hover:bg-slate-50'
-                    }`}
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        : 'text-foreground hover:bg-muted',
+                    )}
                   >
                     <Store className="h-4 w-4" />
                     <span className="flex-1 text-left">{loja.apelido}</span>
@@ -269,7 +282,7 @@ export function Header() {
                   <Link
                     to="/admin/empresas"
                     onClick={() => setShowAdminMenu(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                    className="mx-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
                   >
                     <Building2 className="h-4 w-4" />
                     Empresas
@@ -278,7 +291,7 @@ export function Header() {
                 <Link
                   to="/admin/usuarios"
                   onClick={() => setShowAdminMenu(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                  className="mx-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted"
                 >
                   <Users className="h-4 w-4" />
                   Usuarios
