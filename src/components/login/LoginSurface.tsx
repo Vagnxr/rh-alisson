@@ -47,25 +47,27 @@ export function LoginSurface({
         </button>
       </div>
 
-      <div className="form-wrap" data-screen={screen} data-dir={direction} key={screen}>
-        {screen === 'signin' && (
-          <SignInView
-            onForgot={() => go('forgot')}
-            onSignup={() => go('signup')}
-            onLogin={onLogin}
-            isLoading={isLoading}
-            apiError={apiError}
-          />
-        )}
-        {screen === 'forgot' && <ForgotView onBack={() => go('signin', 'back')} />}
-        {screen === 'signup' && (
-          <SignupView
-            onBack={() => go('signin', 'back')}
-            onRegister={onRegister}
-            isLoading={isLoading}
-            apiError={apiError}
-          />
-        )}
+      <div className="right-body">
+        <div className="form-wrap" data-screen={screen} data-dir={direction} key={screen}>
+          {screen === 'signin' && (
+            <SignInView
+              onForgot={() => go('forgot')}
+              onSignup={() => go('signup')}
+              onLogin={onLogin}
+              isLoading={isLoading}
+              apiError={apiError}
+            />
+          )}
+          {screen === 'forgot' && <ForgotView onBack={() => go('signin', 'back')} />}
+          {screen === 'signup' && (
+            <SignupView
+              onBack={() => go('signin', 'back')}
+              onRegister={onRegister}
+              isLoading={isLoading}
+              apiError={apiError}
+            />
+          )}
+        </div>
       </div>
 
       <footer className="right-foot">

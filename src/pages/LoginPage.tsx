@@ -20,9 +20,18 @@ export function LoginPage() {
     const body = document.body;
     const prevHtmlOverflow = html.style.overflow;
     const prevBodyOverflow = body.style.overflow;
-    html.style.overflow = 'hidden';
-    body.style.overflow = 'hidden';
+    const mq = window.matchMedia('(min-width: 981px)');
+
+    const applyOverflow = () => {
+      const lock = mq.matches;
+      html.style.overflow = lock ? 'hidden' : '';
+      body.style.overflow = lock ? '' : '';
+    };
+
+    applyOverflow();
+    mq.addEventListener('change', applyOverflow);
     return () => {
+      mq.removeEventListener('change', applyOverflow);
       html.style.overflow = prevHtmlOverflow;
       body.style.overflow = prevBodyOverflow;
     };
