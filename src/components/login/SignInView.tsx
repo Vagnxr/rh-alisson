@@ -10,18 +10,6 @@ type SignInViewProps = {
   apiError: string | null;
 };
 
-const STRENGTH_COLORS = ['#f87171', '#fb923c', '#facc15', '#22c55e'];
-const STRENGTH_LABELS = ['Muito fraca', 'Fraca', 'Moderada', 'Forte'];
-
-function scorePassword(v: string): number {
-  let s = 0;
-  if (v.length >= 6) s++;
-  if (v.length >= 10) s++;
-  if (/[A-Z]/.test(v) && /[0-9]/.test(v)) s++;
-  if (/[^A-Za-z0-9]/.test(v)) s++;
-  return Math.min(s, 4);
-}
-
 export function SignInView({ onForgot, onSignup, onLogin, isLoading, apiError }: SignInViewProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,8 +22,6 @@ export function SignInView({ onForgot, onSignup, onLogin, isLoading, apiError }:
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const passwordValid = password.length >= 6;
-  const pwdScore = scorePassword(password);
-  const showStrength = password.length > 0;
 
   useEffect(() => {
     if (apiError) {
@@ -149,25 +135,6 @@ export function SignInView({ onForgot, onSignup, onLogin, isLoading, apiError }:
             <button type="button" className="eye-btn" onClick={() => setShowPwd((v) => !v)} aria-label="Mostrar senha">
               {showPwd ? <IconEyeOff size={14} /> : <IconEye size={14} />}
             </button>
-          </div>
-          <div className={`strength-wrap${showStrength ? ' show' : ''}`}>
-            <div className="strength-bars">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="s-bar"
-                  style={{
-                    background: i < pwdScore ? STRENGTH_COLORS[pwdScore - 1] : 'var(--surf3)',
-                  }}
-                />
-              ))}
-            </div>
-            <div
-              className="strength-lbl"
-              style={{ color: pwdScore > 0 ? STRENGTH_COLORS[pwdScore - 1] : STRENGTH_COLORS[0] }}
-            >
-              {pwdScore > 0 ? STRENGTH_LABELS[pwdScore - 1] : 'Forca da senha'}
-            </div>
           </div>
           <div className="field-err">Minimo 6 caracteres.</div>
         </div>

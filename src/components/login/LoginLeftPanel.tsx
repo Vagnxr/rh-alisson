@@ -27,10 +27,6 @@ export function LoginLeftPanel() {
         </div>
 
         <div className="hero">
-          <div className="hero-eyebrow">
-            <div className="pulse-dot" />
-            Plataforma ativa · v2.4
-          </div>
           <h1 className="hero-title">
             Gestão completa
             <br />
