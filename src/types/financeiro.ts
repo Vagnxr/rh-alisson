@@ -244,17 +244,37 @@ export interface VendaPerdaDebitoPixRow {
   totalLiquido: number;
 }
 
-export interface VendaPerdaAlimRefRow {
+/** Resumo de voucher (cartoes) no Venda e Perda. */
+export interface VendaPerdaVoucherRow {
   totalBruto: number;
   descontos: number;
   totalLiquido: number;
 }
 
-export interface VendaPerdaFoodRow {
+/** Resumo de iFood (lancamentos em cartoes) no Venda e Perda. */
+export interface VendaPerdaIfoodRow {
   totalBruto: number;
   descontos: number;
   totalLiquido: number;
-  viaLoja?: string;
+}
+
+/** @deprecated Use VendaPerdaVoucherRow */
+export type VendaPerdaAlimRefRow = VendaPerdaVoucherRow;
+
+/** @deprecated Use VendaPerdaIfoodRow */
+export type VendaPerdaFoodRow = VendaPerdaIfoodRow;
+
+/** Config mensal editavel (POS aluguel + quadro iFood manual). */
+export interface VendaPerdaIfoodConfig {
+  valorBruto: number;
+  viaLoja: number;
+  descontos: number;
+  valorLiquido: number;
+}
+
+export interface VendaPerdaConfigMes {
+  posAluguel: number;
+  ifood: VendaPerdaIfoodConfig;
 }
 
 export interface VendaPerdaTotalCartoesRow {

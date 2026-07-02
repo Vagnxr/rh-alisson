@@ -1,61 +1,65 @@
-import { AnimatedNumber } from './AnimatedNumber';
-import { LiveChartBlock } from './LiveChartBlock';
+import { useRef } from 'react';
+import { MarketTicker } from './MarketTicker';
+import { useParticleCanvas } from './useParticleCanvas';
+import { useTypewriter } from './useTypewriter';
 import { MSystemMark } from './icons';
 
+const PHOTO_URL =
+  'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1600&q=90';
+
 export function LoginLeftPanel() {
+  const panelRef = useRef<HTMLElement>(null);
+  const canvasRef = useParticleCanvas(panelRef);
+  const { staticText, dynamicText } = useTypewriter();
+
   return (
-    <aside className="left">
-      <header className="brand rise rise-1">
-        <span className="brand-mark">
-          <MSystemMark size={26} />
-        </span>
-        <span className="brand-name">MSystem</span>
-        <span className="brand-meta">
-          <span className="dot" />
-Versão
-          <span style={{ opacity: 0.5, marginLeft: 2 }}>1.0</span>
-        </span>
-      </header>
+    <aside className="left" ref={panelRef}>
+      <div className="left-photo" style={{ backgroundImage: `url('${PHOTO_URL}')` }} />
+      <div className="left-overlay" />
+      <canvas ref={canvasRef} className="particle-canvas" aria-hidden />
 
-      <div className="hero">
-        <span className="eyebrow rise rise-2">
-          <span className="dot" />
-          Gestão financeira
-        </span>
-        <h1 className="headline rise rise-3">
-          Gestão completa do seu <em>negócio</em>.
-        </h1>
-        <p className="sub rise rise-4">
-          Controle vendas, estoque, fluxo de caixa e equipe, da sua conveniência ao seu
-          supermercado, com a clareza de quem entende cada centavo.
-        </p>
+      <div className="left-inner">
+        <div className="brand">
+          <div className="brand-icon">
+            <MSystemMark size={18} />
+          </div>
+          <span className="brand-name">MSystem</span>
+        </div>
 
-        <div className="stats rise rise-5">
-          <div className="stat">
-            <div className="stat-value">
-              <AnimatedNumber value={12.4} format={v => v.toFixed(1)} />
-              <span className="unit">k+</span>
-            </div>
-            <div className="stat-label">Empresas ativas</div>
+        <div className="hero">
+          <div className="hero-eyebrow">
+            <div className="pulse-dot" />
+            Plataforma ativa · v2.4
           </div>
-          <div className="stat">
-            <div className="stat-value">
-              <AnimatedNumber value={99.98} format={v => v.toFixed(2)} />
-              <span className="unit">%</span>
-            </div>
-            <div className="stat-label">Uptime em 12 meses</div>
+          <h1 className="hero-title">
+            Gestão completa
+            <br />
+            do seu <em>negócio</em>
+          </h1>
+          <div className="typewriter-wrap">
+            <span>{staticText}</span>
+            <span className="typewriter-text">{dynamicText}</span>
+            <span className="cursor" />
           </div>
-          <div className="stat">
-            <div className="stat-value">
-              <AnimatedNumber value={4.9} format={v => v.toFixed(1)} />
-              <span className="unit">/5</span>
+
+          <div className="hero-stats">
+            <div className="stat-item">
+              <div className="stat-num">12k+</div>
+              <div className="stat-label">Empresas ativas</div>
             </div>
-            <div className="stat-label">Avaliação média</div>
+            <div className="stat-item">
+              <div className="stat-num">99%</div>
+              <div className="stat-label">Uptime garantido</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-num">4.9</div>
+              <div className="stat-label">Avaliação média</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <LiveChartBlock />
+        <MarketTicker />
+      </div>
     </aside>
   );
 }

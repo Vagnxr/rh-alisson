@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ForgotView } from './ForgotView';
 import { SignInView } from './SignInView';
 import { SignupView } from './SignupView';
-import { IconHelp, IconMoon, IconSun, MSystemMark } from './icons';
+import { IconMoon, IconSun, MSystemMark } from './icons';
 
 export type LoginScreen = 'signin' | 'forgot' | 'signup';
 
@@ -24,60 +24,41 @@ export function LoginSurface({
   apiError,
 }: LoginSurfaceProps) {
   const [screen, setScreen] = useState<LoginScreen>('signin');
-  const [direction, setDirection] = useState<'forward' | 'back'>('forward');
-  const go = (next: LoginScreen, dir: 'forward' | 'back' = 'forward') => {
-    setDirection(dir);
-    setScreen(next);
-  };
 
   return (
     <div className="right">
-      <div className="right-top">
-        <div className="right-top-left">
-          <span className="brand-mark" style={{ width: 36, height: 36, color: 'var(--accent)' }}>
-            <MSystemMark size={22} />
-          </span>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17 }}>MSystem</span>
-        </div>
-        <button className="icon-btn" type="button" aria-label="Ajuda" title="Precisa de ajuda?">
-          <IconHelp />
-        </button>
-        <button className="icon-btn" type="button" aria-label="Alternar tema" onClick={onTheme} title="Alternar tema">
-          {theme === 'dark' ? <IconSun /> : <IconMoon />}
+      <div className="controls">
+        <button className="ctrl-btn" type="button" aria-label="Alternar tema" onClick={onTheme}>
+          {theme === 'dark' ? <IconMoon size={14} /> : <IconSun size={14} />}
         </button>
       </div>
 
-      <div className="right-body">
-        <div className="form-wrap" data-screen={screen} data-dir={direction} key={screen}>
-          {screen === 'signin' && (
-            <SignInView
-              onForgot={() => go('forgot')}
-              onSignup={() => go('signup')}
-              onLogin={onLogin}
-              isLoading={isLoading}
-              apiError={apiError}
-            />
-          )}
-          {screen === 'forgot' && <ForgotView onBack={() => go('signin', 'back')} />}
-          {screen === 'signup' && (
-            <SignupView
-              onBack={() => go('signin', 'back')}
-              onRegister={onRegister}
-              isLoading={isLoading}
-              apiError={apiError}
-            />
-          )}
+      <div className="form-wrap">
+        <div className="form-logo">
+          <div className="logo-ring">
+            <MSystemMark size={25} />
+          </div>
         </div>
-      </div>
 
-      <footer className="right-foot">
-        <span>© 2026 MSystem</span>
-        <span className="foot-links">
-          <a href="#">Termos</a>
-          <a href="#">Privacidade</a>
-          <a href="#">Status</a>
-        </span>
-      </footer>
+        {screen === 'signin' && (
+          <SignInView
+            onForgot={() => setScreen('forgot')}
+            onSignup={() => setScreen('signup')}
+            onLogin={onLogin}
+            isLoading={isLoading}
+            apiError={apiError}
+          />
+        )}
+        {screen === 'forgot' && <ForgotView onBack={() => setScreen('signin')} />}
+        {screen === 'signup' && (
+          <SignupView
+            onBack={() => setScreen('signin')}
+            onRegister={onRegister}
+            isLoading={isLoading}
+            apiError={apiError}
+          />
+        )}
+      </div>
     </div>
   );
 }

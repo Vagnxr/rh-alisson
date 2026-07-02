@@ -70,13 +70,7 @@ export function LoginPage() {
   );
 
   return (
-    <div
-      className="login-page"
-      data-theme={theme}
-      data-accent="emerald"
-      data-density="comfortable"
-      data-input="outlined"
-    >
+    <div className="login-page" data-theme={theme}>
       <main className="stage">
         <LoginLeftPanel />
         <LoginSurface
