@@ -33,7 +33,7 @@ import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { AtivoImobilizadoRow, AtivoImobilizadoFormaPagto } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
-import { formatDateStringToBR, addOneMonth } from '@/lib/date';
+import { formatDateStringToBR, addOneMonth, formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { DataValorList, type DataValorItem } from '@/components/ui/data-valor-list';
 import { CurrencyInput } from '@/components/ui/currency-input';
@@ -62,7 +62,7 @@ export function AtivoImobilizadoPage() {
   const [editingEntrada, setEditingEntrada] = useState<AtivoImobilizadoRow | null>(null);
   const [deleteEntradaId, setDeleteEntradaId] = useState<string | null>(null);
   const [formEntrada, setFormEntrada] = useState({
-    data: new Date().toISOString().split('T')[0],
+    data: formatDateToLocalYYYYMMDD(new Date()),
     nf: '',
     descricaoFornecedor: '',
     valor: '',
@@ -74,7 +74,7 @@ export function AtivoImobilizadoPage() {
   /** Ref com ultimo valor/data digitados (evita perder ao trocar forma de pagamento antes do state atualizar). */
   const lastDataValorRef = useRef({ data: '', valor: '' });
   const handleOpenDialogEntrada = (item?: AtivoImobilizadoRow) => {
-    const hoje = new Date().toISOString().split('T')[0];
+    const hoje = formatDateToLocalYYYYMMDD(new Date());
     if (item) {
       setEditingEntrada(item);
       const isBoleto = (item.formaPagto ?? '').toString().toLowerCase() === 'boleto';
@@ -798,7 +798,7 @@ export function AtivoImobilizadoPage() {
                           const dataBase = ultima?.data?.trim() || formEntrada.data;
                           const proximaData = dataBase
                             ? addOneMonth(dataBase)
-                            : new Date().toISOString().split('T')[0];
+                            : formatDateToLocalYYYYMMDD(new Date());
                           const ultimoValor = ultima?.valor ?? formEntrada.valor;
                           return { data: proximaData, valor: ultimoValor };
                         }}

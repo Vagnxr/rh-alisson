@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FileSpreadsheet, FileText, Download, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { useTenantStore } from '@/stores/tenantStore';
 
 interface ExportColumn {
@@ -85,7 +86,7 @@ export function ExportButtons({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `${filename}_${formatDateToLocalYYYYMMDD(new Date())}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

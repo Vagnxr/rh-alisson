@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/cn';
-import { formatDateStringToBR } from '@/lib/date';
+import { formatDateStringToBR, formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { useLembretesStore, type Lembrete } from '@/stores/lembretesStore';
 import { DateInput } from '@/components/ui/date-input';
 
@@ -113,7 +113,7 @@ export function LembretesPage() {
       setFormData({
         titulo: '',
         descricao: '',
-        data: new Date().toISOString().split('T')[0],
+        data: formatDateToLocalYYYYMMDD(new Date()),
         hora: '',
         prioridade: 'media',
       });

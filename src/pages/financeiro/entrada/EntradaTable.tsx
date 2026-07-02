@@ -193,6 +193,11 @@ export function EntradaTable({
     getSortedRowModel: getSortedRowModel(),
   });
 
+  const valorTotal = useMemo(
+    () => items.reduce((acc, row) => acc + getRowTotal(row), 0),
+    [items, getRowTotal],
+  );
+
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="overflow-x-auto">
@@ -243,6 +248,18 @@ export function EntradaTable({
                 ))
               )}
             </tbody>
+            {table.getRowModel().rows.length > 0 && (
+              <tfoot className="border-t border-border bg-muted/40">
+                <tr>
+                  <td
+                    colSpan={columns.length}
+                    className="whitespace-nowrap px-4 py-3 text-right text-sm font-bold text-foreground"
+                  >
+                    Valor Total: {formatCurrency(valorTotal)}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         )}
       </div>

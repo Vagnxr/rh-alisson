@@ -37,7 +37,7 @@ import type { TableColumnConfigFromApi, ColunaConfig } from '@/types/configuraca
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { useConfiguracaoStore } from '@/stores/configuracaoStore';
 import { buildTableColumns } from '@/lib/buildTableColumns';
-import { formatDateStringToBR } from '@/lib/date';
+import { formatDateStringToBR, formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { DateInput } from '@/components/ui/date-input';
@@ -192,7 +192,7 @@ export function CaixaPage() {
     );
   }, [colunasVisiveis]);
   const [formData, setFormData] = useState<Record<string, string>>({
-    dia: new Date().toISOString().split('T')[0],
+    dia: formatDateToLocalYYYYMMDD(new Date()),
     dinheiroDeposito: '',
     pagamentoPdv: '',
     pagamentoEscritorio: '',
@@ -244,7 +244,7 @@ export function CaixaPage() {
     const base: Record<string, string> = {
       dia: item
         ? (item.dia ?? '').toString().split('T')[0]?.slice(0, 10) ?? ''
-        : new Date().toISOString().split('T')[0],
+        : formatDateToLocalYYYYMMDD(new Date()),
     };
     colunasValor.forEach((c) => {
       const val = item != null ? item[c.id] : '';

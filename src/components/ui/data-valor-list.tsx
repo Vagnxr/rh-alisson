@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { DateInput } from '@/components/ui/date-input';
 import { CurrencyInput } from '@/components/ui/currency-input';
 
@@ -66,7 +67,7 @@ export function DataValorList({
       return;
     }
     const first = value[0];
-    const defaultData = first?.data ?? new Date().toISOString().split('T')[0];
+    const defaultData = first?.data ?? formatDateToLocalYYYYMMDD(new Date());
     onChange([...value, { data: defaultData, valor: '' }]);
   };
 

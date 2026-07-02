@@ -35,12 +35,21 @@ import type { ControleCartoesRow, BandeiraCartao } from '@/types/financeiro';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { ExportButtons } from '@/components/ui/export-buttons';
-import { formatDateStringToBR } from '@/lib/date';
+import { formatDateStringToBR, formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { DateInput } from '@/components/ui/date-input';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { parseValorFromInput, formatValorForInput } from '@/lib/formatValor';
 import { MAQUININHAS_PADRAO_LIST, MAQUININHAS_PADRAO_HABILITADAS } from '@/lib/maquininhas';
 import { INPUT_CLASS, PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL } from '@/lib/uiClasses';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  type BandeiraCadastro,
+  type ModulosHabilitados,
+  DEFAULT_VOUCHER_CONFIGS,
+  getModulosHabilitados,
+  resolverVoucherConfig,
+} from '@/types/taxas-prazos';
+import { COR_IDS, CORES_MAQUININHA, DEFAULT_MAQUININHAS_CORES, corIdDe } from '@/lib/cores-maquininha';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -76,15 +85,15 @@ const BANDEIRAS_DEBITO: { id: BandeiraCartao; label: string }[] = [
   { id: 'elo-debito', label: 'Elo Debito' },
   { id: 'maestro', label: 'Maestro' },
 ];
-/** Bandeiras voucher (alimentacao/refeicao). */
-const BANDEIRAS_VOUCHER: { id: string; label: string }[] = [
-  { id: 'alelo', label: 'Alelo' },
-  { id: 'ben', label: 'Ben Visa Vale' },
-  { id: 'sodexo', label: 'Sodexo' },
-  { id: 'ticket', label: 'Ticket' },
-  { id: 'vr', label: 'VR' },
-  { id: 'verocard', label: 'Verocard' },
-  { id: 'pluxee', label: 'Pluxee' },
+/** Fallback de bandeiras voucher quando o GET de taxas-prazos falha.
+ * A fonte oficial e `bandeirasCadastradas` (Taxas e Prazos). */
+const DEFAULT_BANDEIRAS_VOUCHER: BandeiraCadastro[] = [
+  { id: 'alelo', label: 'Alelo', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.alelo },
+  { id: 'ben', label: 'Ben Alim/Ref', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.ben },
+  { id: 'ticket', label: 'Ticket', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.ticket },
+  { id: 'vr', label: 'VR', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.vr },
+  { id: 'verocard', label: 'Verocard', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.verocard },
+  { id: 'pluxee', label: 'Pluxee', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.pluxee },
 ];
 
 /** Tipos de pagamento configuraveis por maquininha. */
@@ -168,6 +177,14 @@ export function ControleCartoesPage() {
   const [tab, setTab] = useState<TabCartao>('credito');
   const [bandeira, setBandeira] = useState<BandeiraCartao>('visa');
   const [bandeiraVoucher, setBandeiraVoucher] = useState<string>('alelo');
+  /** Categoria da bandeira voucher selecionada (ex.: Pluxee Alimentacao). '' = sem categoria. */
+  const [categoriaVoucher, setCategoriaVoucher] = useState<string>('');
+  /** Bandeiras voucher cadastradas em Taxas e Prazos (fonte oficial). */
+  const [bandeirasVoucherAll, setBandeirasVoucherAll] = useState<BandeiraCadastro[]>(DEFAULT_BANDEIRAS_VOUCHER);
+  /** Modulos Voucher/iFood habilitaveis no Gerenciar maquininhas. */
+  const [modulos, setModulos] = useState<ModulosHabilitados>({ voucher: true, ifood: true });
+  /** Cores de cabecalho por maquininha/modulo (paleta em cores-maquininha.ts). */
+  const [cores, setCores] = useState<Record<string, string>>({ ...DEFAULT_MAQUININHAS_CORES });
   const [items, setItems] = useState<ControleCartoesRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -175,18 +192,24 @@ export function ControleCartoesPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [tipoCredito, setTipoCredito] = useState<TipoCredito>('a-vista');
   const [formData, setFormData] = useState({
-    data: new Date().toISOString().split('T')[0],
+    data: formatDateToLocalYYYYMMDD(new Date()),
     valor: '',
     prazo: '',
     taxaPercent: '',
-    dataAReceber: new Date().toISOString().split('T')[0],
+    dataAReceber: formatDateToLocalYYYYMMDD(new Date()),
     numeroParcelas: '',
     valorLoja: '', // para iFood: valor recebido na loja (nao soma no a receber)
+    qtdCupons: '', // para voucher com Por Venda por cupom (ex.: Ticket Rest/Flex)
   });
 
-  /** Persiste habilitacao + maquininhas customizadas no backend (JSON em ControleCartaoTaxasPrazos.taxas). */
+  /** Persiste habilitacao + customizadas + modulos + cores no backend (JSON em ControleCartaoTaxasPrazos.taxas). */
   const persistirConfigMaquininhas = useCallback(
-    async (habilitadas: string[], customs: MaquininhaConfig[]) => {
+    async (config: {
+      habilitadas: string[];
+      customs: MaquininhaConfig[];
+      modulos: ModulosHabilitados;
+      cores: Record<string, string>;
+    }) => {
       try {
         const cur = await api.get<{ taxas?: Record<string, unknown> }>(
           'financeiro/controle-cartoes/taxas-prazos',
@@ -194,8 +217,10 @@ export function ControleCartoesPage() {
         const taxasAtual = (cur.data?.taxas ?? {}) as Record<string, unknown>;
         const novo = {
           ...taxasAtual,
-          maquininhasHabilitadas: habilitadas,
-          maquininhasCustom: customs,
+          maquininhasHabilitadas: config.habilitadas,
+          maquininhasCustom: config.customs,
+          modulosHabilitados: config.modulos,
+          maquininhasCores: config.cores,
         };
         await api.put('financeiro/controle-cartoes/taxas-prazos', { taxas: novo });
       } catch (e) {
@@ -204,6 +229,30 @@ export function ControleCartoesPage() {
     },
     [],
   );
+
+  /** Troca a cor de cabecalho de uma maquininha/modulo e persiste. */
+  const handleSetCor = (id: string, corId: string) => {
+    const next = { ...cores, [id]: corId };
+    setCores(next);
+    persistirConfigMaquininhas({
+      habilitadas: maquininhasHabilitadas,
+      customs: maquininhasCustom,
+      modulos,
+      cores: next,
+    }).catch(() => {});
+  };
+
+  /** Habilita/desabilita os modulos Voucher e iFood e persiste. */
+  const handleToggleModulo = (key: 'voucher' | 'ifood', enabled: boolean) => {
+    const next = { ...modulos, [key]: enabled };
+    setModulos(next);
+    persistirConfigMaquininhas({
+      habilitadas: maquininhasHabilitadas,
+      customs: maquininhasCustom,
+      modulos: next,
+      cores,
+    }).catch(() => {});
+  };
 
   /** Bandeiras extras cadastradas em Taxas e Prazos (alem das defaults). */
   const [bandeirasCreditoExtras, setBandeirasCreditoExtras] = useState<{ id: string; label: string }[]>([]);
@@ -225,9 +274,11 @@ export function ControleCartoesPage() {
     api
       .get<{
         taxas?: {
-          bandeirasCadastradas?: Array<{ id: string; label: string; tipo: 'credito' | 'debito' }>;
+          bandeirasCadastradas?: BandeiraCadastro[];
           maquininhasHabilitadas?: string[];
           maquininhasCustom?: MaquininhaConfig[];
+          modulosHabilitados?: ModulosHabilitados;
+          maquininhasCores?: Record<string, string>;
         };
       }>('financeiro/controle-cartoes/taxas-prazos')
       .then((res) => {
@@ -240,6 +291,10 @@ export function ControleCartoesPage() {
         if (Array.isArray(habilitadas) && habilitadas.length > 0) {
           setMaquininhasHabilitadas(habilitadas);
           if (!habilitadas.includes(operadora)) setOperadora(habilitadas[0]);
+        }
+        setModulos(getModulosHabilitados(res.data?.taxas ?? null));
+        if (res.data?.taxas?.maquininhasCores && typeof res.data.taxas.maquininhasCores === 'object') {
+          setCores({ ...DEFAULT_MAQUININHAS_CORES, ...res.data.taxas.maquininhasCores });
         }
         if (Array.isArray(cadastradas)) {
           const defaultsCred = new Set(BANDEIRAS_CREDITO.map((b) => b.id));
@@ -254,11 +309,35 @@ export function ControleCartoesPage() {
               .filter((b) => b.tipo === 'debito' && !defaultsDeb.has(b.id))
               .map(({ id, label }) => ({ id, label })),
           );
+          const vouchers = cadastradas.filter((b) => b.tipo === 'voucher');
+          if (vouchers.length > 0) {
+            setBandeirasVoucherAll(vouchers);
+            if (!vouchers.some((v) => v.id === bandeiraVoucher)) {
+              setBandeiraVoucher(vouchers[0].id);
+            }
+          }
         }
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Config efetiva da bandeira voucher selecionada (com overrides da categoria). */
+  const voucherSelecionado = useMemo(
+    () => bandeirasVoucherAll.find((b) => b.id === bandeiraVoucher),
+    [bandeirasVoucherAll, bandeiraVoucher],
+  );
+  const voucherCfgEfetiva = useMemo(
+    () => resolverVoucherConfig(voucherSelecionado, categoriaVoucher || null),
+    [voucherSelecionado, categoriaVoucher],
+  );
+
+  /** Se o modulo da aba atual for desabilitado, volta para credito. */
+  useEffect(() => {
+    if ((tab === 'voucher' && !modulos.voucher) || (tab === 'ifood' && !modulos.ifood)) {
+      setTab('credito');
+    }
+  }, [tab, modulos]);
 
   const fetchList = useCallback(() => {
     setLoading(true);
@@ -268,7 +347,10 @@ export function ControleCartoesPage() {
     };
     if (tab === 'credito' || tab === 'debito') params.bandeira = bandeira;
     if (tab === 'credito') params.tipoCredito = tipoCredito;
-    if (tab === 'voucher') params.bandeira = bandeiraVoucher;
+    if (tab === 'voucher') {
+      params.bandeira = bandeiraVoucher;
+      if (categoriaVoucher) params.categoriaVoucher = categoriaVoucher;
+    }
     // operadora aplica para credito/debito/pix (nao voucher nem ifood)
     if (tab === 'credito' || tab === 'debito' || tab === 'pix') params.operadora = operadora;
     api
@@ -288,7 +370,7 @@ export function ControleCartoesPage() {
       })
       .catch((err) => toast.error(err?.message ?? 'Erro ao carregar'))
       .finally(() => setLoading(false));
-  }, [dateFilter, tab, bandeira, bandeiraVoucher, tipoCredito, operadora]);
+  }, [dateFilter, tab, bandeira, bandeiraVoucher, categoriaVoucher, tipoCredito, operadora]);
 
   useEffect(() => {
     fetchList();
@@ -302,6 +384,7 @@ export function ControleCartoesPage() {
       const itemAny = item as ControleCartoesRow & {
         numeroParcelas?: number;
         valorLoja?: number;
+        qtdCupons?: number;
       };
       setFormData({
         data: (item.data ?? '').toString().split('T')[0]?.slice(0, 10) ?? '',
@@ -311,17 +394,19 @@ export function ControleCartoesPage() {
         dataAReceber: (item.dataAReceber ?? '').toString().split('T')[0]?.slice(0, 10) ?? '',
         numeroParcelas: itemAny.numeroParcelas != null ? String(itemAny.numeroParcelas) : '',
         valorLoja: itemAny.valorLoja != null ? formatValorForInput(Number(itemAny.valorLoja)) : '',
+        qtdCupons: itemAny.qtdCupons != null ? String(itemAny.qtdCupons) : '',
       });
     } else {
       setEditingItem(null);
       setFormData({
-        data: new Date().toISOString().split('T')[0],
+        data: formatDateToLocalYYYYMMDD(new Date()),
         valor: '',
         prazo: '',
         taxaPercent: '',
-        dataAReceber: new Date().toISOString().split('T')[0],
+        dataAReceber: formatDateToLocalYYYYMMDD(new Date()),
         numeroParcelas: '',
         valorLoja: '',
+        qtdCupons: '',
       });
     }
     setIsDialogOpen(true);
@@ -345,19 +430,29 @@ export function ControleCartoesPage() {
         : undefined;
     // prazo, taxa e dataAReceber sao calculados no backend a partir da config de Taxas e Prazos
     // (bandeira+tipo). O form so envia o que o usuario realmente preenche.
+    const qtdCupons =
+      tab === 'voucher' && voucherCfgEfetiva?.usaQtdCupons && formData.qtdCupons.trim()
+        ? parseInt(formData.qtdCupons, 10)
+        : undefined;
     const body: Record<string, unknown> = {
       tipo: tab,
       ...((tab === 'credito' || tab === 'debito') && { bandeira }),
       ...(tab === 'voucher' && { bandeira: bandeiraVoucher }),
+      ...(tab === 'voucher' && categoriaVoucher && { categoriaVoucher }),
       ...((tab === 'credito' || tab === 'debito' || tab === 'pix') && { operadora }),
       ...(tab === 'credito' && { tipoCredito }),
       ...(numeroParcelas != null && { numeroParcelas }),
+      ...(qtdCupons != null && { qtdCupons }),
       data,
       valor,
       ...(valorLoja != null && { valorLoja }),
     };
     if (tab === 'credito' && tipoCredito === 'parcelado-prazo' && (numeroParcelas == null || numeroParcelas < 1)) {
       toast.error('Informe o numero de parcelas para credito parcelado a prazo.');
+      return;
+    }
+    if (tab === 'voucher' && voucherCfgEfetiva?.usaQtdCupons && (qtdCupons == null || qtdCupons < 1)) {
+      toast.error('Informe a quantidade de cupons.');
       return;
     }
     if (editingItem) {
@@ -622,8 +717,8 @@ export function ControleCartoesPage() {
             { id: 'credito' as TabCartao, label: 'Credito', visible: tabsDisponiveis.credito },
             { id: 'debito' as TabCartao, label: 'Debito', visible: tabsDisponiveis.debito },
             { id: 'pix' as TabCartao, label: 'PIX', visible: tabsDisponiveis.pix },
-            { id: 'voucher' as TabCartao, label: 'Voucher', visible: true },
-            { id: 'ifood' as TabCartao, label: 'iFood', visible: true },
+            { id: 'voucher' as TabCartao, label: 'Voucher', visible: modulos.voucher },
+            { id: 'ifood' as TabCartao, label: 'iFood', visible: modulos.ifood },
           ] as { id: TabCartao; label: string; visible: boolean }[]
         )
           .filter((t) => t.visible)
@@ -695,23 +790,49 @@ export function ControleCartoesPage() {
         </div>
       )}
       {tab === 'voucher' && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground">Vouchers:</span>
-          {BANDEIRAS_VOUCHER.map((b) => (
-            <button
-              key={b.id}
-              type="button"
-              onClick={() => setBandeiraVoucher(b.id)}
-              className={cn(
-                'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
-                bandeiraVoucher === b.id
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-muted text-foreground hover:bg-accent',
-              )}
-            >
-              {b.label}
-            </button>
-          ))}
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Vouchers:</span>
+            {bandeirasVoucherAll.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => {
+                  setBandeiraVoucher(b.id);
+                  const cats = b.voucher?.categorias ?? [];
+                  setCategoriaVoucher(cats.length > 0 ? cats[0].id : '');
+                }}
+                className={cn(
+                  'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                  bandeiraVoucher === b.id
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-muted text-foreground hover:bg-accent',
+                )}
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
+          {(voucherSelecionado?.voucher?.categorias?.length ?? 0) > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Categoria:</span>
+              {voucherSelecionado!.voucher!.categorias!.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCategoriaVoucher(c.id)}
+                  className={cn(
+                    'rounded-lg px-3 py-1 text-xs font-medium transition-colors',
+                    categoriaVoucher === c.id
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-card text-foreground ring-1 ring-border hover:bg-muted/40',
+                  )}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -771,7 +892,7 @@ export function ControleCartoesPage() {
           <DialogHeader>
             <DialogTitle>{editingItem ? 'Editar Registro' : 'Novo Registro'}</DialogTitle>
             <DialogDescription>
-              {editingItem ? 'Altere os dados.' : 'Preencha data, valor e data a receber. O valor a receber e calculado pelo sistema (taxa/prazo).'}
+              {editingItem ? 'Altere os dados.' : 'Preencha data e valor. O valor a receber e calculado pelo sistema (taxa/prazo).'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
@@ -835,6 +956,29 @@ export function ControleCartoesPage() {
                   />
                   <p className="text-xs text-muted-foreground">
                     O comerciante recebe N parcelas a cada 30 dias.
+                  </p>
+                </div>
+              )}
+              {tab === 'voucher' && voucherCfgEfetiva?.usaQtdCupons && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Qtd Cupons <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Ex.: 10"
+                    value={formData.qtdCupons}
+                    onChange={(e) =>
+                      setFormData({ ...formData, qtdCupons: sanitizeInteger(e.target.value) })
+                    }
+                    className={inputClass}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {voucherCfgEfetiva.porVenda != null
+                      ? `Desconto de ${formatCurrency(voucherCfgEfetiva.porVenda)} por cupom de venda.`
+                      : 'Quantidade de cupons da venda.'}
                   </p>
                 </div>
               )}
@@ -922,9 +1066,11 @@ export function ControleCartoesPage() {
                       return (
                         <div
                           key={m.id}
-                          className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2"
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2"
                         >
                           <span className="text-sm text-foreground">{m.label}</span>
+                          <div className="flex items-center gap-2">
+                          <CorSelect value={corIdDe(cores, m.id)} onChange={(c) => handleSetCor(m.id, c)} />
                           <label className="flex cursor-pointer items-center gap-2">
                             <span className="text-xs text-muted-foreground">
                               {habilitada ? 'Habilitada' : 'Desabilitada'}
@@ -942,13 +1088,19 @@ export function ControleCartoesPage() {
                                     return prev;
                                   }
                                   if (!next.includes(operadora)) setOperadora(next[0]);
-                                  persistirConfigMaquininhas(next, maquininhasCustom).catch(() => {});
+                                  persistirConfigMaquininhas({
+                                    habilitadas: next,
+                                    customs: maquininhasCustom,
+                                    modulos,
+                                    cores,
+                                  }).catch(() => {});
                                   return next;
                                 });
                               }}
                               className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
                             />
                           </label>
+                          </div>
                         </div>
                       );
                     })}
@@ -998,6 +1150,7 @@ export function ControleCartoesPage() {
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
+                              <CorSelect value={corIdDe(cores, m.id)} onChange={(c) => handleSetCor(m.id, c)} />
                               <input
                                 type="checkbox"
                                 checked={habilitada}
@@ -1011,7 +1164,12 @@ export function ControleCartoesPage() {
                                       return prev;
                                     }
                                     if (!next.includes(operadora)) setOperadora(next[0]);
-                                    persistirConfigMaquininhas(next, maquininhasCustom).catch(() => {});
+                                    persistirConfigMaquininhas({
+                                    habilitadas: next,
+                                    customs: maquininhasCustom,
+                                    modulos,
+                                    cores,
+                                  }).catch(() => {});
                                     return next;
                                   });
                                 }}
@@ -1040,12 +1198,15 @@ export function ControleCartoesPage() {
                                       : MAQUININHAS_PADRAO_HABILITADAS,
                                   );
                                   if (operadora === m.id) setOperadora('cielo');
-                                  persistirConfigMaquininhas(
-                                    novasHabilitadas.length > 0
-                                      ? novasHabilitadas
-                                      : MAQUININHAS_PADRAO_HABILITADAS,
-                                    novos,
-                                  ).catch(() => {});
+                                  persistirConfigMaquininhas({
+                                    habilitadas:
+                                      novasHabilitadas.length > 0
+                                        ? novasHabilitadas
+                                        : MAQUININHAS_PADRAO_HABILITADAS,
+                                    customs: novos,
+                                    modulos,
+                                    cores,
+                                  }).catch(() => {});
                                   toast.success('Maquininha excluida.');
                                 }}
                                 className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-red-600"
@@ -1059,6 +1220,53 @@ export function ControleCartoesPage() {
                       })}
                     </div>
                   )}
+                </div>
+
+                {/* Voucher e iFood: modulos habilitaveis (independentes de maquininha) */}
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Outros modulos
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {(
+                      [
+                        { key: 'voucher' as const, label: 'Voucher (Alelo, Ticket, VR...)' },
+                        { key: 'ifood' as const, label: 'iFood' },
+                      ]
+                    ).map((mod) => {
+                      const habilitado = modulos[mod.key];
+                      return (
+                        <div
+                          key={mod.key}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2"
+                        >
+                          <span className="text-sm text-foreground">{mod.label}</span>
+                          <div className="flex items-center gap-2">
+                            <CorSelect
+                              value={corIdDe(cores, mod.key)}
+                              onChange={(c) => handleSetCor(mod.key, c)}
+                            />
+                            <label className="flex cursor-pointer items-center gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                {habilitado ? 'Habilitado' : 'Desabilitado'}
+                              </span>
+                              <input
+                                type="checkbox"
+                                checked={habilitado}
+                                onChange={(e) => handleToggleModulo(mod.key, e.target.checked)}
+                                className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Desabilitar esconde as abas aqui, a secao em Taxas e Prazos e os cards em A Receber.
+                  </p>
                 </div>
               </div>
             ) : (
@@ -1092,7 +1300,12 @@ export function ControleCartoesPage() {
                     setMaquininhasHabilitadas(novasHabilitadas);
                     setOperadora(id);
                   }
-                  persistirConfigMaquininhas(novasHabilitadas, novos).catch(() => {});
+                  persistirConfigMaquininhas({
+                    habilitadas: novasHabilitadas,
+                    customs: novos,
+                    modulos,
+                    cores,
+                  }).catch(() => {});
                   setEditingMaq(null);
                   toast.success(ehNova ? 'Maquininha criada.' : 'Maquininha atualizada.');
                 }}
@@ -1113,6 +1326,27 @@ export function ControleCartoesPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/** Seletor compacto de cor de cabecalho (paleta fixa de cores-maquininha.ts). */
+function CorSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger className="h-8 w-32" title="Cor do cabecalho nos cards">
+        <SelectValue placeholder="Cor" />
+      </SelectTrigger>
+      <SelectContent>
+        {COR_IDS.map((c) => (
+          <SelectItem key={c} value={c}>
+            <span className="inline-flex items-center gap-2">
+              <span className={cn('h-3 w-3 rounded-full', CORES_MAQUININHA[c].dot)} />
+              {CORES_MAQUININHA[c].label}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 

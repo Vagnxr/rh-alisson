@@ -33,7 +33,7 @@ import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { PagoDinheiroRow } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
-import { formatDateStringToBR } from '@/lib/date';
+import { formatDateStringToBR, formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { DateInput } from '@/components/ui/date-input';
@@ -64,7 +64,7 @@ export function PagoDinheiroPage() {
   const [editingItem, setEditingItem] = useState<PagoDinheiroRow | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    data: new Date().toISOString().split('T')[0],
+    data: formatDateToLocalYYYYMMDD(new Date()),
     descricaoFornecedor: '',
     valor: '',
   });
@@ -95,7 +95,7 @@ export function PagoDinheiroPage() {
     } else {
       setEditingItem(null);
       setFormData({
-        data: new Date().toISOString().split('T')[0],
+        data: formatDateToLocalYYYYMMDD(new Date()),
         descricaoFornecedor: '',
         valor: '',
       });

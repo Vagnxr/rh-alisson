@@ -25,7 +25,7 @@ import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { TableColumnConfigFromApi } from '@/types/configuracao';
 import type { SaidaRow, SaidaFormaPagamento } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
-import { formatDateStringToBR } from '@/lib/date';
+import { formatDateStringToBR, formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { DateInput } from '@/components/ui/date-input';
 import { INPUT_CLASS, PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL } from '@/lib/uiClasses';
 import { maskCPF, maskCNPJ, onlyNumbers } from '@/lib/masks';
@@ -71,7 +71,7 @@ const LABEL_CAMPO: Record<string, string> = {
 const FORMAS_SAIDA: SaidaFormaPagamento[] = ['BOLETO', 'CARTAO'];
 
 const defaultForm = () => ({
-  data: new Date().toISOString().split('T')[0],
+  data: formatDateToLocalYYYYMMDD(new Date()),
   formaPagamento: 'BOLETO' as SaidaFormaPagamento,
   fornecedor: '',
   industrializacao: '',
@@ -435,6 +435,18 @@ export function SaidaPage() {
                   ))
                 )}
               </tbody>
+              {table.getRowModel().rows.length > 0 && (
+                <tfoot className="border-t border-border bg-muted/40">
+                  <tr>
+                    <td
+                      colSpan={columns.length}
+                      className="whitespace-nowrap px-4 py-3 text-right text-sm font-bold text-foreground"
+                    >
+                      Valor Total: {formatCurrency(items.reduce((acc, r) => acc + Number(r.total ?? 0), 0))}
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           )}
         </div>

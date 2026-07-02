@@ -1,15 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Loader2, Settings2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogBody,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { AReceberRow } from '@/types/financeiro';
@@ -17,7 +9,9 @@ import type { BandeiraCartao } from '@/types/financeiro';
 import { MAQUININHAS_PADRAO_LIST, MAQUININHAS_PADRAO_HABILITADAS, MAQUININHAS_PADRAO_IDS } from '@/lib/maquininhas';
 import { cn } from '@/lib/cn';
 import { ExportButtons } from '@/components/ui/export-buttons';
-import { PAGE_TITLE, PAGE_SUBTITLE, BTN_OUTLINE } from '@/lib/uiClasses';
+import { PAGE_TITLE, PAGE_SUBTITLE } from '@/lib/uiClasses';
+import { type ModulosHabilitados } from '@/types/taxas-prazos';
+import { corHeaderClasses, DEFAULT_MAQUININHAS_CORES } from '@/lib/cores-maquininha';
 
 const BANDEIRAS_CREDITO: { id: BandeiraCartao; label: string }[] = [
   { id: 'amex', label: 'Amex' },
@@ -43,8 +37,27 @@ interface TaxasJsonResp {
     bandeirasCadastradas?: { id: string; label: string; tipo: string }[];
     maquininhasCustom?: { id: string; label: string }[];
     maquininhasHabilitadas?: string[];
+    maquininhasCores?: Record<string, string>;
+    modulosHabilitados?: ModulosHabilitados;
   } | null;
 }
+
+/** Resposta do GET a-receber/voucher (v2): linhas por bandeira/categoria + DOC por bloco. */
+interface VoucherAReceberResp {
+  itens: { bandeira: string; categoria: string | null; label: string; aReceber: number }[];
+  subtotal: number;
+  doc: { bandeira: string; label: string; blocos: number; doc: number; total: number }[];
+  docTotal: number;
+  total: number;
+}
+
+interface IfoodAReceberResp {
+  aReceber: number;
+  valorBruto: number;
+  valorLoja: number;
+}
+
+const VOUCHER_VAZIO: VoucherAReceberResp = { itens: [], subtotal: 0, doc: [], docTotal: 0, total: 0 };
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -54,14 +67,14 @@ export function AReceberPage() {
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   const [credito, setCredito] = useState<AReceberRow[]>([]);
   const [debito, setDebito] = useState<AReceberRow[]>([]);
-  const [voucher, setVoucher] = useState<AReceberRow[]>([]);
-  const [bandeirasVoucher, setBandeirasVoucher] = useState<string[]>([]);
+  const [voucher, setVoucher] = useState<VoucherAReceberResp>(VOUCHER_VAZIO);
+  const [ifood, setIfood] = useState<IfoodAReceberResp>({ aReceber: 0, valorBruto: 0, valorLoja: 0 });
   const [maquininhasHabilitadas, setMaquininhasHabilitadas] = useState<MaquininhaInfo[]>([]);
   const [bandeirasCreditoCfg, setBandeirasCreditoCfg] = useState<{ id: string; label: string }[]>(BANDEIRAS_CREDITO);
   const [bandeirasDebitoCfg, setBandeirasDebitoCfg] = useState<{ id: string; label: string }[]>(BANDEIRAS_DEBITO);
+  const [modulos, setModulos] = useState<ModulosHabilitados>({ voucher: true, ifood: true });
+  const [cores, setCores] = useState<Record<string, string>>({ ...DEFAULT_MAQUININHAS_CORES });
   const [loading, setLoading] = useState(true);
-  const [dialogBandeiras, setDialogBandeiras] = useState(false);
-  const [novaBandeiraVoucher, setNovaBandeiraVoucher] = useState('');
 
   const params = useMemo(() => dateFilterToParams(dateFilter), [dateFilter]);
 
@@ -70,10 +83,20 @@ export function AReceberPage() {
     Promise.all([
       api.get<AReceberRow[]>('financeiro/outras-funcoes/a-receber/credito', { params }).then((r) => setCredito(Array.isArray(r.data) ? r.data : [])),
       api.get<AReceberRow[]>('financeiro/outras-funcoes/a-receber/debito', { params }).then((r) => setDebito(Array.isArray(r.data) ? r.data : [])),
-      api.get<AReceberRow[]>('financeiro/outras-funcoes/a-receber/voucher', { params }).then((r) => setVoucher(Array.isArray(r.data) ? r.data : [])),
+      api.get<VoucherAReceberResp>('financeiro/outras-funcoes/a-receber/voucher', { params }).then((r) => {
+        const d = r.data;
+        setVoucher(d && Array.isArray(d.itens) ? d : VOUCHER_VAZIO);
+      }),
+      api.get<IfoodAReceberResp>('financeiro/outras-funcoes/a-receber/ifood', { params }).then((r) => {
+        const d = r.data;
+        setIfood({
+          aReceber: Number(d?.aReceber) || 0,
+          valorBruto: Number(d?.valorBruto) || 0,
+          valorLoja: Number(d?.valorLoja) || 0,
+        });
+      }),
     ]).catch((err) => toast.error(err?.message ?? 'Erro ao carregar')).finally(() => setLoading(false));
-    api.get<string[]>('financeiro/outras-funcoes/config/bandeiras-voucher').then((r) => setBandeirasVoucher(Array.isArray(r.data) ? r.data : [])).catch(() => {});
-    // Le maquininhas habilitadas + bandeiras cadastradas no config de taxas/prazos.
+    // Le maquininhas habilitadas, cores, modulos e bandeiras cadastradas no config de taxas/prazos.
     api.get<TaxasJsonResp>('financeiro/controle-cartoes/taxas-prazos').then((r) => {
       const taxasJson = r.data?.taxas;
       if (!taxasJson || typeof taxasJson !== 'object') return;
@@ -88,6 +111,10 @@ export function AReceberPage() {
       ];
       const habilitadas = todas.filter((m) => habilitadasIds.includes(m.id));
       setMaquininhasHabilitadas(habilitadas.length > 0 ? habilitadas : todas);
+      setModulos(taxasJson.modulosHabilitados ?? { voucher: true, ifood: true });
+      if (taxasJson.maquininhasCores && typeof taxasJson.maquininhasCores === 'object') {
+        setCores({ ...DEFAULT_MAQUININHAS_CORES, ...taxasJson.maquininhasCores });
+      }
       // Bandeiras (sobrepoe defaults se o tenant configurou).
       const bandsCfg = Array.isArray(taxasJson.bandeirasCadastradas) ? taxasJson.bandeirasCadastradas : [];
       if (bandsCfg.length > 0) {
@@ -110,7 +137,7 @@ export function AReceberPage() {
       .reduce((acc, r) => acc + r.aReceber, 0);
   };
 
-  /** Tabela por maquininha (credito ou debito). */
+  /** Tabela por maquininha (credito ou debito). Cabecalho com a cor configurada no Gerenciar. */
   const renderTabelaPorMaquininha = (
     tipo: 'Credito' | 'Debito',
     maquininha: MaquininhaInfo,
@@ -125,9 +152,9 @@ export function AReceberPage() {
     const total = linhas.reduce((a, l) => a + l.aReceber, 0);
     return (
       <div key={`${tipo}-${maquininha.id}`} className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="border-b border-border bg-muted/40 px-4 py-2">
-          <h2 className="text-sm font-semibold text-foreground">
-            {tipo} <span className="text-muted-foreground">— {maquininha.label}</span>
+        <div className={cn('border-b border-border px-4 py-2', corHeaderClasses(cores, maquininha.id))}>
+          <h2 className="text-sm font-semibold">
+            {tipo} <span className="opacity-70">— {maquininha.label}</span>
           </h2>
         </div>
         <div className="overflow-x-auto">
@@ -158,29 +185,13 @@ export function AReceberPage() {
     );
   };
 
-  /** Voucher: nao discrimina por maquininha (cliente pediu pra deixar consolidado). */
-  const voucherCompleto = useMemo(() => {
-    if (bandeirasVoucher.length === 0) {
-      // Agrega os recebidos por bandeira (sem distincao de maquininha).
-      const map = new Map<string, number>();
-      for (const r of voucher) {
-        map.set(r.bandeira, (map.get(r.bandeira) ?? 0) + r.aReceber);
-      }
-      return Array.from(map.entries()).map(([bandeira, aReceber]) => ({ bandeira, aReceber }));
-    }
-    return bandeirasVoucher.map((b) => {
-      const total = voucher.filter((r) => r.bandeira === b).reduce((a, r) => a + r.aReceber, 0);
-      return { bandeira: b, aReceber: total };
-    });
-  }, [bandeirasVoucher, voucher]);
-
+  /** Voucher consolidado: linhas por bandeira/categoria + DOC por bloco de fechamento. */
   const renderTabelaVoucher = () => {
-    const total = voucherCompleto.reduce((a, r) => a + r.aReceber, 0);
     return (
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="border-b border-border bg-muted/40 px-4 py-2">
-          <h2 className="text-sm font-semibold text-foreground">
-            Voucher <span className="text-muted-foreground">— consolidado</span>
+        <div className={cn('border-b border-border px-4 py-2', corHeaderClasses(cores, 'voucher'))}>
+          <h2 className="text-sm font-semibold">
+            Voucher <span className="opacity-70">— consolidado</span>
           </h2>
         </div>
         <div className="overflow-x-auto">
@@ -192,21 +203,33 @@ export function AReceberPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {voucherCompleto.length === 0 ? (
+              {voucher.itens.length === 0 ? (
                 <tr>
-                  <td colSpan={2} className="px-4 py-4 text-center text-sm text-muted-foreground">Nenhuma bandeira</td>
+                  <td colSpan={2} className="px-4 py-4 text-center text-sm text-muted-foreground">
+                    Nenhuma bandeira voucher cadastrada em Taxas e Prazos.
+                  </td>
                 </tr>
-              ) : voucherCompleto.map((r) => (
-                <tr key={r.bandeira} className="hover:bg-muted/40">
-                  <td className="px-4 py-2 text-sm text-foreground">{r.bandeira}</td>
+              ) : voucher.itens.map((r) => (
+                <tr key={`${r.bandeira}-${r.categoria ?? ''}`} className="hover:bg-muted/40">
+                  <td className="px-4 py-2 text-sm text-foreground">{r.label}</td>
                   <td className="px-4 py-2 text-right text-sm font-medium text-foreground">{formatCurrency(r.aReceber)}</td>
+                </tr>
+              ))}
+              {voucher.doc.map((d) => (
+                <tr key={`doc-${d.bandeira}`} className="hover:bg-muted/40">
+                  <td className="px-4 py-2 text-sm text-red-600 dark:text-red-400">
+                    DOC {d.label} <span className="text-xs text-muted-foreground">({d.blocos} bloco{d.blocos > 1 ? 's' : ''} x {formatCurrency(d.doc)})</span>
+                  </td>
+                  <td className="px-4 py-2 text-right text-sm font-medium text-red-600 dark:text-red-400">
+                    -{formatCurrency(d.total)}
+                  </td>
                 </tr>
               ))}
             </tbody>
             <tfoot className="border-t border-border bg-muted/40">
               <tr>
                 <td className="px-4 py-2 text-sm font-medium text-foreground">Total</td>
-                <td className="px-4 py-2 text-right text-sm font-bold text-foreground">{formatCurrency(total)}</td>
+                <td className="px-4 py-2 text-right text-sm font-bold text-foreground">{formatCurrency(voucher.total)}</td>
               </tr>
             </tfoot>
           </table>
@@ -215,21 +238,37 @@ export function AReceberPage() {
     );
   };
 
-  const addBandeiraVoucher = () => {
-    const t = novaBandeiraVoucher.trim();
-    if (!t) return;
-    if (bandeirasVoucher.includes(t)) {
-      toast.error('Bandeira ja existe.');
-      return;
-    }
-    setBandeirasVoucher((prev) => [...prev, t]);
-    setNovaBandeiraVoucher('');
-    api.put('financeiro/outras-funcoes/config/bandeiras-voucher', { bandeiras: [...bandeirasVoucher, t] }).catch(() => {});
-  };
-
-  const removeBandeiraVoucher = (bandeira: string) => {
-    setBandeirasVoucher((prev) => prev.filter((b) => b !== bandeira));
-    api.put('financeiro/outras-funcoes/config/bandeiras-voucher', { bandeiras: bandeirasVoucher.filter((b) => b !== bandeira) }).catch(() => {});
+  /** Card iFood: a receber calculado + valor bruto/loja informativos. */
+  const renderTabelaIfood = () => {
+    return (
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className={cn('border-b border-border px-4 py-2', corHeaderClasses(cores, 'ifood'))}>
+          <h2 className="text-sm font-semibold">
+            iFood <span className="opacity-70">— consolidado</span>
+          </h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[280px]">
+            <tbody className="divide-y divide-border">
+              <tr className="hover:bg-muted/40">
+                <td className="px-4 py-2 text-sm text-foreground">Valor bruto (iFood)</td>
+                <td className="px-4 py-2 text-right text-sm font-medium text-foreground">{formatCurrency(ifood.valorBruto)}</td>
+              </tr>
+              <tr className="hover:bg-muted/40">
+                <td className="px-4 py-2 text-sm text-foreground">Recebido na loja</td>
+                <td className="px-4 py-2 text-right text-sm font-medium text-foreground">{formatCurrency(ifood.valorLoja)}</td>
+              </tr>
+            </tbody>
+            <tfoot className="border-t border-border bg-muted/40">
+              <tr>
+                <td className="px-4 py-2 text-sm font-medium text-foreground">A receber</td>
+                <td className="px-4 py-2 text-right text-sm font-bold text-foreground">{formatCurrency(ifood.aReceber)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -238,7 +277,7 @@ export function AReceberPage() {
         <div>
           <h1 className={PAGE_TITLE}>A Receber</h1>
           <p className={PAGE_SUBTITLE}>
-            Credito e Debito separados por maquininha habilitada. Voucher consolidado por bandeira.
+            Credito e Debito separados por maquininha habilitada. Voucher e iFood consolidados.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -261,12 +300,17 @@ export function AReceberPage() {
                   aReceber: formatCurrency(valorPara(debito, m.id, b.id)),
                 })),
               ),
-              ...voucherCompleto.map((r) => ({
-                tipo: 'Voucher',
-                maquininha: '—',
-                bandeira: r.bandeira,
-                aReceber: formatCurrency(r.aReceber),
-              })),
+              ...(modulos.voucher
+                ? voucher.itens.map((r) => ({
+                    tipo: 'Voucher',
+                    maquininha: '—',
+                    bandeira: r.label,
+                    aReceber: formatCurrency(r.aReceber),
+                  }))
+                : []),
+              ...(modulos.ifood
+                ? [{ tipo: 'iFood', maquininha: '—', bandeira: 'iFood', aReceber: formatCurrency(ifood.aReceber) }]
+                : []),
             ]}
             columns={[
               { key: 'tipo', label: 'Tipo' },
@@ -277,14 +321,6 @@ export function AReceberPage() {
             filename="a-receber"
             title="A receber"
           />
-          <button
-            type="button"
-            onClick={() => setDialogBandeiras(true)}
-            className={BTN_OUTLINE}
-          >
-            <Settings2 className="h-4 w-4" />
-            Bandeiras voucher
-          </button>
         </div>
       </div>
 
@@ -320,70 +356,19 @@ export function AReceberPage() {
             )}
           </section>
 
-          <section>
-            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Voucher</h2>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {renderTabelaVoucher()}
-            </div>
-          </section>
+          {(modulos.voucher || modulos.ifood) && (
+            <section>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                Voucher e iFood
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {modulos.voucher && renderTabelaVoucher()}
+                {modulos.ifood && renderTabelaIfood()}
+              </div>
+            </section>
+          )}
         </div>
       )}
-
-      <Dialog open={dialogBandeiras} onOpenChange={setDialogBandeiras}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Bandeiras Voucher</DialogTitle>
-            <p className="text-sm text-muted-foreground">Adicione ou remova linhas (bandeiras) da tabela Voucher.</p>
-          </DialogHeader>
-          <DialogBody>
-            <div className="flex gap-2 mt-2">
-              <input
-                type="text"
-                value={novaBandeiraVoucher}
-                onChange={(e) => setNovaBandeiraVoucher(e.target.value)}
-                placeholder="Nova bandeira"
-                className={cn(
-                  'flex h-10 flex-1 rounded-lg border border-border px-3 py-2 text-sm',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500'
-                )}
-              />
-              <button
-                type="button"
-                onClick={addBandeiraVoucher}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-              >
-                Adicionar
-              </button>
-            </div>
-            <ul className="mt-4 space-y-2 max-h-48 overflow-y-auto">
-              {bandeirasVoucher.map((b) => (
-                <li key={b} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
-                  <span className="text-foreground">{b}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeBandeiraVoucher(b)}
-                    className="text-red-600 hover:text-red-800 text-xs font-medium"
-                  >
-                    Remover
-                  </button>
-                </li>
-              ))}
-              {bandeirasVoucher.length === 0 && (
-                <li className="text-sm text-muted-foreground py-2">Nenhuma bandeira. Adicione acima.</li>
-              )}
-            </ul>
-          </DialogBody>
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={() => setDialogBandeiras(false)}
-              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/40"
-            >
-              Fechar
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

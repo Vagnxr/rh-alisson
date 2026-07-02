@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api';
+import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { DateInput } from '@/components/ui/date-input';
 import { cn } from '@/lib/cn';
 import { PAGE_TITLE, PAGE_SUBTITLE, INPUT_CLASS } from '@/lib/uiClasses';
@@ -71,7 +72,7 @@ const emptyItem = (): ItemPedido => ({
 });
 
 function defaultPedido(): PedidoVenda {
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = formatDateToLocalYYYYMMDD(new Date());
   return {
     id: '',
     nomeEmpresa: '',

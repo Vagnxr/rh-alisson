@@ -33,7 +33,7 @@ import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { ControleDepositoRow, ValorDepositadoRow } from '@/types/financeiro';
 import { ExportButtons } from '@/components/ui/export-buttons';
-import { formatDateStringToBR } from '@/lib/date';
+import { formatDateStringToBR, formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { DateInput } from '@/components/ui/date-input';
@@ -83,13 +83,13 @@ export function ControleDepositoPage() {
   const [deleteDepositoId, setDeleteDepositoId] = useState<string | null>(null);
   const [deleteValorId, setDeleteValorId] = useState<string | null>(null);
   const [formDeposito, setFormDeposito] = useState({
-    data: new Date().toISOString().split('T')[0],
+    data: formatDateToLocalYYYYMMDD(new Date()),
     dia: '',
     dinheiro: '',
     responsavelDeposito: '',
   });
   const [formValor, setFormValor] = useState({
-    data: new Date().toISOString().split('T')[0],
+    data: formatDateToLocalYYYYMMDD(new Date()),
     dia: '',
     dinheiro: '',
   });
@@ -106,7 +106,7 @@ export function ControleDepositoPage() {
       });
     } else {
       setEditingDeposito(null);
-      const hoje = new Date().toISOString().split('T')[0];
+      const hoje = formatDateToLocalYYYYMMDD(new Date());
       setFormDeposito({
         data: hoje,
         dia: diaSemanaFromDate(hoje).toUpperCase(),
@@ -127,7 +127,7 @@ export function ControleDepositoPage() {
       });
     } else {
       setEditingValor(null);
-      const hoje = new Date().toISOString().split('T')[0];
+      const hoje = formatDateToLocalYYYYMMDD(new Date());
       setFormValor({
         data: hoje,
         dia: diaSemanaFromDate(hoje).toUpperCase(),
