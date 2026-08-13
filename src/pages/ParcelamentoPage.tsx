@@ -8,6 +8,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { ArrowUpDown, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import type { Parcelamento, ParcelamentoInput } from '@/types/parcelamento';
 import { useParcelamentoStore } from '@/stores/parcelamentoStore';
@@ -226,11 +227,8 @@ export function ParcelamentoPage() {
             <ArrowUpDown className="h-4 w-4" />
           </button>
         ),
-        cell: ({ row }) => (
-          <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-            {row.getValue('parcela')}
-          </span>
-        ),
+        // Mesmo badge neutro usado em Despesas — legivel nos dois temas.
+        cell: ({ row }) => <Badge variant="secondary">{row.getValue('parcela')}</Badge>,
       },
       valor: {
         accessorKey: 'valor',
@@ -252,18 +250,9 @@ export function ParcelamentoPage() {
       comunicarAgenda: {
         accessorKey: 'comunicarAgenda',
         header: 'COMUNICAR AGENDA',
-        cell: ({ row }) => {
-          const v = row.original.comunicarAgenda ?? false;
-          return (
-            <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                v ? 'bg-emerald-50 text-emerald-700' : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {v ? 'SIM' : 'NAO'}
-            </span>
-          );
-        },
+        cell: ({ row }) => (
+          <Badge variant="secondary">{row.original.comunicarAgenda ? 'SIM' : 'NAO'}</Badge>
+        ),
       },
     }),
     []
@@ -435,9 +424,7 @@ export function ParcelamentoPage() {
                         <span className="text-xs text-muted-foreground">
                           {formatDateStringToBR(item.data)}
                         </span>
-                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-                          {item.parcela}
-                        </span>
+                        <Badge variant="secondary">{item.parcela}</Badge>
                       </div>
                     </div>
                     <div className="ml-4 flex items-center gap-2">

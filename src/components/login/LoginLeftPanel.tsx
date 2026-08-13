@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { MarketTicker } from './MarketTicker';
 import { useParticleCanvas } from './useParticleCanvas';
 import { useTypewriter } from './useTypewriter';
-import { MSystemMark } from './icons';
+import logotipo from '@/assets/logotipo-novo.png';
 
 const PHOTO_URL =
   'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1600&q=90';
@@ -19,11 +19,11 @@ export function LoginLeftPanel() {
       <canvas ref={canvasRef} className="particle-canvas" aria-hidden />
 
       <div className="left-inner">
+        {/* Arte oficial (lockup horizontal). Altura fixa + width auto preserva
+            a proporcao 3.9:1 — a imagem nunca e esticada. Este painel tem fundo
+            escuro nos dois temas, entao o gradiente do logo mantem contraste. */}
         <div className="brand">
-          <div className="brand-icon">
-            <MSystemMark size={18} />
-          </div>
-          <span className="brand-name">MSystem</span>
+          <img src={logotipo} alt="MSystem" className="brand-logo" />
         </div>
 
         <div className="hero">

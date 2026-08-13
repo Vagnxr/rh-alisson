@@ -10,11 +10,13 @@ import {
 import { cn } from '@/lib/cn';
 import { PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL } from '@/lib/uiClasses';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NumberField } from '@/components/ui/number-field';
 import {
   type TipoBandeira,
   type CategoriaCredito,
   type TipoMaq,
   type FechamentoVoucher,
+  type CorteQuinzenal,
   type VoucherConfig,
   type VoucherCategoria,
   type BandeiraCadastro,
@@ -25,29 +27,26 @@ import {
   type ModulosHabilitados,
   FECHAMENTO_OPTIONS,
   CORTE_OPTIONS,
-  DEFAULT_VOUCHER_CONFIGS,
+  CORTE_QUINZENAL_PADRAO,
+  DEFAULT_BANDEIRAS,
   DEFAULT_IFOOD_CONFIG,
+  comVoucherSeed,
   getModulosHabilitados,
 } from '@/types/taxas-prazos';
 
-/** Seed inicial de bandeiras (credito, debito incluindo PIX, voucher com config do cliente). */
-const DEFAULT_BANDEIRAS: BandeiraCadastro[] = [
-  { id: 'visa', label: 'Visa', tipo: 'credito' },
-  { id: 'mastercard', label: 'Mastercard', tipo: 'credito' },
-  { id: 'elo-credito', label: 'Elo Credito', tipo: 'credito' },
-  { id: 'amex', label: 'Amex', tipo: 'credito' },
-  { id: 'hipercard', label: 'Hipercard', tipo: 'credito' },
-  { id: 'electron', label: 'Electron', tipo: 'debito' },
-  { id: 'elo-debito', label: 'Elo Debito', tipo: 'debito' },
-  { id: 'maestro', label: 'Maestro', tipo: 'debito' },
-  { id: 'pix', label: 'PIX', tipo: 'debito' },
-  { id: 'alelo', label: 'Alelo', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.alelo },
-  { id: 'ben', label: 'Ben Alim/Ref', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.ben },
-  { id: 'ticket', label: 'Ticket', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.ticket },
-  { id: 'vr', label: 'VR', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.vr },
-  { id: 'verocard', label: 'Verocard', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.verocard },
-  { id: 'pluxee', label: 'Pluxee', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.pluxee },
-];
+/**
+ * Valor sentinela do Select de fechamento/corte de uma CATEGORIA.
+ *
+ * Sem ele, o Select exibiria o valor efetivo (herdado da bandeira) e ao salvar
+ * gravaria esse valor explicitamente na categoria — congelando a heranca. Com o
+ * sentinela, "Herdar" limpa o override e a categoria volta a seguir a bandeira.
+ * Radix Select nao aceita value="", por isso uma string.
+ */
+const HERDAR = '__herdar';
+
+const fechamentoLabelDe = (f: FechamentoVoucher) =>
+  FECHAMENTO_OPTIONS.find((o) => o.id === f)?.label ?? 'Normal';
+const corteLabelDe = (c?: number) => CORTE_OPTIONS.find((o) => o.id === c)?.label ?? '-';
 
 const CATEGORIAS_CREDITO: { id: CategoriaCredito; label: string }[] = [
   { id: 'a-vista', label: 'A vista' },
@@ -62,8 +61,7 @@ const TIPOS_MAQ: { id: TipoMaq; label: string }[] = [
   { id: 'pix', label: 'PIX' },
 ];
 
-const INPUT_NUM_CLASS =
-  'w-20 rounded-lg border border-border px-2 py-1.5 text-center text-sm focus:ring-2 focus:ring-emerald-500';
+const INPUT_NUM_CLASS = 'w-20';
 
 function slugify(s: string): string {
   return s
@@ -81,17 +79,12 @@ function keyOf(operadora: string, tipo: TipoMaq, categoria: CategoriaCredito | '
   return `${operadora}|${tipo}|${categoria}|${bandeira}`;
 }
 
-/** Garante config voucher em toda bandeira voucher (seed a partir dos defaults do cliente). */
-function comVoucherSeed(b: BandeiraCadastro): BandeiraCadastro {
-  if (b.tipo !== 'voucher' || b.voucher) return b;
-  return { ...b, voucher: DEFAULT_VOUCHER_CONFIGS[b.id] ?? { taxa: 0, prazo: 0, fechamento: 'normal' } };
-}
-
 interface VoucherFormState {
   taxa: string;
   prazo: string;
   fechamento: FechamentoVoucher;
   corte: number;
+  corteQuinzenal: CorteQuinzenal;
   doc: string;
   porVenda: string;
   anuidade: string;
@@ -104,6 +97,7 @@ const VOUCHER_FORM_VAZIO: VoucherFormState = {
   prazo: '',
   fechamento: 'normal',
   corte: 1,
+  corteQuinzenal: { ...CORTE_QUINZENAL_PADRAO },
   doc: '',
   porVenda: '',
   anuidade: '',
@@ -118,6 +112,7 @@ function voucherToForm(v?: VoucherConfig): VoucherFormState {
     prazo: v.prazo ? String(v.prazo) : '',
     fechamento: v.fechamento ?? 'normal',
     corte: v.corte ?? 1,
+    corteQuinzenal: { ...CORTE_QUINZENAL_PADRAO, ...(v.corteQuinzenal ?? {}) },
     doc: v.doc != null ? String(v.doc) : '',
     porVenda: v.porVenda != null ? String(v.porVenda) : '',
     anuidade: v.anuidade != null ? String(v.anuidade) : '',
@@ -127,15 +122,21 @@ function voucherToForm(v?: VoucherConfig): VoucherFormState {
 }
 
 function formToVoucher(f: VoucherFormState): VoucherConfig {
+  // Campo vazio = nao configurado (undefined). Zero digitado e um valor valido —
+  // antes `n > 0` descartava, tornando impossivel gravar DOC ou Por venda = 0.
   const numOrUndef = (s: string) => {
-    const n = parseFloat(s);
-    return Number.isFinite(n) && n > 0 ? n : undefined;
+    if (s.trim() === '') return undefined;
+    const n = parseFloat(s.replace(',', '.'));
+    return Number.isFinite(n) ? n : undefined;
   };
   return {
-    taxa: parseFloat(f.taxa) || 0,
+    taxa: parseFloat(f.taxa.replace(',', '.')) || 0,
     prazo: parseInt(f.prazo, 10) || 0,
     fechamento: f.fechamento,
-    ...(f.fechamento === 'semanal' ? { corte: f.corte } : {}),
+    // Corte e corte quinzenal sao gravados sempre, independente do fechamento
+    // ativo: alternar Semanal <-> Quinzenal nao pode apagar a configuracao do outro.
+    corte: f.corte,
+    corteQuinzenal: f.corteQuinzenal,
     doc: numOrUndef(f.doc),
     porVenda: numOrUndef(f.porVenda),
     anuidade: numOrUndef(f.anuidade),
@@ -447,49 +448,117 @@ export function TaxasPrazosPage() {
     );
   }
 
-  /** Selects de fechamento+corte de uma bandeira voucher (usados com rowSpan no grupo). */
-  const renderFechamentoCells = (b: BandeiraCadastro, rowSpan: number) => (
-    <>
-      <td rowSpan={rowSpan} className="whitespace-nowrap px-3 py-2 align-middle">
-        <Select
-          value={b.voucher?.fechamento ?? 'normal'}
-          onValueChange={(v) => updateVoucherCfg(b.id, { fechamento: v as FechamentoVoucher })}
-        >
-          <SelectTrigger className="h-9 w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {FECHAMENTO_OPTIONS.map((o) => (
-              <SelectItem key={o.id} value={o.id}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </td>
-      <td rowSpan={rowSpan} className="whitespace-nowrap px-3 py-2 align-middle">
-        {(b.voucher?.fechamento ?? 'normal') === 'semanal' ? (
+  /**
+   * Celulas de Fechamento, Corte (semanal) e Corte quinzenal — renderizadas POR
+   * LINHA, para que cada categoria tenha ciclo proprio.
+   *
+   * @param efetivo config ja resolvida (override da categoria ou herdada da bandeira)
+   * @param herdavel true numa linha de categoria — habilita a opcao "Herdar"
+   * @param proprio  o que a propria linha define (undefined = herdando)
+   */
+  const renderFechamentoCells = (
+    efetivo: { fechamento: FechamentoVoucher; corte?: number; corteQuinzenal?: CorteQuinzenal },
+    herdavel: boolean,
+    proprio: { fechamento?: FechamentoVoucher; corte?: number; corteQuinzenal?: CorteQuinzenal },
+    onChange: (patch: Partial<VoucherCategoria>) => void,
+  ) => {
+    const herdandoFechamento = herdavel && proprio.fechamento === undefined;
+    const herdandoCorte = herdavel && proprio.corte === undefined;
+    const herdandoQuinzenal = herdavel && proprio.corteQuinzenal === undefined;
+    const quinzenal = efetivo.corteQuinzenal ?? CORTE_QUINZENAL_PADRAO;
+    const marcaHerdado = (herdando: boolean) => (herdando ? 'italic text-muted-foreground' : '');
+
+    return (
+      <>
+        <td className="whitespace-nowrap px-3 py-2 align-middle">
           <Select
-            value={String(b.voucher?.corte ?? 1)}
-            onValueChange={(v) => updateVoucherCfg(b.id, { corte: parseInt(v, 10) })}
+            value={herdandoFechamento ? HERDAR : efetivo.fechamento}
+            onValueChange={(v) =>
+              onChange(v === HERDAR ? { fechamento: undefined } : { fechamento: v as FechamentoVoucher })
+            }
           >
-            <SelectTrigger className="h-9 w-28">
+            <SelectTrigger className={cn('h-9 w-36', marcaHerdado(herdandoFechamento))}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {CORTE_OPTIONS.map((o) => (
-                <SelectItem key={o.id} value={String(o.id)}>
+              {herdavel && <SelectItem value={HERDAR}>Herdar ({fechamentoLabelDe(efetivo.fechamento)})</SelectItem>}
+              {FECHAMENTO_OPTIONS.map((o) => (
+                <SelectItem key={o.id} value={o.id}>
                   {o.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        ) : (
-          <span className="text-sm text-muted-foreground">-</span>
-        )}
-      </td>
-    </>
-  );
+        </td>
+
+        <td className="whitespace-nowrap px-3 py-2 align-middle">
+          {efetivo.fechamento === 'semanal' ? (
+            <Select
+              value={herdandoCorte ? HERDAR : String(efetivo.corte ?? 1)}
+              onValueChange={(v) =>
+                onChange(v === HERDAR ? { corte: undefined } : { corte: parseInt(v, 10) })
+              }
+            >
+              <SelectTrigger className={cn('h-9 w-32', marcaHerdado(herdandoCorte))}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {herdavel && <SelectItem value={HERDAR}>Herdar ({corteLabelDe(efetivo.corte)})</SelectItem>}
+                {CORTE_OPTIONS.map((o) => (
+                  <SelectItem key={o.id} value={String(o.id)}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <span className="text-sm text-muted-foreground">-</span>
+          )}
+        </td>
+
+        <td className="whitespace-nowrap px-3 py-2 align-middle">
+          {efetivo.fechamento === 'quinzenal' ? (
+            <div className={cn('flex items-center gap-1', marcaHerdado(herdandoQuinzenal))}>
+              <NumberField
+                value={quinzenal.primeiro}
+                decimals={0}
+                min={1}
+                max={28}
+                aria-label="Primeiro dia de corte"
+                className="w-14"
+                onCommit={(v) =>
+                  onChange({ corteQuinzenal: { ...quinzenal, primeiro: v ?? CORTE_QUINZENAL_PADRAO.primeiro } })
+                }
+              />
+              <span className="text-xs text-muted-foreground">e</span>
+              <NumberField
+                value={quinzenal.segundo ?? 0}
+                decimals={0}
+                min={0}
+                max={31}
+                title="0 = ultimo dia do mes"
+                aria-label="Segundo dia de corte (0 = fim do mes)"
+                className="w-14"
+                onCommit={(v) => onChange({ corteQuinzenal: { ...quinzenal, segundo: v ?? 0 } })}
+              />
+              {herdavel && !herdandoQuinzenal && (
+                <button
+                  type="button"
+                  title="Voltar a herdar da bandeira"
+                  onClick={() => onChange({ corteQuinzenal: undefined })}
+                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <span className="text-sm text-muted-foreground">-</span>
+          )}
+        </td>
+      </>
+    );
+  };
 
   /** Linha de inputs numericos de voucher — bandeira (sem categorias) ou categoria (overrides). */
   const renderVoucherInputs = (
@@ -498,42 +567,40 @@ export function TaxasPrazosPage() {
   ) => (
     <>
       <td className="whitespace-nowrap px-3 py-2">
-        <input
-          type="number"
-          step="0.01"
-          min="0"
+        <NumberField
           value={efetivo.taxa}
-          onChange={(e) => onChange({ taxa: parseFloat(e.target.value) || 0 })}
+          min={0}
+          aria-label="Taxa (%)"
           className={INPUT_NUM_CLASS}
+          onCommit={(v) => onChange({ taxa: v ?? 0 })}
         />
       </td>
       <td className="whitespace-nowrap px-3 py-2">
-        <input
-          type="number"
-          min="0"
+        <NumberField
           value={efetivo.prazo}
-          onChange={(e) => onChange({ prazo: parseInt(e.target.value, 10) || 0 })}
+          decimals={0}
+          min={0}
+          aria-label="Prazo (dias)"
           className={INPUT_NUM_CLASS}
+          onCommit={(v) => onChange({ prazo: v ?? 0 })}
         />
       </td>
       <td className="whitespace-nowrap px-3 py-2">
-        <input
-          type="number"
-          step="0.01"
-          min="0"
+        <NumberField
           value={efetivo.doc ?? 0}
-          onChange={(e) => onChange({ doc: parseFloat(e.target.value) || 0 })}
+          min={0}
+          aria-label="DOC (R$)"
           className={INPUT_NUM_CLASS}
+          onCommit={(v) => onChange({ doc: v ?? 0 })}
         />
       </td>
       <td className="whitespace-nowrap px-3 py-2">
-        <input
-          type="number"
-          step="0.01"
-          min="0"
+        <NumberField
           value={efetivo.porVenda ?? 0}
-          onChange={(e) => onChange({ porVenda: parseFloat(e.target.value) || 0 })}
+          min={0}
+          aria-label="Por venda (R$)"
           className={INPUT_NUM_CLASS}
+          onCommit={(v) => onChange({ porVenda: v ?? 0 })}
         />
       </td>
       <td className="whitespace-nowrap px-3 py-2 text-center">
@@ -546,13 +613,12 @@ export function TaxasPrazosPage() {
         />
       </td>
       <td className="whitespace-nowrap px-3 py-2">
-        <input
-          type="number"
-          step="0.01"
-          min="0"
+        <NumberField
           value={efetivo.anuidade ?? 0}
-          onChange={(e) => onChange({ anuidade: parseFloat(e.target.value) || 0 })}
+          min={0}
+          aria-label="Anuidade (R$)"
           className={INPUT_NUM_CLASS}
+          onCommit={(v) => onChange({ anuidade: v ?? 0 })}
         />
       </td>
     </>
@@ -575,7 +641,7 @@ export function TaxasPrazosPage() {
             <table className="w-full min-w-[900px]">
               <thead className="border-b border-border bg-muted/40">
                 <tr>
-                  {['Bandeira', 'Taxa (%)', 'Prazo (dias)', 'DOC (R$)', 'Por venda (R$)', 'Cupons', 'Anuidade (R$)', 'Fechamento', 'Corte'].map(
+                  {['Bandeira', 'Taxa (%)', 'Prazo (dias)', 'DOC (R$)', 'Por venda (R$)', 'Cupons', 'Anuidade (R$)', 'Fechamento', 'Corte', 'Corte quinzenal'].map(
                     (h) => (
                       <th
                         key={h}
@@ -591,19 +657,29 @@ export function TaxasPrazosPage() {
                 {bandeirasVoucher.map((b) => {
                   const cats = b.voucher?.categorias ?? [];
                   if (cats.length === 0) {
+                    const cfg = b.voucher ?? { taxa: 0, prazo: 0, fechamento: 'normal' as FechamentoVoucher };
                     return (
                       <tr key={b.id} className="hover:bg-muted/40">
                         <td className="whitespace-nowrap px-3 py-2 text-sm font-medium text-foreground">
                           {b.label}
                         </td>
-                        {renderVoucherInputs(b.voucher ?? { taxa: 0, prazo: 0 }, (patch) =>
-                          updateVoucherCfg(b.id, patch),
+                        {renderVoucherInputs(cfg, (patch) => updateVoucherCfg(b.id, patch))}
+                        {renderFechamentoCells(
+                          {
+                            fechamento: cfg.fechamento ?? 'normal',
+                            corte: cfg.corte,
+                            corteQuinzenal: cfg.corteQuinzenal,
+                          },
+                          false,
+                          cfg,
+                          (patch) => updateVoucherCfg(b.id, patch),
                         )}
-                        {renderFechamentoCells(b, 1)}
                       </tr>
                     );
                   }
-                  return cats.map((cat, i) => {
+                  return cats.map((cat) => {
+                    // Cada categoria resolve sua config efetiva: o que ela mesma
+                    // define, senao o da bandeira. Alterar uma nao afeta as irmas.
                     const efetivo = {
                       taxa: cat.taxa ?? b.voucher!.taxa,
                       prazo: cat.prazo ?? b.voucher!.prazo,
@@ -611,6 +687,9 @@ export function TaxasPrazosPage() {
                       porVenda: cat.porVenda ?? b.voucher!.porVenda,
                       anuidade: cat.anuidade ?? b.voucher!.anuidade,
                       usaQtdCupons: cat.usaQtdCupons ?? b.voucher!.usaQtdCupons,
+                      fechamento: cat.fechamento ?? b.voucher!.fechamento ?? 'normal',
+                      corte: cat.corte ?? b.voucher!.corte,
+                      corteQuinzenal: cat.corteQuinzenal ?? b.voucher!.corteQuinzenal,
                     };
                     return (
                       <tr key={`${b.id}-${cat.id}`} className="hover:bg-muted/40">
@@ -619,14 +698,16 @@ export function TaxasPrazosPage() {
                           <span className="text-muted-foreground">{cat.label}</span>
                         </td>
                         {renderVoucherInputs(efetivo, (patch) => updateVoucherCat(b.id, cat.id, patch))}
-                        {i === 0 && renderFechamentoCells(b, cats.length)}
+                        {renderFechamentoCells(efetivo, true, cat, (patch) =>
+                          updateVoucherCat(b.id, cat.id, patch),
+                        )}
                       </tr>
                     );
                   });
                 })}
                 {bandeirasVoucher.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                    <td colSpan={10} className="px-6 py-8 text-center text-sm text-muted-foreground">
                       Nenhuma bandeira voucher cadastrada. Cadastre acima em Bandeiras.
                     </td>
                   </tr>
@@ -642,23 +723,21 @@ export function TaxasPrazosPage() {
               <span className="pb-2 text-sm font-bold text-foreground">iFood</span>
               <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
                 Taxa (%)
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                <NumberField
                   value={ifoodConfig.taxa}
-                  onChange={(e) => setIfoodConfig((f) => ({ ...f, taxa: parseFloat(e.target.value) || 0 }))}
+                  min={0}
                   className={INPUT_NUM_CLASS}
+                  onCommit={(v) => setIfoodConfig((f) => ({ ...f, taxa: v ?? 0 }))}
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
                 Prazo (dias)
-                <input
-                  type="number"
-                  min="0"
+                <NumberField
                   value={ifoodConfig.prazo}
-                  onChange={(e) => setIfoodConfig((f) => ({ ...f, prazo: parseInt(e.target.value, 10) || 0 }))}
+                  decimals={0}
+                  min={0}
                   className={INPUT_NUM_CLASS}
+                  onCommit={(v) => setIfoodConfig((f) => ({ ...f, prazo: v ?? 0 }))}
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
@@ -697,6 +776,49 @@ export function TaxasPrazosPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </label>
+              )}
+              {(ifoodConfig.fechamento ?? 'normal') === 'quinzenal' && (
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+                  Corte quinzenal (dias do mes)
+                  <div className="flex items-center gap-1">
+                    <NumberField
+                      value={ifoodConfig.corteQuinzenal?.primeiro ?? CORTE_QUINZENAL_PADRAO.primeiro}
+                      decimals={0}
+                      min={1}
+                      max={28}
+                      aria-label="Primeiro dia de corte"
+                      className="w-14"
+                      onCommit={(v) =>
+                        setIfoodConfig((f) => ({
+                          ...f,
+                          corteQuinzenal: {
+                            primeiro: v ?? CORTE_QUINZENAL_PADRAO.primeiro,
+                            segundo: f.corteQuinzenal?.segundo ?? 0,
+                          },
+                        }))
+                      }
+                    />
+                    <span className="text-xs text-muted-foreground">e</span>
+                    <NumberField
+                      value={ifoodConfig.corteQuinzenal?.segundo ?? 0}
+                      decimals={0}
+                      min={0}
+                      max={31}
+                      title="0 = ultimo dia do mes"
+                      aria-label="Segundo dia de corte (0 = fim do mes)"
+                      className="w-14"
+                      onCommit={(v) =>
+                        setIfoodConfig((f) => ({
+                          ...f,
+                          corteQuinzenal: {
+                            primeiro: f.corteQuinzenal?.primeiro ?? CORTE_QUINZENAL_PADRAO.primeiro,
+                            segundo: v ?? 0,
+                          },
+                        }))
+                      }
+                    />
+                  </div>
                 </label>
               )}
             </div>
@@ -756,40 +878,26 @@ export function TaxasPrazosPage() {
                       {l.bandeiraLabel}
                     </td>
                     <td className="whitespace-nowrap px-6 py-3 text-sm text-muted-foreground">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                      <NumberField
                         value={c.taxa}
-                        onChange={(e) =>
-                          updateConfig(
-                            maqAtiva,
-                            tipoAtivo,
-                            categoriaParam,
-                            l.bandeiraId,
-                            'taxa',
-                            parseFloat(e.target.value) || 0,
-                          )
+                        min={0}
+                        aria-label={`Taxa de ${l.bandeiraLabel}`}
+                        className="w-24"
+                        onCommit={(v) =>
+                          updateConfig(maqAtiva, tipoAtivo, categoriaParam, l.bandeiraId, 'taxa', v ?? 0)
                         }
-                        className="w-24 rounded-lg border border-border px-2 py-1.5 text-center text-sm focus:ring-2 focus:ring-emerald-500"
                       />
                     </td>
                     <td className="whitespace-nowrap px-6 py-3 text-sm text-muted-foreground">
-                      <input
-                        type="number"
-                        min="0"
+                      <NumberField
                         value={c.prazo}
-                        onChange={(e) =>
-                          updateConfig(
-                            maqAtiva,
-                            tipoAtivo,
-                            categoriaParam,
-                            l.bandeiraId,
-                            'prazo',
-                            parseInt(e.target.value, 10) || 0,
-                          )
+                        decimals={0}
+                        min={0}
+                        aria-label={`Prazo de ${l.bandeiraLabel}`}
+                        className="w-24"
+                        onCommit={(v) =>
+                          updateConfig(maqAtiva, tipoAtivo, categoriaParam, l.bandeiraId, 'prazo', v ?? 0)
                         }
-                        className="w-24 rounded-lg border border-border px-2 py-1.5 text-center text-sm focus:ring-2 focus:ring-emerald-500"
                       />
                     </td>
                   </tr>

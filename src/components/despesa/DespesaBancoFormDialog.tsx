@@ -11,6 +11,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { CurrencyInput } from '@/components/ui/currency-input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BancoSelector } from './banco';
 
 export interface DespesaBancoFormData {
@@ -95,21 +96,27 @@ export function DespesaBancoFormDialog({
                   Tipo <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-1">
-                  <select
-                    id="tipo"
-                    value={formData.tipo}
-                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                    className="flex h-10 flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 uppercase"
-                    required
-                    data-testid="despesa-categoria-tipo"
+                  {/* Select do design system: o nativo herdava o realce azul do
+                      SO e nao respeitava o tema escuro. */}
+                  <Select
+                    value={formData.tipo || undefined}
+                    onValueChange={(value) => setFormData({ ...formData, tipo: value })}
                   >
-                    <option value="">Selecione...</option>
-                    {tiposDisponiveis.map((tipo) => (
-                      <option key={tipo} value={tipo}>
-                        {tipo}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger
+                      id="tipo"
+                      className="min-w-0 flex-1 uppercase"
+                      data-testid="despesa-categoria-tipo"
+                    >
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tiposDisponiveis.map((tipo) => (
+                        <SelectItem key={tipo} value={tipo} className="uppercase">
+                          {tipo}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <button
                     type="button"
                     onClick={onOpenTipos}

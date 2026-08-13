@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { CurrencyInput } from '@/components/ui/currency-input';
+import { useLatestRequest } from '@/hooks/useLatestRequest';
 import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import { PAGE_TITLE, PAGE_SUBTITLE } from '@/lib/uiClasses';
 import type {
@@ -82,7 +83,11 @@ export function VendaPerdaPage() {
     return (descontos / bruto) * 100;
   }, [ifoodConfigInput.valorBruto, ifoodConfigInput.descontos]);
 
+  const iniciarBusca = useLatestRequest();
+
   const fetchData = useCallback(() => {
+    // So a busca mais recente escreve no estado (ver useLatestRequest).
+    const atual = iniciarBusca();
     setLoading(true);
     const params = dateFilterToParams(dateFilter);
     const mes = mesUnicoDoFiltro(dateFilter);
@@ -100,6 +105,7 @@ export function VendaPerdaPage() {
 
     Promise.all([requests[0], requests[1] ?? Promise.resolve(null)])
       .then(([resumo, configRes]) => {
+        if (!atual()) return;
         const d = resumo.data as {
           credito?: VendaPerdaCreditoRow;
           debitoPix?: VendaPerdaDebitoPixRow;
@@ -142,9 +148,13 @@ export function VendaPerdaPage() {
           });
         }
       })
-      .catch((err) => toast.error(err?.message ?? 'Erro ao carregar'))
-      .finally(() => setLoading(false));
-  }, [dateFilter]);
+      .catch((err) => {
+        if (atual()) toast.error(err?.message ?? 'Erro ao carregar');
+      })
+      .finally(() => {
+        if (atual()) setLoading(false);
+      });
+  }, [dateFilter, iniciarBusca]);
 
   useEffect(() => {
     fetchData();

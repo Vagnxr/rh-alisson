@@ -40,6 +40,12 @@ export interface ControleCartoesRow {
   tipo?: string;
   /** iFood: valor recebido na loja (em mãos) — nao soma no a receber. */
   valorLoja?: number;
+  /** Voucher: categoria da bandeira (ex.: alimentacao, restaurante, flex). */
+  categoriaVoucher?: string;
+  /** Voucher com tarifa por cupom: quantidade lancada. */
+  qtdCupons?: number;
+  /** Diferenca entre o bruto e o a receber (taxa + tarifas). Calculado no backend. */
+  desconto: number;
   aReceber: number;
   dataAReceber: string;
   diaSemanaAReceber?: string;

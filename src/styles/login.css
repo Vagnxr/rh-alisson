@@ -109,6 +109,18 @@
       display: flex; align-items: center; justify-content: center;
     }
     .login-page .brand-name { font-size: 1.05rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+    /* Logotipo oficial: altura fixa, largura automatica — mantem a proporcao
+       original (nunca estica) e preserva a transparencia do PNG. */
+    .login-page .brand-logo {
+      height: 40px;
+      width: auto;
+      max-width: 240px;
+      display: block;
+      object-fit: contain;
+    }
+    @media (max-width: 900px) {
+      .login-page .brand-logo { height: 32px; max-width: 190px; }
+    }
     .login-page .hero { max-width: 500px; }
     .login-page .hero-eyebrow {      display: inline-flex; align-items: center; gap: 0.4rem;
       background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.22);
@@ -198,7 +210,10 @@
     .login-page .ticker-card::before {      content: '';
       position: absolute; inset: 0;
       background: transparent;
-      transition: background 0.4s;
+      /* --flash-delay vem do componente (120ms x indice do card): os cards
+         acendem em sequencia, nao todos no mesmo instante. O atraso fica no
+         transition, entao re-render do React nao reinicia a animacao. */
+      transition: background 0.4s var(--flash-delay, 0ms);
     }
     .login-page .ticker-card.flash-up::before { background: rgba(34,197,94,0.12); }    .login-page .ticker-card.flash-down::before { background: rgba(248,113,113,0.1); }
     .login-page .ticker-name {      font-size: 0.62rem; font-weight: 600;
@@ -213,6 +228,9 @@
     .login-page .ticker-chg {      font-size: 0.65rem; font-weight: 600;
       margin-top: 0.1rem;
       font-variant-numeric: tabular-nums;
+      /* Largura reservada para "▲ 00.00%" — evita o card mudar de tamanho
+         quando o numero de digitos varia (layout shift). */
+      min-width: 5.5ch;
     }
     .login-page .up { color: var(--up); }    .login-page .down { color: var(--down); }
     /* Scrolling ticker tape */
@@ -733,4 +751,32 @@
 
 @media (max-width: 640px) {
   .login-page .segment-grid { grid-template-columns: repeat(2, 1fr); }
+}
+/* Movimento reduzido: desliga animacoes decorativas da tela de login.
+   O conteudo continua legivel e o estado final e preservado — nada some,
+   apenas para de se mover. */
+@media (prefers-reduced-motion: reduce) {
+  .login-page .ticker-card::before,
+  .login-page .ticker-card {
+    transition: none;
+  }
+  .login-page .tape {
+    animation: none;
+  }
+  .login-page .pulse-dot,
+  .login-page .cursor {
+    animation: none;
+    opacity: 1;
+  }
+  .login-page .rise,
+  .login-page .form-wrap {
+    animation: none;
+  }
+  .login-page [class*='fadeUp'],
+  .login-page .brand,
+  .login-page .hero {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }

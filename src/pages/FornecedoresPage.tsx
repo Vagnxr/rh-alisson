@@ -119,8 +119,8 @@ export function FornecedoresPage() {
           const tipo = row.getValue('tipo') as string;
           return (
             <div className="flex items-center gap-2">
-              {tipo === 'cnpj' ? <Building2 className="h-4 w-4 text-slate-400" /> : <User className="h-4 w-4 text-slate-400" />}
-              <span className="text-sm text-slate-600">{tipo?.toUpperCase() ?? '-'}</span>
+              {tipo === 'cnpj' ? <Building2 className="h-4 w-4 text-muted-foreground" /> : <User className="h-4 w-4 text-muted-foreground" />}
+              <span className="text-sm text-muted-foreground">{tipo?.toUpperCase() ?? '-'}</span>
             </div>
           );
         },
@@ -129,7 +129,7 @@ export function FornecedoresPage() {
         accessorKey: 'cnpj',
         header: ({ column }) => <SortableHeader column={column}>CNPJ</SortableHeader>,
         cell: ({ row }) => (
-          <span className="text-sm text-slate-600">{row.original.tipo === 'cnpj' ? row.original.cnpj : '-'}</span>
+          <span className="text-sm text-muted-foreground">{row.original.tipo === 'cnpj' ? row.original.cnpj : '-'}</span>
         ),
       },
       cpf: {
@@ -137,35 +137,35 @@ export function FornecedoresPage() {
         id: 'cpf',
         header: ({ column }) => <SortableHeader column={column}>CPF</SortableHeader>,
         cell: ({ row }) => (
-          <span className="text-sm text-slate-600">{row.original.tipo === 'cpf' ? row.original.cpf : '-'}</span>
+          <span className="text-sm text-muted-foreground">{row.original.tipo === 'cpf' ? row.original.cpf : '-'}</span>
         ),
       },
       razaoSocial: {
         accessorKey: 'razaoSocial',
         header: ({ column }) => <SortableHeader column={column}>Razao Social</SortableHeader>,
         cell: ({ row }) => (
-          <span className="text-sm text-slate-600">{row.original.tipo === 'cnpj' ? row.original.razaoSocial : '-'}</span>
+          <span className="text-sm text-muted-foreground">{row.original.tipo === 'cnpj' ? row.original.razaoSocial : '-'}</span>
         ),
       },
       nomeFantasia: {
         accessorKey: 'nomeFantasia',
         header: ({ column }) => <SortableHeader column={column}>Nome Fantasia</SortableHeader>,
         cell: ({ row }) => (
-          <span className="text-sm text-slate-600">{row.original.tipo === 'cnpj' ? row.original.nomeFantasia : '-'}</span>
+          <span className="text-sm text-muted-foreground">{row.original.tipo === 'cnpj' ? row.original.nomeFantasia : '-'}</span>
         ),
       },
       nomeCompleto: {
         accessorKey: 'nomeCompleto',
         header: ({ column }) => <SortableHeader column={column}>Nome Completo</SortableHeader>,
         cell: ({ row }) => (
-          <span className="text-sm text-slate-600">{row.original.tipo === 'cpf' ? row.original.nomeCompleto : '-'}</span>
+          <span className="text-sm text-muted-foreground">{row.original.tipo === 'cpf' ? row.original.nomeCompleto : '-'}</span>
         ),
       },
       nomeComercial: {
         accessorKey: 'nomeComercial',
         header: ({ column }) => <SortableHeader column={column}>Nome Comercial</SortableHeader>,
         cell: ({ row }) => (
-          <span className="text-sm text-slate-600">{row.original.tipo === 'cpf' ? row.original.nomeComercial ?? '-' : '-'}</span>
+          <span className="text-sm text-muted-foreground">{row.original.tipo === 'cpf' ? row.original.nomeComercial ?? '-' : '-'}</span>
         ),
       },
       endereco: {
@@ -173,7 +173,7 @@ export function FornecedoresPage() {
         header: 'Endereco',
         cell: ({ row }) => {
           const e = row.original.endereco;
-          return <span className="text-sm text-slate-600">{e?.cidade && e?.uf ? `${e.cidade} / ${e.uf}` : '-'}</span>;
+          return <span className="text-sm text-muted-foreground">{e?.cidade && e?.uf ? `${e.cidade} / ${e.uf}` : '-'}</span>;
         },
       },
       contatoEmpresa: {
@@ -183,8 +183,8 @@ export function FornecedoresPage() {
           const c = row.original.contatoEmpresa;
           return (
             <div className="text-sm">
-              {c?.emailPrincipal && <div className="text-slate-900">{c.emailPrincipal}</div>}
-              {c?.telefonePrincipal && <div className="text-xs text-slate-500">{c.telefonePrincipal}</div>}
+              {c?.emailPrincipal && <div className="text-foreground">{c.emailPrincipal}</div>}
+              {c?.telefonePrincipal && <div className="text-xs text-muted-foreground">{c.telefonePrincipal}</div>}
               {!c?.emailPrincipal && !c?.telefonePrincipal && '-'}
             </div>
           );
@@ -194,14 +194,14 @@ export function FornecedoresPage() {
         accessorKey: 'contatoVendedor',
         header: 'Contato Vendedor',
         cell: ({ row }) => (
-          <span className="text-sm text-slate-600">{row.original.contatoVendedor?.nome ?? '-'}</span>
+          <span className="text-sm text-muted-foreground">{row.original.contatoVendedor?.nome ?? '-'}</span>
         ),
       },
       observacoes: {
         accessorKey: 'observacoes',
         header: 'Observacoes',
         cell: ({ row }) => (
-          <span className="max-w-[200px] truncate text-sm text-slate-600" title={row.original.observacoes ?? ''}>
+          <span className="max-w-[200px] truncate text-sm text-muted-foreground" title={row.original.observacoes ?? ''}>
             {row.original.observacoes ?? '-'}
           </span>
         ),
@@ -215,7 +215,9 @@ export function FornecedoresPage() {
             <span
               className={cn(
                 'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                isAtivo ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                isAtivo
+                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-secondary text-secondary-foreground'
               )}
             >
               {isAtivo ? 'Ativo' : 'Inativo'}
@@ -227,7 +229,7 @@ export function FornecedoresPage() {
         accessorKey: 'createdAt',
         header: ({ column }) => <SortableHeader column={column}>Criado em</SortableHeader>,
         cell: ({ row }) => (
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-muted-foreground">
             {row.original.createdAt ? new Date(row.original.createdAt).toLocaleDateString('pt-BR') : '-'}
           </span>
         ),
@@ -236,7 +238,7 @@ export function FornecedoresPage() {
         accessorKey: 'updatedAt',
         header: ({ column }) => <SortableHeader column={column}>Atualizado em</SortableHeader>,
         cell: ({ row }) => (
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-muted-foreground">
             {row.original.updatedAt ? new Date(row.original.updatedAt).toLocaleDateString('pt-BR') : '-'}
           </span>
         ),
@@ -259,14 +261,14 @@ export function FornecedoresPage() {
             return (
               <div className="flex items-center justify-end gap-1">
                 <button
-                  className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                   title="Editar"
                   onClick={() => handleOpenDialog(f)}
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
                 <button
-                  className="rounded p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-700"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-amber-600 dark:hover:text-amber-400"
                   title={isAtivo ? 'Inativar' : 'Reativar'}
                   onClick={() => handleToggleStatus(f.id, isAtivo)}
                 >
@@ -497,9 +499,9 @@ export function FornecedoresPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         {fornecedor.tipo === 'cnpj' ? (
-                          <Building2 className="h-4 w-4 text-slate-400" />
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <User className="h-4 w-4 text-slate-400" />
+                          <User className="h-4 w-4 text-muted-foreground" />
                         )}
                         <p className="font-medium text-foreground">
                           {fornecedor.tipo === 'cnpj'

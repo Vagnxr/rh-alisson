@@ -20,8 +20,12 @@ function formatCurrency(value: number) {
   }).format(safeNumber(value));
 }
 
+/** Percentual no padrao brasileiro (virgula decimal), como os valores monetarios. */
 function formatPercent(value: number) {
-  return `${safeNumber(value).toFixed(2)}%`;
+  return `${new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(safeNumber(value))}%`;
 }
 
 // Agrupa items por descricao e retorna valores por loja

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileSpreadsheet, FileText, Download, Loader2 } from 'lucide-react';
+import { FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatDateToLocalYYYYMMDD } from '@/lib/date';
 import { useTenantStore } from '@/stores/tenantStore';
@@ -16,6 +16,13 @@ interface ExportButtonsProps {
   filename: string;
   title?: string;
   className?: string;
+  /**
+   * Linha de totais adicionada ao final do Excel e do PDF.
+   *
+   * Usa as mesmas chaves de `columns`; colunas ausentes saem vazias. Opcional —
+   * exportacoes que nao somam nada continuam iguais.
+   */
+  footer?: Record<string, unknown>;
 }
 
 /**
@@ -28,6 +35,7 @@ export function ExportButtons({
   filename,
   title,
   className,
+  footer,
 }: ExportButtonsProps) {
   const [isExporting, setIsExporting] = useState<'excel' | 'pdf' | null>(null);
   const tenant = useTenantStore((s) => s.currentTenant);
@@ -72,6 +80,10 @@ export function ExportButtons({
         headers,
         // Dados
         ...rows,
+        // Linha de totais, quando a tela informa
+        ...(footer
+          ? [columns.map((col) => String(footer[col.key] ?? '').toUpperCase())]
+          : []),
       ]
         .map((row) => row.map((cell) => `"${cell}"`).join(';'))
         .join('\n');
@@ -247,6 +259,15 @@ export function ExportButtons({
                 )
                 .join('')}
             </tbody>
+            ${
+              footer
+                ? `<tfoot>
+                <tr style="font-weight: bold; background: #f1f5f9;">
+                  ${columns.map((col) => `<td>${String(footer[col.key] ?? '')}</td>`).join('')}
+                </tr>
+              </tfoot>`
+                : ''
+            }
           </table>
           
           <div class="footer">

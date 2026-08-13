@@ -39,6 +39,8 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
 import { DateInput } from '@/components/ui/date-input';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CARD_INTERACTIVE } from '@/lib/uiClasses';
 
 function formatCurrency(value: number) {
@@ -167,17 +169,18 @@ function MovimentacoesTable({
       data: {
         accessorKey: 'data',
         header: 'Data',
-        cell: ({ row }) => formatDateStringToBR(String(row.getValue('data') ?? '')),
+        cell: ({ row }) => (
+          <span className="text-foreground">
+            {formatDateStringToBR(String(row.getValue('data') ?? ''))}
+          </span>
+        ),
       },
       tipo: {
         accessorKey: 'tipo',
         header: 'Tipo',
-        cell: ({ row }) => {
-          const { label, cor } = getTipoMovimentacaoDisplay(row.original.tipo);
-          return (
-            <span className={cn('rounded-full px-2 py-1 text-xs font-medium', cor)}>{label}</span>
-          );
-        },
+        cell: ({ row }) => (
+          <Badge variant="secondary">{getTipoMovimentacaoDisplay(row.original.tipo).label}</Badge>
+        ),
       },
       descricao: {
         accessorKey: 'descricao',
@@ -188,7 +191,7 @@ function MovimentacoesTable({
         accessorKey: 'valor',
         header: () => <span className="block text-right">Valor</span>,
         cell: ({ row }) => (
-          <span className="block text-right font-medium text-black">
+          <span className="block text-right font-medium text-foreground">
             {formatCurrency(row.original.valor)}
           </span>
         ),
@@ -267,7 +270,7 @@ function MovimentacoesTable({
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-border">
             {table.getRowModel().rows.map(row => (
               <tr key={row.id} className="hover:bg-muted/40">
                 {row.getVisibleCells().map(cell => (
@@ -875,23 +878,28 @@ export function SociosPage() {
                   Tipo <span className="text-muted-foreground">*</span>
                 </label>
                 <div className="flex gap-1">
-                  <select
-                    value={formData.tipo}
-                    onChange={e => setFormData({ ...formData, tipo: e.target.value })}
-                    className="flex h-10 flex-1 rounded-lg border border-border px-3 py-2 text-sm uppercase"
-                    required
+                  {/* Select do design system: o nativo herdava o realce azul do
+                      SO e nao respeitava o tema escuro. */}
+                  <Select
+                    value={formData.tipo || undefined}
+                    onValueChange={(value) => setFormData({ ...formData, tipo: value })}
                   >
-                    {TIPOS_FIXOS.map(key => (
-                      <option key={key} value={key}>
-                        {TIPOS_MOVIMENTACAO[key].label.toUpperCase()}
-                      </option>
-                    ))}
-                    {tiposCustom.map(t => (
-                      <option key={t.id} value={t.label}>
-                        {t.label.toUpperCase()}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="min-w-0 flex-1 uppercase">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIPOS_FIXOS.map(key => (
+                        <SelectItem key={key} value={key} className="uppercase">
+                          {TIPOS_MOVIMENTACAO[key].label}
+                        </SelectItem>
+                      ))}
+                      {tiposCustom.map(t => (
+                        <SelectItem key={t.id} value={t.label} className="uppercase">
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <button
                     type="button"
                     onClick={() => {
@@ -1039,7 +1047,10 @@ export function SociosPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-slate-700 hover:bg-slate-800">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>

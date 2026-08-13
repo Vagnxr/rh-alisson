@@ -13,7 +13,27 @@ export type TipoMaq = 'credito' | 'debito' | 'pix' | 'voucher' | 'ifood';
 
 export type FechamentoVoucher = 'normal' | 'semanal' | 'quinzenal';
 
-/** Categoria de uma bandeira voucher (ex.: Pluxee Alimentacao). Campos opcionais sobrescrevem a bandeira. */
+/**
+ * Corte do fechamento quinzenal, em dia do mes.
+ * Ausente = blocos 1-15 e 16-fim (comportamento historico).
+ */
+export interface CorteQuinzenal {
+  /** Dia do mes do primeiro corte (1..28). */
+  primeiro: number;
+  /** Dia do mes do segundo corte. 0 ou ausente = ultimo dia do mes. */
+  segundo?: number;
+}
+
+/** Default aplicado quando a bandeira/categoria nao configura o corte quinzenal. */
+export const CORTE_QUINZENAL_PADRAO: CorteQuinzenal = { primeiro: 15, segundo: 0 };
+
+/**
+ * Categoria de uma bandeira voucher (ex.: Pluxee Alimentacao).
+ *
+ * Todo campo opcional SOBRESCREVE o da bandeira — inclusive `fechamento`,
+ * `corte` e `corteQuinzenal`, para que categorias da mesma bandeira possam ter
+ * ciclos proprios. Ausentes, herdam da bandeira.
+ */
 export interface VoucherCategoria {
   id: string;
   label: string;
@@ -23,6 +43,11 @@ export interface VoucherCategoria {
   porVenda?: number;
   anuidade?: number;
   usaQtdCupons?: boolean;
+  fechamento?: FechamentoVoucher;
+  /** Dia da semana do corte (1=segunda ... 5=sexta). So para fechamento semanal. */
+  corte?: number;
+  /** Dias do mes de corte. So para fechamento quinzenal. */
+  corteQuinzenal?: CorteQuinzenal;
 }
 
 /** Configuracao de voucher por bandeira (independente de maquininha). */
@@ -32,6 +57,8 @@ export interface VoucherConfig {
   fechamento: FechamentoVoucher;
   /** Dia da semana do corte (1=segunda ... 5=sexta). So para fechamento semanal. */
   corte?: number;
+  /** Dias do mes de corte. So para fechamento quinzenal. Ausente = 15 e fim do mes. */
+  corteQuinzenal?: CorteQuinzenal;
   /** Tarifa em R$ cobrada por bloco de fechamento (DOC). */
   doc?: number;
   /** Tarifa em R$ por lancamento (ou por cupom quando usaQtdCupons). */
@@ -74,6 +101,8 @@ export interface IfoodConfig {
   prazo: number;
   fechamento?: FechamentoVoucher;
   corte?: number;
+  /** Dias do mes de corte. So para fechamento quinzenal. Ausente = 15 e fim do mes. */
+  corteQuinzenal?: CorteQuinzenal;
 }
 
 export interface ModulosHabilitados {
@@ -195,7 +224,43 @@ export const DEFAULT_IFOOD_CONFIG: IfoodConfig = {
   corte: 3,
 };
 
-/** Config efetiva de uma bandeira voucher, aplicando overrides da categoria. */
+/**
+ * Seed inicial de bandeiras, usado apenas quando o tenant ainda nao tem
+ * `bandeirasCadastradas` no JSON. A fonte da verdade em runtime e sempre o
+ * cadastro salvo (ver `useTaxasPrazos`) — nenhuma tela deve manter lista propria.
+ *
+ * PIX NAO aparece aqui: ele tem secao propria por maquininha
+ * (`taxasPorMaquininha[tipo='pix']`) e nao e bandeira de debito.
+ */
+export const DEFAULT_BANDEIRAS: BandeiraCadastro[] = [
+  { id: 'visa', label: 'Visa', tipo: 'credito' },
+  { id: 'mastercard', label: 'Mastercard', tipo: 'credito' },
+  { id: 'elo-credito', label: 'Elo Credito', tipo: 'credito' },
+  { id: 'amex', label: 'Amex', tipo: 'credito' },
+  { id: 'hipercard', label: 'Hipercard', tipo: 'credito' },
+  { id: 'electron', label: 'Electron', tipo: 'debito' },
+  { id: 'elo-debito', label: 'Elo Debito', tipo: 'debito' },
+  { id: 'maestro', label: 'Maestro', tipo: 'debito' },
+  { id: 'alelo', label: 'Alelo', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.alelo },
+  { id: 'ben', label: 'Ben Alim/Ref', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.ben },
+  { id: 'ticket', label: 'Ticket', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.ticket },
+  { id: 'vr', label: 'VR', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.vr },
+  { id: 'verocard', label: 'Verocard', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.verocard },
+  { id: 'pluxee', label: 'Pluxee', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.pluxee },
+];
+
+/** Garante config voucher em toda bandeira voucher (seed a partir dos defaults do cliente). */
+export function comVoucherSeed(b: BandeiraCadastro): BandeiraCadastro {
+  if (b.tipo !== 'voucher' || b.voucher) return b;
+  return { ...b, voucher: DEFAULT_VOUCHER_CONFIGS[b.id] ?? { taxa: 0, prazo: 0, fechamento: 'normal' } };
+}
+
+/**
+ * Config efetiva de uma bandeira voucher, aplicando overrides da categoria.
+ * Espelho de resolverVoucherConfig do backend — manter em sincronia.
+ *
+ * Fechamento e corte tambem sao herdaveis: sem override, valem os da bandeira.
+ */
 export function resolverVoucherConfig(
   bandeira: BandeiraCadastro | undefined,
   categoriaId?: string | null,
@@ -213,5 +278,15 @@ export function resolverVoucherConfig(
     porVenda: cat.porVenda ?? cfg.porVenda,
     anuidade: cat.anuidade ?? cfg.anuidade,
     usaQtdCupons: cat.usaQtdCupons ?? cfg.usaQtdCupons,
+    fechamento: cat.fechamento ?? cfg.fechamento,
+    corte: cat.corte ?? cfg.corte,
+    corteQuinzenal: cat.corteQuinzenal ?? cfg.corteQuinzenal,
   };
+}
+
+/** Rotulo curto do corte quinzenal (ex.: "10 e 25", "15 e fim do mes"). */
+export function corteQuinzenalLabel(c?: CorteQuinzenal): string {
+  const primeiro = c?.primeiro ?? CORTE_QUINZENAL_PADRAO.primeiro;
+  const segundo = c?.segundo ?? 0;
+  return `${primeiro} e ${segundo > 0 ? segundo : 'fim do mes'}`;
 }

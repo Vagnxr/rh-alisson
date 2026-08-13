@@ -23,19 +23,22 @@ export interface MovimentacaoSocio {
 
 export type TipoMovimentacaoSocio = 'pro-labore' | 'distribuicao' | 'retirada' | 'aporte' | 'outro';
 
-export const TIPOS_MOVIMENTACAO: Record<TipoMovimentacaoSocio, { label: string; cor: string }> = {
-  'pro-labore': { label: 'Pro-labore', cor: 'bg-blue-100 text-blue-700' },
-  'distribuicao': { label: 'Distribuicao de Lucros', cor: 'bg-emerald-100 text-emerald-700' },
-  'retirada': { label: 'Retirada', cor: 'bg-amber-100 text-amber-700' },
-  'aporte': { label: 'Aporte', cor: 'bg-purple-100 text-purple-700' },
-  'outro': { label: 'Outro', cor: 'bg-slate-100 text-slate-700' },
+/**
+ * Os badges de tipo usam o mesmo padrao neutro de Despesas
+ * (`<Badge variant="secondary">`), com tokens do tema. As cores fixas anteriores
+ * (`bg-*-100 text-*-700`) ficavam ilegiveis no tema escuro.
+ */
+export const TIPOS_MOVIMENTACAO: Record<TipoMovimentacaoSocio, { label: string }> = {
+  'pro-labore': { label: 'Pro-labore' },
+  'distribuicao': { label: 'Distribuicao de Lucros' },
+  'retirada': { label: 'Retirada' },
+  'aporte': { label: 'Aporte' },
+  'outro': { label: 'Outro' },
 };
 
-/** Retorna label e cor para exibicao (tipos fixos ou customizados). */
-export function getTipoMovimentacaoDisplay(tipo: string): { label: string; cor: string } {
-  const fixed = TIPOS_MOVIMENTACAO[tipo as TipoMovimentacaoSocio];
-  if (fixed) return fixed;
-  return { label: tipo, cor: 'bg-slate-100 text-slate-700' };
+/** Retorna o label para exibicao (tipos fixos ou customizados). */
+export function getTipoMovimentacaoDisplay(tipo: string): { label: string } {
+  return TIPOS_MOVIMENTACAO[tipo as TipoMovimentacaoSocio] ?? { label: tipo };
 }
 
 export interface ResumoSocio {

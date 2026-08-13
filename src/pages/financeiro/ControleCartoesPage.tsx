@@ -32,7 +32,6 @@ import {
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { ControleCartoesRow, BandeiraCartao } from '@/types/financeiro';
-import { Link } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { ExportButtons } from '@/components/ui/export-buttons';
 import { formatDateStringToBR, formatDateToLocalYYYYMMDD } from '@/lib/date';
@@ -42,14 +41,17 @@ import { parseValorFromInput, formatValorForInput } from '@/lib/formatValor';
 import { MAQUININHAS_PADRAO_LIST, MAQUININHAS_PADRAO_HABILITADAS } from '@/lib/maquininhas';
 import { INPUT_CLASS, PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL } from '@/lib/uiClasses';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { resolverVoucherConfig, type ModulosHabilitados } from '@/types/taxas-prazos';
+import { useTaxasPrazos } from '@/hooks/useTaxasPrazos';
+import { useLatestRequest } from '@/hooks/useLatestRequest';
 import {
-  type BandeiraCadastro,
-  type ModulosHabilitados,
-  DEFAULT_VOUCHER_CONFIGS,
-  getModulosHabilitados,
-  resolverVoucherConfig,
-} from '@/types/taxas-prazos';
-import { COR_IDS, CORES_MAQUININHA, DEFAULT_MAQUININHAS_CORES, corIdDe } from '@/lib/cores-maquininha';
+  agruparPorBlocoCorte,
+  calcularTotais,
+  descontoDaLinha,
+  temQtdCupons,
+  type TotaisControleCartoes,
+} from '@/lib/controle-cartoes-totais';
+import { COR_IDS, CORES_MAQUININHA, corIdDe } from '@/lib/cores-maquininha';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -58,6 +60,33 @@ function formatCurrency(value: number) {
 function parseNum(v: string): number {
   const n = parseFloat(String(v).replace(',', '.'));
   return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Conteudo de uma celula de rodape (total ou subtotal), alinhada com a coluna.
+ *
+ * Percorre as colunas visiveis para que o rodape acompanhe automaticamente as
+ * colunas que mudam por aba (Categoria, Qtd cupons, Valor loja).
+ */
+function celulaDeTotal(
+  columnId: string,
+  totais: TotaisControleCartoes,
+  rotulo: string,
+): React.ReactNode {
+  switch (columnId) {
+    case 'data':
+      return rotulo;
+    case 'valor':
+      return formatCurrency(totais.valor);
+    case 'valorLoja':
+      return formatCurrency(totais.valorLoja);
+    case 'desconto':
+      return formatCurrency(totais.desconto);
+    case 'aReceber':
+      return formatCurrency(totais.aReceber);
+    default:
+      return null;
+  }
 }
 
 /** Permite apenas digitos (inteiro). */
@@ -73,28 +102,13 @@ function diaSemanaFromDate(dateStr: string): string {
 
 const inputClass = INPUT_CLASS;
 
-const BANDEIRAS_CREDITO: { id: BandeiraCartao; label: string }[] = [
-  { id: 'amex', label: 'Amex' },
-  { id: 'elo-credito', label: 'Elo Credito' },
-  { id: 'hipercard', label: 'Hipercard' },
-  { id: 'mastercard', label: 'Mastercard' },
-  { id: 'visa', label: 'Visa' },
-];
-const BANDEIRAS_DEBITO: { id: BandeiraCartao; label: string }[] = [
-  { id: 'electron', label: 'Electron' },
-  { id: 'elo-debito', label: 'Elo Debito' },
-  { id: 'maestro', label: 'Maestro' },
-];
-/** Fallback de bandeiras voucher quando o GET de taxas-prazos falha.
- * A fonte oficial e `bandeirasCadastradas` (Taxas e Prazos). */
-const DEFAULT_BANDEIRAS_VOUCHER: BandeiraCadastro[] = [
-  { id: 'alelo', label: 'Alelo', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.alelo },
-  { id: 'ben', label: 'Ben Alim/Ref', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.ben },
-  { id: 'ticket', label: 'Ticket', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.ticket },
-  { id: 'vr', label: 'VR', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.vr },
-  { id: 'verocard', label: 'Verocard', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.verocard },
-  { id: 'pluxee', label: 'Pluxee', tipo: 'voucher', voucher: DEFAULT_VOUCHER_CONFIGS.pluxee },
-];
+/**
+ * As bandeiras NAO sao listadas aqui.
+ *
+ * A fonte unica e `bandeirasCadastradas` do JSON de Taxas e Prazos, lida por
+ * `useTaxasPrazos()`. Antes esta tela mantinha listas proprias, que divergiam
+ * das outras telas e ignoravam as bandeiras personalizadas do usuario.
+ */
 
 /** Tipos de pagamento configuraveis por maquininha. */
 const TIPOS_PAGAMENTO_MAQUININHA = [
@@ -112,10 +126,10 @@ interface MaquininhaConfig {
   custom?: boolean;
   /** Tipos de pagamento habilitados nesta maquininha. */
   tipos: string[];
-  /** Bandeiras de credito aceitas. */
-  bandeirasCredito: string[];
-  /** Bandeiras de debito aceitas. */
-  bandeirasDebito: string[];
+  /** Bandeiras de credito aceitas. `undefined` = todas as cadastradas. */
+  bandeirasCredito?: string[];
+  /** Bandeiras de debito aceitas. `undefined` = todas as cadastradas. */
+  bandeirasDebito?: string[];
 }
 
 /** Tipos padrao quando cria/usa maquininha sem config explicita. */
@@ -127,8 +141,10 @@ const MAQUININHAS_PADRAO: MaquininhaConfig[] = MAQUININHAS_PADRAO_LIST.map((m) =
   id: m.id,
   label: m.label,
   tipos: TIPOS_DEFAULT,
-  bandeirasCredito: BANDEIRAS_CREDITO.map((b) => b.id),
-  bandeirasDebito: BANDEIRAS_DEBITO.map((b) => b.id),
+  // Sem whitelist: maquininha padrao aceita toda bandeira cadastrada. Fixar as
+  // bandeiras aqui impedia que uma bandeira nova aparecesse na tela.
+  bandeirasCredito: undefined,
+  bandeirasDebito: undefined,
 }));
 
 /** Slugify para gerar id a partir de label de maquininha custom. */
@@ -151,6 +167,7 @@ const TIPOS_CREDITO: { id: TipoCredito; label: string }[] = [
 
 export function ControleCartoesPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const iniciarBusca = useLatestRequest();
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   /** Operadora (maquininha) selecionada quando em credito/debito/pix. */
   const [operadora, setOperadora] = useState<string>('cielo');
@@ -179,12 +196,18 @@ export function ControleCartoesPage() {
   const [bandeiraVoucher, setBandeiraVoucher] = useState<string>('alelo');
   /** Categoria da bandeira voucher selecionada (ex.: Pluxee Alimentacao). '' = sem categoria. */
   const [categoriaVoucher, setCategoriaVoucher] = useState<string>('');
-  /** Bandeiras voucher cadastradas em Taxas e Prazos (fonte oficial). */
-  const [bandeirasVoucherAll, setBandeirasVoucherAll] = useState<BandeiraCadastro[]>(DEFAULT_BANDEIRAS_VOUCHER);
-  /** Modulos Voucher/iFood habilitaveis no Gerenciar maquininhas. */
-  const [modulos, setModulos] = useState<ModulosHabilitados>({ voucher: true, ifood: true });
-  /** Cores de cabecalho por maquininha/modulo (paleta em cores-maquininha.ts). */
-  const [cores, setCores] = useState<Record<string, string>>({ ...DEFAULT_MAQUININHAS_CORES });
+  /**
+   * Bandeiras, modulos e cores vem do cadastro de Taxas e Prazos — fonte unica.
+   * Inclui as bandeiras personalizadas de credito, debito e voucher.
+   */
+  const {
+    bandeirasCredito: bandeirasCreditoAll,
+    bandeirasDebito: bandeirasDebitoAll,
+    bandeirasVoucher: bandeirasVoucherAll,
+    modulos,
+    cores,
+    refetch: refetchTaxas,
+  } = useTaxasPrazos();
   const [items, setItems] = useState<ControleCartoesRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -232,95 +255,57 @@ export function ControleCartoesPage() {
 
   /** Troca a cor de cabecalho de uma maquininha/modulo e persiste. */
   const handleSetCor = (id: string, corId: string) => {
-    const next = { ...cores, [id]: corId };
-    setCores(next);
     persistirConfigMaquininhas({
       habilitadas: maquininhasHabilitadas,
       customs: maquininhasCustom,
       modulos,
-      cores: next,
-    }).catch(() => {});
+      cores: { ...cores, [id]: corId },
+    })
+      .then(() => refetchTaxas())
+      .catch(() => {});
   };
 
   /** Habilita/desabilita os modulos Voucher e iFood e persiste. */
   const handleToggleModulo = (key: 'voucher' | 'ifood', enabled: boolean) => {
-    const next = { ...modulos, [key]: enabled };
-    setModulos(next);
     persistirConfigMaquininhas({
       habilitadas: maquininhasHabilitadas,
       customs: maquininhasCustom,
-      modulos: next,
+      modulos: { ...modulos, [key]: enabled },
       cores,
-    }).catch(() => {});
+    })
+      .then(() => refetchTaxas())
+      .catch(() => {});
   };
 
-  /** Bandeiras extras cadastradas em Taxas e Prazos (alem das defaults). */
-  const [bandeirasCreditoExtras, setBandeirasCreditoExtras] = useState<{ id: string; label: string }[]>([]);
-  const [bandeirasDebitoExtras, setBandeirasDebitoExtras] = useState<{ id: string; label: string }[]>([]);
-
-  /** Listas finais (defaults + extras, sem duplicar). Usadas em todos os selects/checkboxes da pagina. */
-  const bandeirasCreditoAll = useMemo<{ id: string; label: string }[]>(() => {
-    const seen = new Set(BANDEIRAS_CREDITO.map((b) => b.id));
-    return [...BANDEIRAS_CREDITO, ...bandeirasCreditoExtras.filter((b) => !seen.has(b.id))];
-  }, [bandeirasCreditoExtras]);
-  const bandeirasDebitoAll = useMemo<{ id: string; label: string }[]>(() => {
-    const seen = new Set(BANDEIRAS_DEBITO.map((b) => b.id));
-    return [...BANDEIRAS_DEBITO, ...bandeirasDebitoExtras.filter((b) => !seen.has(b.id))];
-  }, [bandeirasDebitoExtras]);
-
-  /** Carrega config (habilitadas + custom + bandeiras cadastradas) do backend.
-   * O JSON eh envelopado: { taxas: { bandeirasCadastradas?, maquininhasHabilitadas?, maquininhasCustom?, taxas? } }. */
+  /** Maquininhas habilitadas e customizadas — config propria desta tela. */
   useEffect(() => {
     api
       .get<{
         taxas?: {
-          bandeirasCadastradas?: BandeiraCadastro[];
           maquininhasHabilitadas?: string[];
           maquininhasCustom?: MaquininhaConfig[];
-          modulosHabilitados?: ModulosHabilitados;
-          maquininhasCores?: Record<string, string>;
         };
       }>('financeiro/controle-cartoes/taxas-prazos')
       .then((res) => {
         const habilitadas = res.data?.taxas?.maquininhasHabilitadas;
         const customs = res.data?.taxas?.maquininhasCustom;
-        const cadastradas = res.data?.taxas?.bandeirasCadastradas;
-        if (Array.isArray(customs)) {
-          setMaquininhasCustom(customs);
-        }
+        if (Array.isArray(customs)) setMaquininhasCustom(customs);
         if (Array.isArray(habilitadas) && habilitadas.length > 0) {
           setMaquininhasHabilitadas(habilitadas);
           if (!habilitadas.includes(operadora)) setOperadora(habilitadas[0]);
-        }
-        setModulos(getModulosHabilitados(res.data?.taxas ?? null));
-        if (res.data?.taxas?.maquininhasCores && typeof res.data.taxas.maquininhasCores === 'object') {
-          setCores({ ...DEFAULT_MAQUININHAS_CORES, ...res.data.taxas.maquininhasCores });
-        }
-        if (Array.isArray(cadastradas)) {
-          const defaultsCred = new Set(BANDEIRAS_CREDITO.map((b) => b.id));
-          const defaultsDeb = new Set(BANDEIRAS_DEBITO.map((b) => b.id));
-          setBandeirasCreditoExtras(
-            cadastradas
-              .filter((b) => b.tipo === 'credito' && !defaultsCred.has(b.id))
-              .map(({ id, label }) => ({ id, label })),
-          );
-          setBandeirasDebitoExtras(
-            cadastradas
-              .filter((b) => b.tipo === 'debito' && !defaultsDeb.has(b.id))
-              .map(({ id, label }) => ({ id, label })),
-          );
-          const vouchers = cadastradas.filter((b) => b.tipo === 'voucher');
-          if (vouchers.length > 0) {
-            setBandeirasVoucherAll(vouchers);
-            if (!vouchers.some((v) => v.id === bandeiraVoucher)) {
-              setBandeiraVoucher(vouchers[0].id);
-            }
-          }
         }
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Mantem a bandeira voucher selecionada valida quando o cadastro carrega. */
+  useEffect(() => {
+    if (bandeirasVoucherAll.length === 0) return;
+    if (!bandeirasVoucherAll.some((v) => v.id === bandeiraVoucher)) {
+      setBandeiraVoucher(bandeirasVoucherAll[0].id);
+    }
+  }, [bandeirasVoucherAll, bandeiraVoucher]);
 
   /** Config efetiva da bandeira voucher selecionada (com overrides da categoria). */
   const voucherSelecionado = useMemo(
@@ -340,6 +325,9 @@ export function ControleCartoesPage() {
   }, [tab, modulos]);
 
   const fetchList = useCallback(() => {
+    // So a busca mais recente escreve no estado: trocar aba/bandeira/maquininha
+    // deixa a anterior em voo, e a resposta atrasada zerava a tabela.
+    const atual = iniciarBusca();
     setLoading(true);
     const params: Record<string, string> = {
       ...dateFilterToParams(dateFilter),
@@ -356,6 +344,7 @@ export function ControleCartoesPage() {
     api
       .get<ControleCartoesRow[]>('financeiro/controle-cartoes', { params })
       .then((res) => {
+        if (!atual()) return;
         const list = Array.isArray(res.data) ? res.data : [];
         setItems(
           list.map((r: ControleCartoesRow & { data?: string; dataAReceber?: string }) => ({
@@ -368,9 +357,13 @@ export function ControleCartoesPage() {
           }))
         );
       })
-      .catch((err) => toast.error(err?.message ?? 'Erro ao carregar'))
-      .finally(() => setLoading(false));
-  }, [dateFilter, tab, bandeira, bandeiraVoucher, categoriaVoucher, tipoCredito, operadora]);
+      .catch((err) => {
+        if (atual()) toast.error(err?.message ?? 'Erro ao carregar');
+      })
+      .finally(() => {
+        if (atual()) setLoading(false);
+      });
+  }, [dateFilter, tab, bandeira, bandeiraVoucher, categoriaVoucher, tipoCredito, operadora, iniciarBusca]);
 
   useEffect(() => {
     fetchList();
@@ -513,6 +506,20 @@ export function ControleCartoesPage() {
       .catch((err) => toast.error(err?.message ?? 'Erro ao excluir'));
   };
 
+  /** Coluna de cupons so aparece quando ha lancamento usando cupom. */
+  const mostrarQtdCupons = useMemo(() => temQtdCupons(items), [items]);
+
+  /** Rotulo legivel da categoria voucher de uma linha, a partir do cadastro. */
+  const labelCategoriaVoucher = useCallback(
+    (row: ControleCartoesRow): string | null => {
+      if (!row.categoriaVoucher) return null;
+      const banda = bandeirasVoucherAll.find((b) => b.id === row.bandeira);
+      const cat = banda?.voucher?.categorias?.find((c) => c.id === row.categoriaVoucher);
+      return cat?.label ?? row.categoriaVoucher;
+    },
+    [bandeirasVoucherAll],
+  );
+
   const columns = useMemo<ColumnDef<ControleCartoesRow>[]>(
     () => [
       {
@@ -539,11 +546,44 @@ export function ControleCartoesPage() {
             } as ColumnDef<ControleCartoesRow>,
           ]
         : []),
+      // Voucher: categoria da bandeira (Ticket Restaurante, Pluxee Gift, etc.).
+      ...(tab === 'voucher'
+        ? [
+            {
+              accessorKey: 'categoriaVoucher' as const,
+              header: 'Categoria',
+              cell: ({ row }: { row: { original: ControleCartoesRow } }) =>
+                labelCategoriaVoucher(row.original) ?? '-',
+            } as ColumnDef<ControleCartoesRow>,
+          ]
+        : []),
       {
         accessorKey: 'valor',
-        header: 'Valor',
+        // No iFood o bruto e explicitamente o valor do iFood — `Valor loja` e outra coisa.
+        header: tab === 'ifood' ? 'Valor iFood' : 'Valor',
         cell: ({ row }) => formatCurrency(row.getValue('valor')),
       },
+      ...(tab === 'ifood'
+        ? [
+            {
+              accessorKey: 'valorLoja' as const,
+              header: 'Valor loja',
+              cell: ({ row }: { row: { original: ControleCartoesRow } }) =>
+                row.original.valorLoja != null ? formatCurrency(row.original.valorLoja) : '-',
+            } as ColumnDef<ControleCartoesRow>,
+          ]
+        : []),
+      // Quantidade de cupons so aparece quando a bandeira cobra por cupom.
+      ...(tab === 'voucher' && mostrarQtdCupons
+        ? [
+            {
+              accessorKey: 'qtdCupons' as const,
+              header: 'Qtd cupons',
+              cell: ({ row }: { row: { original: ControleCartoesRow } }) =>
+                row.original.qtdCupons != null ? String(row.original.qtdCupons) : '-',
+            } as ColumnDef<ControleCartoesRow>,
+          ]
+        : []),
       {
         accessorKey: 'prazo',
         header: 'Prazo',
@@ -559,6 +599,11 @@ export function ControleCartoesPage() {
           const v = row.getValue('taxaPercent') as number | undefined;
           return v != null ? `${v}%` : '-';
         },
+      },
+      {
+        id: 'desconto',
+        header: 'Desconto',
+        cell: ({ row }) => formatCurrency(descontoDaLinha(row.original)),
       },
       {
         accessorKey: 'aReceber',
@@ -595,7 +640,8 @@ export function ControleCartoesPage() {
         ),
       },
     ],
-    [tab]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tab, mostrarQtdCupons, bandeirasVoucherAll]
   );
 
   const table = useReactTable({
@@ -607,19 +653,47 @@ export function ControleCartoesPage() {
     getSortedRowModel: getSortedRowModel(),
   });
 
+  /** Linhas efetivamente exibidas (respeita ordenacao), base de todos os totais. */
+  const linhasVisiveis = useMemo(
+    () => table.getRowModel().rows.map((r) => r.original),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, sorting],
+  );
+  const totaisGerais = useMemo(() => calcularTotais(linhasVisiveis), [linhasVisiveis]);
+  /**
+   * Voucher e pago por bloco de fechamento: os subtotais respeitam cada bloco,
+   * em vez de somar lancamentos de ciclos diferentes.
+   */
+  const blocosVoucher = useMemo(
+    () => (tab === 'voucher' ? agruparPorBlocoCorte(linhasVisiveis) : []),
+    [tab, linhasVisiveis],
+  );
+
   const showBandeiras = tab === 'credito' || tab === 'debito';
-  /** Filtra bandeiras conforme config da maquininha selecionada. */
+  /**
+   * Bandeiras da aba atual, filtradas pela whitelist da maquininha quando ela
+   * existir. `undefined` (maquininhas padrao) = aceita todas as cadastradas,
+   * para que bandeiras novas aparecam sem precisar reconfigurar a maquininha.
+   */
   const bandeirasList = useMemo(() => {
     if (tab === 'credito') {
-      const aceitas = operadoraConfig?.bandeirasCredito ?? bandeirasCreditoAll.map((b) => b.id);
-      return bandeirasCreditoAll.filter((b) => aceitas.includes(b.id));
+      const aceitas = operadoraConfig?.bandeirasCredito;
+      return aceitas ? bandeirasCreditoAll.filter((b) => aceitas.includes(b.id)) : bandeirasCreditoAll;
     }
     if (tab === 'debito') {
-      const aceitas = operadoraConfig?.bandeirasDebito ?? bandeirasDebitoAll.map((b) => b.id);
-      return bandeirasDebitoAll.filter((b) => aceitas.includes(b.id));
+      const aceitas = operadoraConfig?.bandeirasDebito;
+      return aceitas ? bandeirasDebitoAll.filter((b) => aceitas.includes(b.id)) : bandeirasDebitoAll;
     }
     return [];
-  }, [tab, operadoraConfig]);
+  }, [tab, operadoraConfig, bandeirasCreditoAll, bandeirasDebitoAll]);
+
+  /** Mantem a bandeira selecionada valida quando a lista muda (aba, maquininha, cadastro). */
+  useEffect(() => {
+    if (!showBandeiras || bandeirasList.length === 0) return;
+    if (!bandeirasList.some((b) => b.id === bandeira)) {
+      setBandeira(bandeirasList[0].id as BandeiraCartao);
+    }
+  }, [bandeirasList, bandeira, showBandeiras]);
 
   /** Tipos de credito disponiveis para a maquininha selecionada. */
   const tiposCreditoDisponiveis = useMemo(() => {
@@ -650,22 +724,43 @@ export function ControleCartoesPage() {
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
           <ExportButtons
-            data={items.map((r) => ({
+            data={linhasVisiveis.map((r) => ({
               data: formatDateStringToBR(r.data),
+              ...(tab === 'voucher' ? { categoriaVoucher: labelCategoriaVoucher(r) ?? '-' } : {}),
               valor: formatCurrency(r.valor),
+              ...(tab === 'ifood'
+                ? { valorLoja: r.valorLoja != null ? formatCurrency(r.valorLoja) : '-' }
+                : {}),
+              ...(tab === 'voucher' && mostrarQtdCupons
+                ? { qtdCupons: r.qtdCupons != null ? String(r.qtdCupons) : '-' }
+                : {}),
               prazo: r.prazo != null ? `${r.prazo}` : '-',
               taxaPercent: r.taxaPercent != null ? `${r.taxaPercent}%` : '-',
+              desconto: formatCurrency(descontoDaLinha(r)),
               aReceber: formatCurrency(r.aReceber),
               dataAReceber: formatDateStringToBR(r.dataAReceber),
             }))}
             columns={[
               { key: 'data', label: 'Data' },
-              { key: 'valor', label: 'Valor' },
+              ...(tab === 'voucher' ? [{ key: 'categoriaVoucher', label: 'Categoria' }] : []),
+              { key: 'valor', label: tab === 'ifood' ? 'Valor iFood' : 'Valor' },
+              ...(tab === 'ifood' ? [{ key: 'valorLoja', label: 'Valor loja' }] : []),
+              ...(tab === 'voucher' && mostrarQtdCupons
+                ? [{ key: 'qtdCupons', label: 'Qtd cupons' }]
+                : []),
               { key: 'prazo', label: 'Prazo' },
               { key: 'taxaPercent', label: 'Taxa %' },
+              { key: 'desconto', label: 'Desconto' },
               { key: 'aReceber', label: 'A receber' },
               { key: 'dataAReceber', label: 'Data a receber' },
             ]}
+            footer={{
+              data: 'TOTAL',
+              valor: formatCurrency(totaisGerais.valor),
+              ...(tab === 'ifood' ? { valorLoja: formatCurrency(totaisGerais.valorLoja) } : {}),
+              desconto: formatCurrency(totaisGerais.desconto),
+              aReceber: formatCurrency(totaisGerais.aReceber),
+            }}
             filename={`controle-cartoes-${tab}`}
             title="Controle Cartoes"
           />
@@ -860,28 +955,75 @@ export function ControleCartoesPage() {
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-border">
-              {table.getRowModel().rows.length === 0 ? (
+            {table.getRowModel().rows.length === 0 ? (
+              <tbody>
                 <tr>
                   <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-muted-foreground">
                     Nenhum registro no periodo
                   </td>
                 </tr>
-              ) : (
-                table.getRowModel().rows.map((row) => (
+              </tbody>
+            ) : tab === 'voucher' ? (
+              // Voucher: um tbody por bloco de corte, cada um com seu subtotal.
+              blocosVoucher.map((bloco) => {
+                const linhasDoBloco = table
+                  .getRowModel()
+                  .rows.filter((r) => (r.original.dataAReceber ?? '').slice(0, 10) === bloco.chave);
+                return (
+                  <tbody key={bloco.chave} className="divide-y divide-border border-b border-border">
+                    <tr className="bg-muted/60">
+                      <td
+                        colSpan={columns.length}
+                        className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                      >
+                        Bloco de corte — recebimento em {formatDateStringToBR(bloco.chave)} (
+                        {bloco.subtotal.quantidade} lancamento
+                        {bloco.subtotal.quantidade > 1 ? 's' : ''})
+                      </td>
+                    </tr>
+                    {linhasDoBloco.map((row) => (
+                      <tr key={row.id} className="hover:bg-muted/40">
+                        {row.getVisibleCells().map((cell) => (
+                          <td key={cell.id} className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                    <tr className="bg-muted/30 text-sm font-medium text-foreground">
+                      {table.getVisibleLeafColumns().map((col) => (
+                        <td key={col.id} className="whitespace-nowrap px-4 py-2">
+                          {celulaDeTotal(col.id, bloco.subtotal, 'Subtotal')}
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                );
+              })
+            ) : (
+              <tbody className="divide-y divide-border">
+                {table.getRowModel().rows.map((row) => (
                   <tr key={row.id} className="hover:bg-muted/40">
                     {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground"
-                      >
+                      <td key={cell.id} className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
                   </tr>
-                ))
-              )}
-            </tbody>
+                ))}
+              </tbody>
+            )}
+            {table.getRowModel().rows.length > 0 && (
+              <tfoot className="border-t-2 border-border bg-muted/40">
+                <tr className="text-sm font-bold text-foreground">
+                  {table.getVisibleLeafColumns().map((col) => (
+                    <td key={col.id} className="whitespace-nowrap px-4 py-3">
+                      {celulaDeTotal(col.id, totaisGerais, 'Total')}
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
+            )}
           </table>
           )}
         </div>
@@ -1146,7 +1288,10 @@ export function ControleCartoesPage() {
                             <div className="flex flex-col">
                               <span className="text-sm font-medium text-foreground">{m.label}</span>
                               <span className="text-xs text-muted-foreground">
-                                {m.tipos.length} forma(s) | {m.bandeirasCredito.length} bandeira(s) credito
+                                {m.tipos.length} forma(s) |{' '}
+                                {m.bandeirasCredito
+                                  ? `${m.bandeirasCredito.length} bandeira(s) credito`
+                                  : 'todas as bandeiras'}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -1424,14 +1569,15 @@ function MaquininhaForm({
           <label className="text-sm font-medium text-foreground">Bandeiras de credito aceitas</label>
           <div className="flex flex-wrap gap-2">
             {bandeirasCredito.map((b) => {
-              const ativo = value.bandeirasCredito.includes(b.id);
+              // Sem whitelist (undefined) = todas aceitas. Ao desmarcar a
+              // primeira, materializa a lista atual menos a bandeira clicada.
+              const atuais = value.bandeirasCredito ?? bandeirasCredito.map((x) => x.id);
+              const ativo = atuais.includes(b.id);
               return (
                 <button
                   key={b.id}
                   type="button"
-                  onClick={() =>
-                    onChange({ ...value, bandeirasCredito: toggle(value.bandeirasCredito, b.id) })
-                  }
+                  onClick={() => onChange({ ...value, bandeirasCredito: toggle(atuais, b.id) })}
                   className={cn(
                     'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
                     ativo
@@ -1452,14 +1598,13 @@ function MaquininhaForm({
           <label className="text-sm font-medium text-foreground">Bandeiras de debito aceitas</label>
           <div className="flex flex-wrap gap-2">
             {bandeirasDebito.map((b) => {
-              const ativo = value.bandeirasDebito.includes(b.id);
+              const atuais = value.bandeirasDebito ?? bandeirasDebito.map((x) => x.id);
+              const ativo = atuais.includes(b.id);
               return (
                 <button
                   key={b.id}
                   type="button"
-                  onClick={() =>
-                    onChange({ ...value, bandeirasDebito: toggle(value.bandeirasDebito, b.id) })
-                  }
+                  onClick={() => onChange({ ...value, bandeirasDebito: toggle(atuais, b.id) })}
                   className={cn(
                     'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
                     ativo

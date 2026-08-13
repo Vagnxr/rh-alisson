@@ -252,8 +252,21 @@ table thead th {
     border-color: var(--border);
   }
 
+  .dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
   .dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
     border-color: var(--border);
+  }
+
+  /* Buracos do shim original: preto puro e cinza claro nao eram tratados e
+     ficavam ilegiveis no tema escuro. */
+  .dark .text-black {
+    color: var(--foreground);
+  }
+
+  .dark .text-slate-100,
+  .dark .text-slate-200,
+  .dark .text-slate-300 {
+    color: var(--muted-foreground);
   }
 
   .dark .hover\:bg-slate-50:hover,
@@ -330,6 +343,42 @@ table thead th {
   .dark .text-green-600 { @apply text-green-400; }
   .dark .text-cyan-600 { @apply text-cyan-400; }
   .dark .text-pink-600 { @apply text-pink-400; }
+
+  /* Texto -700 sobre fundo escuro: escuro-sobre-escuro. Clareia para a faixa
+     -300, que mantem a matiz e passa em contraste. `amber-700` e `purple-700`
+     ja tinham regra propria acima. */
+  .dark .text-indigo-700 { @apply text-indigo-300; }
+  .dark .text-blue-700 { @apply text-blue-300; }
+  .dark .text-violet-700 { @apply text-violet-300; }
+  .dark .text-sky-700 { @apply text-sky-300; }
+  .dark .text-rose-700 { @apply text-rose-300; }
+  .dark .text-teal-700 { @apply text-teal-300; }
+  .dark .text-orange-700 { @apply text-orange-300; }
+  .dark .text-red-700 { @apply text-red-300; }
+  .dark .text-fuchsia-700 { @apply text-fuchsia-300; }
+  .dark .text-emerald-700 { @apply text-emerald-300; }
+  .dark .text-yellow-700 { @apply text-yellow-300; }
+  .dark .text-green-700 { @apply text-green-300; }
+  .dark .text-cyan-700 { @apply text-cyan-300; }
+  .dark .text-pink-700 { @apply text-pink-300; }
+
+  /* Fundo -100: mesmo tratamento dado a -50, um pouco mais presente. */
+  .dark .bg-indigo-100 { background-color: oklch(0.26 0.05 277 / 0.5); }
+  .dark .bg-blue-100 { background-color: oklch(0.26 0.05 250 / 0.5); }
+  .dark .bg-amber-100 { background-color: oklch(0.28 0.06 75 / 0.5); }
+  .dark .bg-violet-100 { background-color: oklch(0.26 0.06 300 / 0.5); }
+  .dark .bg-purple-100 { background-color: oklch(0.26 0.06 305 / 0.5); }
+  .dark .bg-sky-100 { background-color: oklch(0.26 0.05 230 / 0.5); }
+  .dark .bg-rose-100 { background-color: oklch(0.26 0.06 15 / 0.5); }
+  .dark .bg-teal-100 { background-color: oklch(0.26 0.05 180 / 0.5); }
+  .dark .bg-orange-100 { background-color: oklch(0.28 0.07 55 / 0.5); }
+  .dark .bg-red-100 { background-color: oklch(0.26 0.07 25 / 0.5); }
+  .dark .bg-fuchsia-100 { background-color: oklch(0.26 0.06 320 / 0.5); }
+  .dark .bg-emerald-100 { background-color: oklch(0.26 0.06 160 / 0.5); }
+  .dark .bg-yellow-100 { background-color: oklch(0.28 0.06 95 / 0.5); }
+  .dark .bg-green-100 { background-color: oklch(0.26 0.06 145 / 0.5); }
+  .dark .bg-cyan-100 { background-color: oklch(0.26 0.05 200 / 0.5); }
+  .dark .bg-pink-100 { background-color: oklch(0.26 0.06 350 / 0.5); }
 
   .dark .text-purple-700 {
     color: oklch(0.82 0.1 305);
