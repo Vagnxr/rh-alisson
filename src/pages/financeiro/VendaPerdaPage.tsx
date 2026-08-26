@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { api } from '@/lib/api';
@@ -160,6 +160,15 @@ export function VendaPerdaPage() {
     fetchData();
   }, [fetchData]);
 
+  /**
+   * Grava a configuracao do mes (POS aluguel + iFood).
+   *
+   * Roda no `onBlur` de cada campo. Antes era preciso clicar em "Salvar
+   * configuracao do mes": o cliente digitou 100,00 em POS aluguel, nao clicou, e
+   * reportou que o valor "nao esta somando no Perda total" — alem de nao entender
+   * para que servia o botao. O calculo no backend sempre esteve certo; o que
+   * faltava era o valor chegar la.
+   */
   const handleSalvarConfig = useCallback(async () => {
     if (!mesUnico) return;
     setSavingConfig(true);
@@ -174,7 +183,8 @@ export function VendaPerdaPage() {
         },
       };
       await api.put(`financeiro/outras-funcoes/venda-perda/config?mes=${encodeURIComponent(mesUnico)}`, payload);
-      toast.success('Configuracao salva');
+      // Sem toast: o salvamento e automatico e a atualizacao do card ja e o
+      // retorno visivel. Toast a cada campo viraria ruido.
       fetchData();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro ao salvar';
@@ -276,6 +286,7 @@ export function VendaPerdaPage() {
                   {editavel ? (
                     <CurrencyInput
                       value={ifoodConfigInput.valorBruto}
+                onBlur={handleSalvarConfig}
                       onChange={(v) => setIfoodConfigInput((s) => ({ ...s, valorBruto: v }))}
                     />
                   ) : (
@@ -287,6 +298,7 @@ export function VendaPerdaPage() {
                   {editavel ? (
                     <CurrencyInput
                       value={ifoodConfigInput.viaLoja}
+                onBlur={handleSalvarConfig}
                       onChange={(v) => setIfoodConfigInput((s) => ({ ...s, viaLoja: v }))}
                     />
                   ) : (
@@ -298,6 +310,7 @@ export function VendaPerdaPage() {
                   {editavel ? (
                     <CurrencyInput
                       value={ifoodConfigInput.descontos}
+                onBlur={handleSalvarConfig}
                       onChange={(v) => setIfoodConfigInput((s) => ({ ...s, descontos: v }))}
                     />
                   ) : (
@@ -309,6 +322,7 @@ export function VendaPerdaPage() {
                   {editavel ? (
                     <CurrencyInput
                       value={ifoodConfigInput.valorLiquido}
+                onBlur={handleSalvarConfig}
                       onChange={(v) => setIfoodConfigInput((s) => ({ ...s, valorLiquido: v }))}
                     />
                   ) : (
@@ -360,13 +374,19 @@ export function VendaPerdaPage() {
             </div>
             <div className="space-y-4 p-5">
               {editavel ? (
-                <CurrencyInput value={posAluguelInput} onChange={setPosAluguelInput} />
+                <CurrencyInput
+                  value={posAluguelInput}
+                  onChange={setPosAluguelInput}
+                  onBlur={handleSalvarConfig}
+                />
               ) : (
                 <p className="text-3xl font-bold text-foreground">{formatCurrency(posAluguel.valor)}</p>
               )}
               {editavel && (
                 <p className="text-sm text-muted-foreground">
-                  Valor atual no periodo: {formatCurrency(posAluguel.valor)}
+                  {savingConfig
+                    ? 'Salvando...'
+                    : 'Aluguel das maquininhas neste mes. Ja somado na Perda total.'}
                 </p>
               )}
             </div>
@@ -381,19 +401,7 @@ export function VendaPerdaPage() {
             </div>
           </div>
 
-          {editavel && (
-            <div className="sm:col-span-2 xl:col-span-3 flex justify-end">
-              <button
-                type="button"
-                onClick={handleSalvarConfig}
-                disabled={savingConfig}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-              >
-                {savingConfig ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Salvar configuracao do mes
-              </button>
-            </div>
-          )}
+
         </div>
       )}
     </div>

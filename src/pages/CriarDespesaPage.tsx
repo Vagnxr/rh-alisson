@@ -78,20 +78,20 @@ export function CriarDespesaPage() {
   };
 
   const inputClass =
-    'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500';
+    'flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500';
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Criar despesa</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Criar despesa</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Lancar uma despesa manualmente com os mesmos campos das telas de despesas.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6">
+      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-input bg-background p-6">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Categoria</label>
+          <label className="text-sm font-medium text-foreground">Categoria</label>
           <select
             value={form.categoria}
             onChange={(e) => {
@@ -114,7 +114,7 @@ export function CriarDespesaPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Data</label>
+            <label className="text-sm font-medium text-foreground">Data</label>
             <DateInput
               value={form.data}
               onChange={(v) => setForm((f) => ({ ...f, data: v }))}
@@ -123,7 +123,7 @@ export function CriarDespesaPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Tipo</label>
+            <label className="text-sm font-medium text-foreground">Tipo</label>
             <select
               value={form.tipo || tiposDisponiveis[0]}
               onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
@@ -142,7 +142,7 @@ export function CriarDespesaPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Descricao</label>
+          <label className="text-sm font-medium text-foreground">Descricao</label>
           <input
             type="text"
             value={form.descricao}
@@ -153,7 +153,7 @@ export function CriarDespesaPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Valor (R$)</label>
+          <label className="text-sm font-medium text-foreground">Valor (R$)</label>
           <input
             type="number"
             step="0.01"
@@ -173,7 +173,7 @@ export function CriarDespesaPage() {
             onChange={(e) => setForm((f) => ({ ...f, recorrente: e.target.checked }))}
             className="h-4 w-4 rounded border-slate-300 text-emerald-600"
           />
-          <label htmlFor="recorrente" className="text-sm font-medium text-slate-700">
+          <label htmlFor="recorrente" className="text-sm font-medium text-foreground">
             Recorrente
           </label>
         </div>
@@ -185,13 +185,13 @@ export function CriarDespesaPage() {
               label="Periodicidade"
             />
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Data fim (opcional)</label>
+              <label className="text-sm font-medium text-foreground">Data fim (opcional)</label>
               <DateInput
                 value={form.recorrenciaFim}
                 onChange={(v) => setForm((f) => ({ ...f, recorrenciaFim: v }))}
                 className={inputClass}
               />
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Última data de vencimento da série. A data informada conta como a primeira ocorrência. Deixe em branco para gerar até 12 meses.
               </p>
             </div>
@@ -206,7 +206,7 @@ export function CriarDespesaPage() {
             onChange={(e) => setForm((f) => ({ ...f, comunicarAgenda: e.target.checked }))}
             className="h-4 w-4 rounded border-slate-300 text-emerald-600"
           />
-          <label htmlFor="comunicarAgenda" className="text-sm font-medium text-slate-700">
+          <label htmlFor="comunicarAgenda" className="text-sm font-medium text-foreground">
             Comunicar Agenda
           </label>
         </div>
@@ -215,7 +215,7 @@ export function CriarDespesaPage() {
           <button
             type="button"
             onClick={() => navigate('/configuracoes')}
-            className="flex h-10 flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            className="flex h-10 flex-1 items-center justify-center rounded-lg border border-input bg-background text-foreground hover:bg-muted"
           >
             Cancelar
           </button>

@@ -50,11 +50,26 @@ export function Header() {
     }
   }, [showTenantMenu, showLojaMenu, showAdminMenu]);
 
-  // Lojas do tenant atual (API pode nao retornar tenantId; nesse caso considera do tenant atual)
+  /**
+   * Lojas que ESTE usuario pode acessar no tenant atual.
+   *
+   * Alem do filtro por tenant (a API pode nao retornar `tenantId`; nesse caso
+   * considera do tenant atual), respeita o vinculo `UserLoja` que o login ja
+   * devolve em `user.lojas`. Antes o seletor listava todas as lojas do tenant, e
+   * um usuario vinculado a uma unica loja conseguia selecionar as outras.
+   *
+   * Lista de vinculos vazia = sem restricao (super admin e usuarios de tenant
+   * de loja unica, que nunca receberam vinculo explicito).
+   */
   const lojasDoTenant = useMemo(() => {
     if (!currentTenant) return [];
-    return lojas.filter((l) => (l.tenantId === currentTenant.id || l.tenantId == null) && l.isAtiva);
-  }, [lojas, currentTenant]);
+    const doTenant = lojas.filter(
+      (l) => (l.tenantId === currentTenant.id || l.tenantId == null) && l.isAtiva,
+    );
+    const vinculos = user?.lojas ?? [];
+    if (user?.isSuperAdmin || vinculos.length === 0) return doTenant;
+    return doTenant.filter((l) => vinculos.includes(l.id));
+  }, [lojas, currentTenant, user]);
 
   // Verifica se o tenant permite multiloja
   const isMultiloja = currentTenant?.isMultiloja && lojasDoTenant.length > 1;
@@ -66,12 +81,18 @@ export function Header() {
     }
   }, [currentTenant, fetchLojas]);
 
-  // Seleciona primeira loja automaticamente se nenhuma selecionada
+  /**
+   * Seleciona a primeira loja permitida quando nenhuma esta escolhida — e
+   * tambem quando a loja persistida deixou de ser permitida (perda de vinculo,
+   * loja desativada ou troca de tenant). `lojaAtual` fica em localStorage, entao
+   * sem essa correcao o usuario continuaria com uma loja que nao pode ver.
+   */
   useEffect(() => {
-    if (lojasDoTenant.length > 0 && !lojaAtual) {
-      const matriz = lojasDoTenant.find((l) => l.isMatriz);
-      setLojaAtual(matriz?.id || lojasDoTenant[0].id);
-    }
+    if (lojasDoTenant.length === 0) return;
+    const permitida = lojaAtual && lojasDoTenant.some((l) => l.id === lojaAtual.id);
+    if (permitida) return;
+    const matriz = lojasDoTenant.find((l) => l.isMatriz);
+    setLojaAtual(matriz?.id || lojasDoTenant[0].id);
   }, [lojasDoTenant, lojaAtual, setLojaAtual]);
 
   // Fecha menus ao clicar fora (considera dropdown renderizado via Portal)

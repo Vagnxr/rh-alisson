@@ -39,19 +39,38 @@ import { DateInput } from '@/components/ui/date-input';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { parseValorFromInput, formatValorForInput } from '@/lib/formatValor';
 import { MAQUININHAS_PADRAO_LIST, MAQUININHAS_PADRAO_HABILITADAS } from '@/lib/maquininhas';
-import { INPUT_CLASS, PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL } from '@/lib/uiClasses';
+import {
+  INPUT_CLASS,
+  PAGE_TITLE,
+  PAGE_SUBTITLE,
+  BTN_CANCEL,
+  ICON_BTN,
+  ICON_BTN_DANGER,
+} from '@/lib/uiClasses';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { resolverVoucherConfig, type ModulosHabilitados } from '@/types/taxas-prazos';
+import {
+  DEFAULT_IFOOD_CONFIG,
+  resolverVoucherConfig,
+  type ModulosHabilitados,
+} from '@/types/taxas-prazos';
 import { useTaxasPrazos } from '@/hooks/useTaxasPrazos';
 import { useLatestRequest } from '@/hooks/useLatestRequest';
 import {
   agruparPorBlocoCorte,
   calcularTotais,
+  calcularTotaisDeBlocos,
   descontoDaLinha,
   temQtdCupons,
   type TotaisControleCartoes,
 } from '@/lib/controle-cartoes-totais';
-import { COR_IDS, CORES_MAQUININHA, corIdDe } from '@/lib/cores-maquininha';
+import {
+  COR_IDS,
+  CORES_MAQUININHA,
+  corChipClasses,
+  corHeaderClasses,
+  corIdDe,
+} from '@/lib/cores-maquininha';
+import { VendasDoDiaDialog } from './controle-cartoes/VendasDoDiaDialog';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -166,7 +185,15 @@ const TIPOS_CREDITO: { id: TipoCredito; label: string }[] = [
 ];
 
 export function ControleCartoesPage() {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  /**
+   * Ordem cronologica CRESCENTE por padrao.
+   *
+   * A lista saia na ordem de insercao (o cliente lancou 19, 18, 17 e 20 e viu
+   * exatamente isso). O backend ja devolve ordenado; fixar o estado aqui garante
+   * que a tabela nao reordene por conta propria e mantem o cabecalho "Data" com
+   * a seta no sentido certo.
+   */
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'data', desc: false }]);
   const iniciarBusca = useLatestRequest();
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   /** Operadora (maquininha) selecionada quando em credito/debito/pix. */
@@ -201,6 +228,7 @@ export function ControleCartoesPage() {
    * Inclui as bandeiras personalizadas de credito, debito e voucher.
    */
   const {
+    json,
     bandeirasCredito: bandeirasCreditoAll,
     bandeirasDebito: bandeirasDebitoAll,
     bandeirasVoucher: bandeirasVoucherAll,
@@ -213,6 +241,10 @@ export function ControleCartoesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ControleCartoesRow | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  /** Dia aberto no dialogo de vendas (parcelado a prazo). */
+  const [diaAberto, setDiaAberto] = useState<string | null>(null);
+  /** Dia inteiro marcado para exclusao (parcelado a prazo, linha agregada). */
+  const [deleteDia, setDeleteDia] = useState<string | null>(null);
   const [tipoCredito, setTipoCredito] = useState<TipoCredito>('a-vista');
   const [formData, setFormData] = useState({
     data: formatDateToLocalYYYYMMDD(new Date()),
@@ -506,6 +538,21 @@ export function ControleCartoesPage() {
       .catch((err) => toast.error(err?.message ?? 'Erro ao excluir'));
   };
 
+  /** Exclui TODAS as vendas de um dia (linha agregada do parcelado a prazo). */
+  const handleDeleteDia = () => {
+    if (!deleteDia) return;
+    const ids = items
+      .filter((r) => (r.data ?? '').slice(0, 10) === deleteDia)
+      .map((r) => r.id);
+    Promise.all(ids.map((id) => api.delete(`financeiro/controle-cartoes/${id}`)))
+      .then(() => {
+        setItems((prev) => prev.filter((r) => !ids.includes(r.id)));
+        toast.success(ids.length > 1 ? `${ids.length} vendas excluidas.` : 'Venda excluida.');
+      })
+      .catch((err) => toast.error(err?.message ?? 'Erro ao excluir'))
+      .finally(() => setDeleteDia(null));
+  };
+
   /** Coluna de cupons so aparece quando ha lancamento usando cupom. */
   const mostrarQtdCupons = useMemo(() => temQtdCupons(items), [items]);
 
@@ -610,11 +657,18 @@ export function ControleCartoesPage() {
         header: 'A receber',
         cell: ({ row }) => formatCurrency(row.getValue('aReceber')),
       },
-      {
-        accessorKey: 'dataAReceber',
-        header: 'Data a receber',
-        cell: ({ row }) => formatDateStringToBR(String(row.getValue('dataAReceber') ?? '')),
-      },
+      // No parcelado a prazo cada venda tem VARIAS datas de recebimento: uma
+      // coluna so mentiria. As datas ficam no dialogo de vendas do dia.
+      ...(tab === 'credito' && tipoCredito === 'parcelado-prazo'
+        ? []
+        : [
+            {
+              accessorKey: 'dataAReceber' as const,
+              header: 'Data a receber',
+              cell: ({ row }: { row: { getValue: (k: string) => unknown } }) =>
+                formatDateStringToBR(String(row.getValue('dataAReceber') ?? '')),
+            } as ColumnDef<ControleCartoesRow>,
+          ]),
       {
         id: 'actions',
         header: () => <span className="sr-only">Acoes</span>,
@@ -641,7 +695,7 @@ export function ControleCartoesPage() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tab, mostrarQtdCupons, bandeirasVoucherAll]
+    [tab, tipoCredito, mostrarQtdCupons, bandeirasVoucherAll]
   );
 
   const table = useReactTable({
@@ -659,15 +713,88 @@ export function ControleCartoesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [items, sorting],
   );
-  const totaisGerais = useMemo(() => calcularTotais(linhasVisiveis), [linhasVisiveis]);
   /**
-   * Voucher e pago por bloco de fechamento: os subtotais respeitam cada bloco,
-   * em vez de somar lancamentos de ciclos diferentes.
+   * A aba usa blocos de corte quando o fechamento da bandeira/modulo NAO e
+   * `normal`.
+   *
+   * Alelo e Ben Alim/Ref sao voucher mas fecham como credito a vista (recebem
+   * por venda), entao nao podem ganhar faixa de bloco — foi o apontamento
+   * "tem que tirar esse bloco de corte deles". O iFood, ao contrario, fecha
+   * semanalmente e passou a usar blocos como o voucher.
    */
-  const blocosVoucher = useMemo(
-    () => (tab === 'voucher' ? agruparPorBlocoCorte(linhasVisiveis) : []),
-    [tab, linhasVisiveis],
+  const fechamentoDaAba = useMemo(() => {
+    if (tab === 'voucher') return voucherCfgEfetiva?.fechamento ?? 'normal';
+    if (tab === 'ifood') return json.ifoodConfig?.fechamento ?? DEFAULT_IFOOD_CONFIG.fechamento ?? 'normal';
+    return 'normal';
+  }, [tab, voucherCfgEfetiva, json]);
+  const usaBlocos = (tab === 'voucher' || tab === 'ifood') && fechamentoDaAba !== 'normal';
+
+  /** Tarifa fixa por bloco (DOC). So o voucher cobra; o iFood nao tem DOC. */
+  const docDaAba = tab === 'voucher' ? (voucherCfgEfetiva?.doc ?? 0) : 0;
+
+  /**
+   * Voucher e iFood sao pagos por bloco de fechamento: os subtotais respeitam
+   * cada bloco, em vez de somar lancamentos de ciclos diferentes, e o DOC entra
+   * uma vez por bloco.
+   */
+  const blocosCorte = useMemo(
+    () => (usaBlocos ? agruparPorBlocoCorte(linhasVisiveis, docDaAba) : []),
+    [usaBlocos, linhasVisiveis, docDaAba],
   );
+
+  // Com blocos, o total da aba e a soma dos subtotais — senao o rodape ignoraria
+  // o DOC e nao fecharia com os subtotais logo acima.
+  const totaisGerais = useMemo(
+    () => (usaBlocos ? calcularTotaisDeBlocos(blocosCorte) : calcularTotais(linhasVisiveis)),
+    [usaBlocos, blocosCorte, linhasVisiveis],
+  );
+
+  /** Faixa de separacao dos blocos, na cor configurada do modulo. */
+  const corFaixaBloco = corHeaderClasses(cores, tab === 'ifood' ? 'ifood' : 'voucher');
+
+  /**
+   * O parcelado a prazo e a unica modalidade com varias vendas no mesmo dia
+   * (cada uma com sua quantidade de parcelas), entao a tela agrega por dia: a
+   * linha principal e o dia, e o detalhe fica no dialogo de vendas.
+   */
+  const ehParceladoPrazo = tab === 'credito' && tipoCredito === 'parcelado-prazo';
+
+  const diasParcelado = useMemo(() => {
+    if (!ehParceladoPrazo) return [];
+    const mapa = new Map<string, ControleCartoesRow[]>();
+    for (const r of linhasVisiveis) {
+      const dia = (r.data ?? '').slice(0, 10);
+      const atual = mapa.get(dia);
+      if (atual) atual.push(r);
+      else mapa.set(dia, [r]);
+    }
+    return [...mapa.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dia, vendas]) => ({ dia, vendas, subtotal: calcularTotais(vendas) }));
+  }, [ehParceladoPrazo, linhasVisiveis]);
+
+  /** Vendas do dia atualmente aberto no dialogo. */
+  const vendasDoDiaAberto = useMemo(
+    () => (diaAberto ? linhasVisiveis.filter((r) => (r.data ?? '').slice(0, 10) === diaAberto) : []),
+    [diaAberto, linhasVisiveis],
+  );
+
+  /** Abre o formulario de novo lancamento ja com a data do dia escolhido. */
+  const handleNovaVendaNoDia = (dia: string) => {
+    setDiaAberto(null);
+    setEditingItem(null);
+    setFormData({
+      data: dia,
+      valor: '',
+      prazo: '',
+      taxaPercent: '',
+      dataAReceber: dia,
+      numeroParcelas: '',
+      valorLoja: '',
+      qtdCupons: '',
+    });
+    setIsDialogOpen(true);
+  };
 
   const showBandeiras = tab === 'credito' || tab === 'debito';
   /**
@@ -788,8 +915,9 @@ export function ControleCartoesPage() {
                 onClick={() => setOperadora(m.id)}
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                  // Selecionado usa a cor escolhida em Gerenciar maquininhas.
                   operadora === m.id
-                    ? 'bg-emerald-600 text-white'
+                    ? corChipClasses(cores, m.id)
                     : 'bg-muted text-foreground hover:bg-accent',
                 )}
               >
@@ -900,7 +1028,7 @@ export function ControleCartoesPage() {
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                   bandeiraVoucher === b.id
-                    ? 'bg-emerald-600 text-white'
+                    ? corChipClasses(cores, 'voucher')
                     : 'bg-muted text-foreground hover:bg-accent',
                 )}
               >
@@ -963,22 +1091,98 @@ export function ControleCartoesPage() {
                   </td>
                 </tr>
               </tbody>
-            ) : tab === 'voucher' ? (
-              // Voucher: um tbody por bloco de corte, cada um com seu subtotal.
-              blocosVoucher.map((bloco) => {
+            ) : ehParceladoPrazo ? (
+              // Uma linha por DIA. O "+" lanca outra venda no mesmo dia e o lapis
+              // abre as vendas daquele dia com as datas de cada parcela.
+              <tbody className="divide-y divide-border">
+                {diasParcelado.map(({ dia, vendas, subtotal }) => (
+                  <tr key={dia} className="hover:bg-muted/40">
+                    {table.getVisibleLeafColumns().map((col) => {
+                      if (col.id === 'actions') {
+                        return (
+                          <td key={col.id} className="whitespace-nowrap px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                className={ICON_BTN}
+                                title="Lancar outra venda neste dia"
+                                onClick={() => handleNovaVendaNoDia(dia)}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                className={ICON_BTN}
+                                title="Ver e editar as vendas do dia"
+                                onClick={() => setDiaAberto(dia)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                className={ICON_BTN_DANGER}
+                                title={
+                                  vendas.length > 1
+                                    ? `Excluir as ${vendas.length} vendas do dia`
+                                    : 'Excluir a venda do dia'
+                                }
+                                onClick={() => setDeleteDia(dia)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        );
+                      }
+                      const conteudo =
+                        col.id === 'data' ? (
+                          <span className="flex items-center gap-2">
+                            {formatDateStringToBR(dia)}
+                            {vendas.length > 1 && (
+                              <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                                {vendas.length} vendas
+                              </span>
+                            )}
+                          </span>
+                        ) : col.id === 'prazo' ? (
+                          vendas[0]?.prazo != null ? `${vendas[0].prazo} d` : '-'
+                        ) : col.id === 'taxaPercent' ? (
+                          vendas[0]?.taxaPercent != null ? `${vendas[0].taxaPercent}%` : '-'
+                        ) : (
+                          celulaDeTotal(col.id, subtotal, '')
+                        );
+                      return (
+                        <td
+                          key={col.id}
+                          className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground"
+                        >
+                          {conteudo}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            ) : usaBlocos ? (
+              // Voucher e iFood: um tbody por bloco de corte, cada um com seu
+              // subtotal (DOC ja embutido). A faixa usa a cor do modulo para os
+              // blocos ficarem visualmente separados.
+              blocosCorte.map((bloco) => {
+                const idsDoBloco = new Set(bloco.rows.map((r) => r.id));
                 const linhasDoBloco = table
                   .getRowModel()
-                  .rows.filter((r) => (r.original.dataAReceber ?? '').slice(0, 10) === bloco.chave);
+                  .rows.filter((r) => idsDoBloco.has(r.original.id));
                 return (
                   <tbody key={bloco.chave} className="divide-y divide-border border-b border-border">
-                    <tr className="bg-muted/60">
+                    <tr className={corFaixaBloco}>
                       <td
                         colSpan={columns.length}
-                        className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                        className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wider"
                       >
                         Bloco de corte — recebimento em {formatDateStringToBR(bloco.chave)} (
                         {bloco.subtotal.quantidade} lancamento
-                        {bloco.subtotal.quantidade > 1 ? 's' : ''})
+                        {bloco.subtotal.quantidade > 1 ? 's' : ''}
+                        {bloco.doc > 0 ? `, DOC ${formatCurrency(bloco.doc)}` : ''})
                       </td>
                     </tr>
                     {linhasDoBloco.map((row) => (
@@ -1052,17 +1256,24 @@ export function ControleCartoesPage() {
               {tab === 'credito' && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Tipo credito</label>
-                  <select
+                  {/* Select do design system, nao o nativo: no dark mode o dropdown
+                      nativo e desenhado pelo SO e vinha com realce azul, destoando
+                      do resto do app (mesmo padrao usado nas despesas). */}
+                  <Select
                     value={tipoCredito}
-                    onChange={(e) => setTipoCredito(e.target.value as TipoCredito)}
-                    className={inputClass}
+                    onValueChange={(v) => setTipoCredito(v as TipoCredito)}
                   >
-                    {tiposCreditoDisponiveis.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className={inputClass}>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tiposCreditoDisponiveis.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
               <div className="space-y-2">
@@ -1175,6 +1386,43 @@ export function ControleCartoesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!deleteDia} onOpenChange={(open) => !open && setDeleteDia(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusao</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const total = deleteDia
+                  ? items.filter((r) => (r.data ?? '').slice(0, 10) === deleteDia).length
+                  : 0;
+                return total > 1
+                  ? `Isso exclui as ${total} vendas lancadas em ${formatDateStringToBR(deleteDia ?? '')}, com todas as parcelas. Esta acao nao pode ser desfeita.`
+                  : `Isso exclui a venda lancada em ${formatDateStringToBR(deleteDia ?? '')}, com todas as parcelas. Esta acao nao pode ser desfeita.`;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteDia}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <VendasDoDiaDialog
+        dia={diaAberto}
+        vendas={vendasDoDiaAberto}
+        onClose={() => setDiaAberto(null)}
+        onNova={handleNovaVendaNoDia}
+        onEditar={(venda) => {
+          setDiaAberto(null);
+          handleOpenDialog(venda);
+        }}
+        onExcluir={(id) => {
+          setDiaAberto(null);
+          setDeleteId(id);
+        }}
+      />
 
       {/* Gerenciar maquininhas: lista padrao + customizadas, habilitar/desabilitar, criar/editar/excluir */}
       <Dialog

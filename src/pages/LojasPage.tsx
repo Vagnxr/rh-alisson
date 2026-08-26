@@ -110,7 +110,7 @@ export function LojasPage() {
             <div className="flex items-center gap-2">
               <Store className="h-4 w-4 text-emerald-600" />
               <div>
-                <div className="font-medium text-slate-900">{loja.apelido}</div>
+                <div className="font-medium text-foreground">{loja.apelido}</div>
                 {loja.isMatriz && (
                   <span className="inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700">
                     MATRIZ
@@ -136,8 +136,8 @@ export function LojasPage() {
           const loja = row.original;
           return (
             <div>
-              <div className="font-medium text-slate-900">{loja.razaoSocial}</div>
-              <div className="text-xs text-slate-500">{loja.nomeFantasia}</div>
+              <div className="font-medium text-foreground">{loja.razaoSocial}</div>
+              <div className="text-xs text-muted-foreground">{loja.nomeFantasia}</div>
             </div>
           );
         },
@@ -168,7 +168,7 @@ export function LojasPage() {
               : `${(endereco as { cidade?: string; uf?: string }).cidade ?? ''} / ${(endereco as { cidade?: string; uf?: string }).uf ?? ''}`.trim() || '-';
           return (
             <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
+              <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="text-sm text-slate-600">{text}</span>
             </div>
           );
@@ -185,9 +185,9 @@ export function LojasPage() {
           const c = contato as { emailPrincipal?: string; telefonePrincipal?: string };
           return (
             <div className="text-sm">
-              {c.emailPrincipal && <div className="text-slate-900">{c.emailPrincipal}</div>}
+              {c.emailPrincipal && <div className="text-foreground">{c.emailPrincipal}</div>}
               {c.telefonePrincipal && (
-                <div className="text-xs text-slate-500">{c.telefonePrincipal}</div>
+                <div className="text-xs text-muted-foreground">{c.telefonePrincipal}</div>
               )}
             </div>
           );
@@ -228,7 +228,7 @@ export function LojasPage() {
             return (
               <div className="flex items-center justify-end gap-1">
                 <button
-                  className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-slate-100 hover:text-slate-600"
                   title="Editar"
                   onClick={() => handleOpenDialog(loja)}
                 >
@@ -236,7 +236,7 @@ export function LojasPage() {
                 </button>
                 {!loja.isMatriz && (
                   <button
-                    className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    className="rounded p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600"
                     title="Excluir"
                     onClick={() => setDeleteLojaId(loja.id)}
                   >
@@ -275,11 +275,11 @@ export function LojasPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Lojas</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-xl font-bold text-foreground sm:text-2xl">Lojas</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Gerencie as lojas/filiais da empresa
             {currentTenant && (
-              <span className="ml-1 font-medium text-slate-700">({currentTenant.name})</span>
+              <span className="ml-1 font-medium text-foreground">({currentTenant.name})</span>
             )}
           </p>
         </div>
@@ -290,7 +290,7 @@ export function LojasPage() {
             placeholder="Buscar lojas..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-64"
+            className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:w-64"
           />
           {/* Exportacao */}
           <ExportButtons
@@ -341,38 +341,38 @@ export function LojasPage() {
 
       {/* Info Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-input bg-background p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
               <Store className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Total de Lojas</p>
-              <p className="text-lg font-bold text-slate-900">{lojasDoTenant.length}</p>
+              <p className="text-xs font-medium text-muted-foreground">Total de Lojas</p>
+              <p className="text-lg font-bold text-foreground">{lojasDoTenant.length}</p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-input bg-background p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
               <Building2 className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Matriz</p>
-              <p className="text-lg font-bold text-slate-900">
+              <p className="text-xs font-medium text-muted-foreground">Matriz</p>
+              <p className="text-lg font-bold text-foreground">
                 {lojasDoTenant.find((l) => l.isMatriz)?.apelido || '-'}
               </p>
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-input bg-background p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
               <MapPin className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500">Filiais</p>
-              <p className="text-lg font-bold text-slate-900">
+              <p className="text-xs font-medium text-muted-foreground">Filiais</p>
+              <p className="text-lg font-bold text-foreground">
                 {lojasDoTenant.filter((l) => !l.isMatriz).length}
               </p>
             </div>
@@ -381,17 +381,17 @@ export function LojasPage() {
       </div>
 
       {/* Tabela */}
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <div className="rounded-xl border border-input bg-background">
         {/* Tabela Desktop */}
         <div className="hidden overflow-x-auto sm:block">
           <table className="w-full">
-            <thead className="border-b border-slate-200 bg-slate-50">
+            <thead className="border-b border-input bg-muted">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-6 py-3 text-left text-xs uppercase tracking-wider text-slate-500"
+                      className="px-6 py-3 text-left text-xs uppercase tracking-wider text-muted-foreground"
                     >
                       {header.isPlaceholder
                         ? null
@@ -406,14 +406,14 @@ export function LojasPage() {
                 <tr>
                   <td
                     colSpan={columns.length}
-                    className="px-6 py-12 text-center text-sm text-slate-500"
+                    className="px-6 py-12 text-center text-sm text-muted-foreground"
                   >
                     {globalFilter ? 'Nenhuma loja encontrada' : 'Nenhuma loja cadastrada'}
                   </td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50">
+                  <tr key={row.id} className="hover:bg-muted">
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
@@ -432,7 +432,7 @@ export function LojasPage() {
         {/* Lista Mobile */}
         <div className="divide-y divide-slate-200 sm:hidden">
           {table.getRowModel().rows.length === 0 ? (
-            <div className="px-4 py-12 text-center text-sm text-slate-500">
+            <div className="px-4 py-12 text-center text-sm text-muted-foreground">
               {globalFilter ? 'Nenhuma loja encontrada' : 'Nenhuma loja cadastrada'}
             </div>
           ) : (
@@ -444,15 +444,15 @@ export function LojasPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <Store className="h-4 w-4 text-emerald-600" />
-                        <p className="font-medium text-slate-900">{loja.apelido}</p>
+                        <p className="font-medium text-foreground">{loja.apelido}</p>
                         {loja.isMatriz && (
                           <span className="inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700">
                             MATRIZ
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 text-xs text-slate-500">{loja.cnpj}</div>
-                      <div className="mt-1 text-xs text-slate-500">
+                      <div className="mt-1 text-xs text-muted-foreground">{loja.cnpj}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
                         {typeof loja.endereco === 'string'
                           ? loja.endereco
                           : `${loja.endereco?.cidade ?? ''} / ${loja.endereco?.uf ?? ''}`.trim() || '-'}
@@ -460,7 +460,7 @@ export function LojasPage() {
                     </div>
                     <div className="ml-4 flex gap-1">
                       <button
-                        className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        className="rounded p-1.5 text-muted-foreground hover:bg-slate-100 hover:text-slate-600"
                         title="Editar"
                         onClick={() => handleOpenDialog(loja)}
                       >
@@ -468,7 +468,7 @@ export function LojasPage() {
                       </button>
                       {!loja.isMatriz && (
                         <button
-                          className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          className="rounded p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600"
                           title="Excluir"
                           onClick={() => setDeleteLojaId(loja.id)}
                         >

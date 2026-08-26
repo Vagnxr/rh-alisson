@@ -415,17 +415,21 @@ table thead th {
     accent-color: var(--primary);
   }
 
-  /* Inputs nativos (hora, data) legiveis no dark mode */
-  .dark input[type='time'],
-  .dark input[type='date'],
-  .dark input[type='datetime-local'] {
-    color-scheme: dark;
+  /*
+   * Controles NATIVOS no dark mode (select, scrollbar, date/time picker).
+   *
+   * O `color-scheme` do documento e quem manda no que o navegador desenha por
+   * conta propria: o popup de um `<select>`, a barra de rolagem, o calendario do
+   * `<input type=date>`. Sem ele o campo ficava escuro mas o popup abria claro,
+   * com realce azul do sistema — foi o que o cliente viu na "tela preta". Como o
+   * tema aqui e por classe (`.dark`), o color-scheme tem de acompanhar a classe.
+   */
+  :root {
+    color-scheme: light;
   }
 
-  input[type='time'],
-  input[type='date'],
-  input[type='datetime-local'] {
-    color-scheme: light;
+  .dark {
+    color-scheme: dark;
   }
 
   /* Autofill do Chrome — sem fundo amarelo; preserva o background do input */

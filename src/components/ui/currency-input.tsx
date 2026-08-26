@@ -4,6 +4,8 @@ interface CurrencyInputProps {
   id?: string;
   value: string;
   onChange: (value: string) => void;
+  /** Disparado ao sair do campo — util para salvar automaticamente. */
+  onBlur?: () => void;
   className?: string;
   placeholder?: string;
   required?: boolean;
@@ -21,6 +23,7 @@ export function CurrencyInput({
   id,
   value,
   onChange,
+  onBlur,
   className,
   placeholder = '0,00',
   required,
@@ -44,6 +47,7 @@ export function CurrencyInput({
       onValueChange={({ formattedValue }) => {
         onChange(formattedValue);
       }}
+      onBlur={onBlur}
       className={className}
       required={required}
       disabled={disabled}

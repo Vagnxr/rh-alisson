@@ -184,7 +184,7 @@ export function LojaForm({
 
           {/* Identificacao */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Identificacao da Loja</h3>
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Identificacao da Loja</h3>
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <InputCNPJ
@@ -202,7 +202,7 @@ export function LojaForm({
                       onChange={(e) => setFormData({ ...formData, isMatriz: e.target.checked })}
                       className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                     />
-                    <span className="text-sm text-slate-700">Esta e a loja matriz</span>
+                    <span className="text-sm text-foreground">Esta e a loja matriz</span>
                   </label>
                 </div>
               </div>
@@ -235,7 +235,7 @@ export function LojaForm({
 
           {/* Endereco */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Endereco</h3>
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Endereco</h3>
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-3">
                 <InputCEP
@@ -246,7 +246,7 @@ export function LojaForm({
                   required
                 />
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  <label className="mb-1.5 block text-sm font-medium text-foreground">
                     Tipo <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -260,7 +260,7 @@ export function LojaForm({
                         },
                       })
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   >
                     {TIPOS_LOGRADOURO.map((tipo) => (
                       <option key={tipo.value} value={tipo.value}>
@@ -346,7 +346,7 @@ export function LojaForm({
 
           {/* Contato */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Contato da Loja</h3>
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Contato da Loja</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <InputTelefone
                 label="Telefone Principal"
@@ -401,7 +401,7 @@ export function LojaForm({
 
           {/* Responsavel */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Responsavel (Opcional)</h3>
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Responsavel (Opcional)</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <InputUppercase
                 label="Nome"
@@ -463,7 +463,7 @@ export function LojaForm({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-slate-100"
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-slate-100"
             >
               Cancelar
             </button>

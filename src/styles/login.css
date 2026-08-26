@@ -780,3 +780,15 @@
     transform: none;
   }
 }
+
+/* Simbolo "M" acima do campo de e-mail no formulario de entrada. */
+.login-page .signin-mark {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.1rem;
+}
+.login-page .signin-mark img {
+  height: 38px;
+  width: auto;
+  display: block;
+}

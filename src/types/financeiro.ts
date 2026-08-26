@@ -49,6 +49,21 @@ export interface ControleCartoesRow {
   aReceber: number;
   dataAReceber: string;
   diaSemanaAReceber?: string;
+  /**
+   * Parcelas do credito PARCELADO A PRAZO, com data de recebimento propria.
+   * Ausente nas demais modalidades, que recebem em data unica.
+   */
+  parcelas?: ParcelaCartaoRow[];
+}
+
+/** Uma parcela de venda parcelada a prazo (backend calcula datas e rateio). */
+export interface ParcelaCartaoRow {
+  numero: number;
+  /** YYYY-MM-DD */
+  dataAReceber: string;
+  valor: number;
+  desconto: number;
+  aReceber: number;
 }
 
 /** Bandeiras para Credito/Debito. O `(string & {})` deixa o union aberto para

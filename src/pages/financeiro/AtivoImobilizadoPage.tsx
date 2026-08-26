@@ -170,6 +170,19 @@ export function AtivoImobilizadoPage() {
     return m ? parseInt(m[1], 10) : null;
   }
 
+  /**
+   * Trocar Boleto <-> Dinheiro/PIX na edicao e bloqueado no backend: os efeitos
+   * colaterais divergem demais (Boleto vive na agenda; Dinheiro/PIX geram saida
+   * na hora). Aqui a regra so e ESPELHADA para explicar o porque ao usuario.
+   */
+  const temParcelaPaga = formEntrada.parcelas.some(p => p.disabled);
+  const trocaFormaBloqueada = temParcelaPaga || !!editingEntrada;
+  const motivoTrocaBloqueada = temParcelaPaga
+    ? 'Nao e possivel alterar a forma de pagamento: ha parcela(s) ja paga(s) na agenda.'
+    : formEntrada.formaPagto === 'Boleto'
+      ? 'Um lancamento salvo como Boleto nao pode virar Dinheiro/PIX: as parcelas ja estao na agenda. Exclua e lance de novo se precisar trocar.'
+      : 'Um lancamento salvo como Dinheiro/PIX nao pode virar Boleto: a saida ja foi gerada. Exclua e lance de novo se precisar trocar.';
+
   const params = useMemo(() => dateFilterToParams(dateFilter), [dateFilter]);
   const totalNotaBoleto = useMemo(() => parseValorFromInput(formEntrada.valor), [formEntrada.valor]);
   const parcelasBoletoValidas = useMemo(
@@ -720,16 +733,8 @@ export function AtivoImobilizadoPage() {
                   </label>
                   <select
                     value={formEntrada.formaPagto}
-                    disabled={formEntrada.parcelas.some(p => p.disabled)}
-                    title={
-                      formEntrada.parcelas.some(p => p.disabled)
-                        ? 'Nao e possivel alterar a forma de pagamento quando ha parcela(s) ja paga(s)'
-                        : editingEntrada && formEntrada.formaPagto === 'Boleto'
-                          ? 'Nao e possivel trocar de Boleto para Dinheiro/PIX'
-                          : editingEntrada
-                            ? 'Nao e possivel trocar de Dinheiro/PIX para Boleto'
-                            : undefined
-                    }
+                    disabled={temParcelaPaga}
+                    title={trocaFormaBloqueada ? motivoTrocaBloqueada : undefined}
                     onChange={e => {
                       const novaForma = e.target.value as AtivoImobilizadoFormaPagto;
                       if (novaForma === 'Boleto') {
@@ -756,23 +761,23 @@ export function AtivoImobilizadoPage() {
                     className={inputClass}
                     required
                   >
-                    {editingEntrada
-                      ? formEntrada.formaPagto === 'Boleto'
-                        ? <option value="Boleto">Boleto</option>
-                        : (
-                            <>
-                              <option value="Dinheiro">Dinheiro</option>
-                              <option value="PIX">PIX</option>
-                            </>
-                          )
-                      : (
-                          <>
-                            <option value="Dinheiro">Dinheiro</option>
-                            <option value="PIX">PIX</option>
-                            <option value="Boleto">Boleto</option>
-                          </>
-                        )}
+                    {/* As tres opcoes aparecem SEMPRE. Na edicao, as invalidas
+                        ficam desabilitadas em vez de sumir: o cliente reportou
+                        "quando edita e foi selecionado boleto nao aparece mais a
+                        opcao DINHEIRO ou PIX" e ficou sem entender o porque. */}
+                    <option value="Dinheiro" disabled={trocaFormaBloqueada && formEntrada.formaPagto !== 'Dinheiro'}>
+                      Dinheiro
+                    </option>
+                    <option value="PIX" disabled={trocaFormaBloqueada && formEntrada.formaPagto !== 'PIX'}>
+                      PIX
+                    </option>
+                    <option value="Boleto" disabled={trocaFormaBloqueada && formEntrada.formaPagto !== 'Boleto'}>
+                      Boleto
+                    </option>
                   </select>
+                  {trocaFormaBloqueada && (
+                    <p className="text-xs text-muted-foreground">{motivoTrocaBloqueada}</p>
+                  )}
                 </div>
                 {formEntrada.formaPagto === 'Boleto' && (
                   <>

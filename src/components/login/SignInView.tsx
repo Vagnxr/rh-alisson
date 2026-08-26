@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { GoogleIcon, IconEye, IconEyeOff, IconLock, IconMail } from './icons';
+import logoM from '@/assets/logo-m.svg';
 
 type SignInViewProps = {
   onForgot: () => void;
@@ -88,6 +89,13 @@ export function SignInView({ onForgot, onSignup, onLogin, isLoading, apiError }:
       </div>
 
       <form onSubmit={handle} noValidate>
+        {/* Simbolo "M" da marca acima do campo de e-mail (pedido do cliente).
+            So o simbolo, sem o "SYSTEM" — o lockup completo ja aparece no painel
+            da esquerda. */}
+        <div className="signin-mark">
+          <img src={logoM} alt="M System" />
+        </div>
+
         <div className={`field${emailErr ? ' err' : ''}`}>
           <div className="field-label">
             <span>E-mail</span>

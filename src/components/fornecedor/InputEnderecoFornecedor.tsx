@@ -182,7 +182,7 @@ export function InputEnderecoFornecedor({
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             UF
             {required && <span className="ml-0.5 text-red-500">*</span>}
           </label>
@@ -192,10 +192,10 @@ export function InputEnderecoFornecedor({
             disabled={disabled}
             aria-invalid={!!errors?.uf}
             className={cn(
-              'w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900',
-              errors?.uf ? 'border-red-500' : 'border-slate-200',
+              'w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground',
+              errors?.uf ? 'border-red-500' : 'border-input',
               'focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500',
-              'disabled:bg-slate-50 disabled:text-slate-500'
+              'disabled:bg-muted disabled:text-muted-foreground'
             )}
           >
             <option value="">UF</option>

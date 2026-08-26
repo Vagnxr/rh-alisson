@@ -42,6 +42,7 @@ export function AReceberPage() {
   const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
   const [credito, setCredito] = useState<AReceberRow[]>([]);
   const [debito, setDebito] = useState<AReceberRow[]>([]);
+  const [pix, setPix] = useState<AReceberRow[]>([]);
   const [voucher, setVoucher] = useState<VoucherAReceberResp>(VOUCHER_VAZIO);
   const [ifood, setIfood] = useState<IfoodAReceberResp>({ aReceber: 0, valorBruto: 0, valorLoja: 0 });
   const {
@@ -68,6 +69,9 @@ export function AReceberPage() {
       }),
       api.get<AReceberRow[]>('financeiro/outras-funcoes/a-receber/debito', { params }).then((r) => {
         if (atual()) setDebito(Array.isArray(r.data) ? r.data : []);
+      }),
+      api.get<AReceberRow[]>('financeiro/outras-funcoes/a-receber/pix', { params }).then((r) => {
+        if (atual()) setPix(Array.isArray(r.data) ? r.data : []);
       }),
       api.get<VoucherAReceberResp>('financeiro/outras-funcoes/a-receber/voucher', { params }).then((r) => {
         const d = r.data;
@@ -209,6 +213,70 @@ export function AReceberPage() {
     );
   };
 
+  /**
+   * PIX consolidado: uma linha por maquininha.
+   *
+   * Diferente de credito e debito, PIX nao tem bandeira — por isso nao cabe no
+   * `renderTabelaPorMaquininha`. O cliente apontou "no a receber nao achei o
+   * PIX": a modalidade existe no Controle de Cartoes mas nao tinha card aqui.
+   */
+  const renderTabelaPix = () => {
+    const linhas = maquininhasHabilitadas.map((m) => ({
+      id: m.id,
+      label: m.label,
+      aReceber: pix
+        .filter((r) => (r.operadora ?? '') === m.id)
+        .reduce((acc, r) => acc + r.aReceber, 0),
+    }));
+    const idsHabilitados = new Set(maquininhasHabilitadas.map((m) => m.id));
+    const orfaos = pix
+      .filter((r) => !idsHabilitados.has(r.operadora ?? ''))
+      .reduce((acc, r) => acc + r.aReceber, 0);
+    if (orfaos !== 0) linhas.push({ id: '__sem', label: 'Sem maquininha', aReceber: orfaos });
+    const total = linhas.reduce((a, l) => a + l.aReceber, 0);
+    return (
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className={cn('border-b border-border px-4 py-2', corHeaderClasses(cores, 'pix'))}>
+          <h2 className="text-sm font-semibold">
+            PIX <span className="opacity-70">— consolidado</span>
+          </h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[260px]">
+            <thead className="border-b border-border bg-muted/40">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+                  Maquininha
+                </th>
+                <th className="px-4 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
+                  A receber
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {linhas.map((l) => (
+                <tr key={l.id} className="hover:bg-muted/40">
+                  <td className="px-4 py-2 text-sm text-foreground">{l.label}</td>
+                  <td className="px-4 py-2 text-right text-sm font-medium text-foreground">
+                    {formatCurrency(l.aReceber)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="border-t border-border bg-muted/40">
+              <tr>
+                <td className="px-4 py-2 text-sm font-medium text-foreground">Total</td>
+                <td className="px-4 py-2 text-right text-sm font-bold text-foreground">
+                  {formatCurrency(total)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   /** Voucher consolidado: linhas por bandeira/categoria + DOC por bloco de fechamento. */
   const renderTabelaVoucher = () => {
     return (
@@ -326,6 +394,14 @@ export function AReceberPage() {
                   aReceber: formatCurrency(valorPara(debito, m.id, b.id)),
                 })),
               ),
+              ...maquininhasHabilitadas.map((m) => ({
+                tipo: 'PIX',
+                maquininha: m.label,
+                bandeira: '—',
+                aReceber: formatCurrency(
+                  pix.filter((r) => (r.operadora ?? '') === m.id).reduce((a, r) => a + r.aReceber, 0),
+                ),
+              })),
               ...(modulos.voucher
                 ? voucher.itens.map((r) => ({
                     tipo: 'Voucher',
@@ -382,6 +458,11 @@ export function AReceberPage() {
                 {renderSemMaquininha('Debito', debito)}
               </div>
             )}
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">PIX</h2>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{renderTabelaPix()}</div>
           </section>
 
           {(modulos.voucher || modulos.ifood) && (

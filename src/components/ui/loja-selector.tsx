@@ -76,26 +76,26 @@ export function LojaSelector({
   return (
     <div className={cn('relative', className)}>
       {showLabel && (
-        <label className="mb-1.5 block text-sm font-medium text-slate-700">Loja</label>
+        <label className="mb-1.5 block text-sm font-medium text-foreground">Loja</label>
       )}
       
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm',
-          'text-slate-700 transition-colors',
-          'hover:border-emerald-300 hover:bg-slate-50',
+          'flex w-full items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 py-2 text-sm',
+          'text-foreground transition-colors',
+          'hover:border-emerald-300 hover:bg-muted',
           'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2',
           isOpen && 'border-emerald-500 ring-1 ring-emerald-500'
         )}
       >
         <div className="flex items-center gap-2">
-          <Store className="h-4 w-4 text-slate-400" />
+          <Store className="h-4 w-4 text-muted-foreground" />
           <span className="font-medium">{displayText}</span>
         </div>
         <ChevronDown
-          className={cn('h-4 w-4 text-slate-400 transition-transform', isOpen && 'rotate-180')}
+          className={cn('h-4 w-4 text-muted-foreground transition-transform', isOpen && 'rotate-180')}
         />
       </button>
 
@@ -108,7 +108,7 @@ export function LojaSelector({
           />
           
           {/* Dropdown */}
-          <div className="absolute z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg">
+          <div className="absolute z-20 mt-1 w-full rounded-lg border border-input bg-background shadow-lg">
             <div className="max-h-60 overflow-y-auto p-1">
               {/* Opção "Todas" */}
               <button
@@ -118,7 +118,7 @@ export function LojaSelector({
                   'w-full rounded px-3 py-2 text-left text-sm transition-colors',
                   lojaAtual === null
                     ? 'bg-emerald-50 text-emerald-700 font-medium'
-                    : 'text-slate-700 hover:bg-slate-50'
+                    : 'text-foreground hover:bg-muted'
                 )}
               >
                 <div className="flex items-center gap-2">
@@ -144,7 +144,7 @@ export function LojaSelector({
                       'w-full rounded px-3 py-2 text-left text-sm transition-colors',
                       lojaAtual === loja.id
                         ? 'bg-emerald-50 text-emerald-700 font-medium'
-                        : 'text-slate-700 hover:bg-slate-50'
+                        : 'text-foreground hover:bg-muted'
                     )}
                   >
                     {displayName}

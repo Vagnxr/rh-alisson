@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
 const inputClass =
-  'flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500';
+  'flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500';
 
 function slugFromNome(nome: string): string {
   return (
@@ -60,7 +60,7 @@ export function NovaPaginaDespesaForm({ onSuccess, onCancel }: NovaPaginaDespesa
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <label htmlFor="nome" className="text-sm font-medium text-slate-700 uppercase">
+        <label htmlFor="nome" className="text-sm font-medium text-foreground uppercase">
           Nome da página
         </label>
         <input
@@ -77,7 +77,7 @@ export function NovaPaginaDespesaForm({ onSuccess, onCancel }: NovaPaginaDespesa
         />
       </div>
       <div className="space-y-2">
-        <label htmlFor="slug" className="text-sm font-medium text-slate-700 uppercase">
+        <label htmlFor="slug" className="text-sm font-medium text-foreground uppercase">
           Identificador (slug)
         </label>
         <input
@@ -94,7 +94,7 @@ export function NovaPaginaDespesaForm({ onSuccess, onCancel }: NovaPaginaDespesa
           placeholder="Ex: despesa-marketing"
           className={inputClass}
         />
-        <p className="text-xs text-slate-500 uppercase">
+        <p className="text-xs text-muted-foreground uppercase">
           Usado na URL e no sistema. Se vazio, é gerado a partir do nome.
         </p>
       </div>
@@ -102,7 +102,7 @@ export function NovaPaginaDespesaForm({ onSuccess, onCancel }: NovaPaginaDespesa
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 uppercase hover:bg-slate-50"
+          className="flex-1 rounded-lg border border-input px-4 py-2.5 text-sm font-medium text-foreground uppercase hover:bg-muted"
         >
           Cancelar
         </button>

@@ -57,15 +57,23 @@ export function MarketTicker() {
   const [flash, setFlash] = useState<Partial<Record<MarketKey, 'up' | 'down'>>>({});
   const prefersReducedMotion = usePrefersReducedMotion();
   const limparFlashRef = useRef<number | undefined>(undefined);
+  /** Espelho do mercado, lido dentro do intervalo sem recria-lo a cada tick. */
+  const marketRef = useRef(market);
 
   useEffect(() => {
     // Movimento reduzido: mercado fica estatico, sem intervalo agendado.
     if (prefersReducedMotion) return;
 
     const id = window.setInterval(() => {
-      const { market: next, flash: nextFlash } = tickMarket(market);
-      setMarket(next);
-      setFlash(nextFlash);
+      // O mercado vem de um ref, nao da closure: com `market` nas dependencias,
+      // CADA tick recriava o efeito, e o cleanup cancelava o timeout que
+      // apagaria o flash — a classe `flash-*` grudava depois do primeiro tick e
+      // os cards paravam de piscar. Ref tambem evita setState dentro de updater,
+      // que roda duas vezes em StrictMode.
+      const { market: proximo, flash: proximoFlash } = tickMarket(marketRef.current);
+      marketRef.current = proximo;
+      setMarket(proximo);
+      setFlash(proximoFlash);
       // Limpa o flash depois que o ultimo card ja acendeu.
       window.clearTimeout(limparFlashRef.current);
       limparFlashRef.current = window.setTimeout(
@@ -78,10 +86,7 @@ export function MarketTicker() {
       window.clearInterval(id);
       window.clearTimeout(limparFlashRef.current);
     };
-    // `market` e lido dentro do intervalo; recriar o intervalo a cada tick e
-    // aceitavel aqui e evita o setState-dentro-do-updater anterior, que rodava
-    // duas vezes em StrictMode.
-  }, [market, prefersReducedMotion]);
+  }, [prefersReducedMotion]);
 
   const allKeys = Object.keys(market) as MarketKey[];
   const tapeItems = [...allKeys, ...allKeys];

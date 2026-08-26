@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Loader2, Save, Plus, Trash2, Pencil, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
@@ -8,9 +8,11 @@ import {
   MAQUININHAS_PADRAO_HABILITADAS,
 } from '@/lib/maquininhas';
 import { cn } from '@/lib/cn';
-import { PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL } from '@/lib/uiClasses';
+import { PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL, INPUT_CLASS } from '@/lib/uiClasses';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { NumberField } from '@/components/ui/number-field';
+import { CurrencyInput } from '@/components/ui/currency-input';
+import { formatValorForInput, parseValorFromInput } from '@/lib/formatValor';
 import {
   type TipoBandeira,
   type CategoriaCredito,
@@ -62,6 +64,51 @@ const TIPOS_MAQ: { id: TipoMaq; label: string }[] = [
 ];
 
 const INPUT_NUM_CLASS = 'w-20';
+
+/**
+ * Campo em R$ com a MESMA digitacao das despesas (mascara 10.000,50 enquanto
+ * digita), em vez do campo numerico cru.
+ *
+ * O cliente reclamou: "aqui esta ruim a digitacao dos numeros, deixa padrao
+ * igual por exemplo nas despesas". Taxa (%) e Prazo (dias) seguem no NumberField
+ * porque nao sao moeda.
+ */
+function MoedaField({
+  value,
+  onCommit,
+  className,
+  'aria-label': ariaLabel,
+}: {
+  value: number | undefined;
+  onCommit: (v: number) => void;
+  className?: string;
+  'aria-label'?: string;
+}) {
+  const [texto, setTexto] = useState(() => formatValorForInput(Number(value) || 0));
+  const focado = useRef(false);
+
+  // Ressincroniza com o valor externo so fora de foco, senao sobrescreveria o
+  // que esta sendo digitado a cada render.
+  useEffect(() => {
+    if (!focado.current) setTexto(formatValorForInput(Number(value) || 0));
+  }, [value]);
+
+  return (
+    <CurrencyInput
+      value={texto}
+      onChange={(v) => {
+        focado.current = true;
+        setTexto(v);
+      }}
+      onBlur={() => {
+        focado.current = false;
+        onCommit(parseValorFromInput(texto) || 0);
+      }}
+      className={cn(INPUT_CLASS, 'h-9 text-center', className)}
+      aria-label={ariaLabel}
+    />
+  );
+}
 
 function slugify(s: string): string {
   return s
@@ -449,8 +496,11 @@ export function TaxasPrazosPage() {
   }
 
   /**
-   * Celulas de Fechamento, Corte (semanal) e Corte quinzenal — renderizadas POR
-   * LINHA, para que cada categoria tenha ciclo proprio.
+   * Celulas de Fechamento e Corte — renderizadas POR LINHA, para que cada
+   * categoria tenha ciclo proprio.
+   *
+   * Sao duas colunas, nao tres: a coluna CORTE muda de conteudo conforme o
+   * fechamento (dia da semana no semanal, dias do mes no quinzenal).
    *
    * @param efetivo config ja resolvida (override da categoria ou herdada da bandeira)
    * @param herdavel true numa linha de categoria — habilita a opcao "Herdar"
@@ -477,8 +527,19 @@ export function TaxasPrazosPage() {
               onChange(v === HERDAR ? { fechamento: undefined } : { fechamento: v as FechamentoVoucher })
             }
           >
-            <SelectTrigger className={cn('h-9 w-36', marcaHerdado(herdandoFechamento))}>
-              <SelectValue />
+            {/* O gatilho mostra so "Herdar": com "Herdar (Semanal)" o texto era
+                cortado no meio e ficava feio, como o cliente apontou. O valor
+                efetivo continua legivel no title e na opcao aberta. */}
+            <SelectTrigger
+              className={cn('h-9 w-36', marcaHerdado(herdandoFechamento))}
+              title={herdandoFechamento ? `Herdando: ${fechamentoLabelDe(efetivo.fechamento)}` : undefined}
+            >
+              {/* Herdando, o gatilho mostra so "Herdar": o texto completo
+                  ("Herdar (Semanal)") era cortado no meio e ficava feio. O valor
+                  efetivo aparece no title e na lista aberta. */}
+              <SelectValue>
+                {herdandoFechamento ? 'Herdar' : fechamentoLabelDe(efetivo.fechamento)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {herdavel && <SelectItem value={HERDAR}>Herdar ({fechamentoLabelDe(efetivo.fechamento)})</SelectItem>}
@@ -491,6 +552,17 @@ export function TaxasPrazosPage() {
           </Select>
         </td>
 
+        {/*
+          Coluna CORTE unica, condicionada ao fechamento:
+          - normal    -> nao ha corte
+          - semanal   -> dia da SEMANA (bloco de 1 semana)
+          - quinzenal -> dias do MES (bloco de 2 semanas a partir do corte)
+
+          Antes o corte quinzenal morava numa coluna propria, sempre visivel e
+          vazia na maioria das linhas. O cliente pediu explicitamente: "nao precisa
+          criar essa coluna, em FECHAMENTO quando selecionar Quinzenal abilita o
+          corte pra selecionar o dia".
+        */}
         <td className="whitespace-nowrap px-3 py-2 align-middle">
           {efetivo.fechamento === 'semanal' ? (
             <Select
@@ -499,8 +571,13 @@ export function TaxasPrazosPage() {
                 onChange(v === HERDAR ? { corte: undefined } : { corte: parseInt(v, 10) })
               }
             >
-              <SelectTrigger className={cn('h-9 w-32', marcaHerdado(herdandoCorte))}>
-                <SelectValue />
+              <SelectTrigger
+                className={cn('h-9 w-32', marcaHerdado(herdandoCorte))}
+                title={herdandoCorte ? `Herdando: ${corteLabelDe(efetivo.corte)}` : undefined}
+              >
+                <SelectValue>
+                  {herdandoCorte ? 'Herdar' : corteLabelDe(efetivo.corte)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {herdavel && <SelectItem value={HERDAR}>Herdar ({corteLabelDe(efetivo.corte)})</SelectItem>}
@@ -511,13 +588,7 @@ export function TaxasPrazosPage() {
                 ))}
               </SelectContent>
             </Select>
-          ) : (
-            <span className="text-sm text-muted-foreground">-</span>
-          )}
-        </td>
-
-        <td className="whitespace-nowrap px-3 py-2 align-middle">
-          {efetivo.fechamento === 'quinzenal' ? (
+          ) : efetivo.fechamento === 'quinzenal' ? (
             <div className={cn('flex items-center gap-1', marcaHerdado(herdandoQuinzenal))}>
               <NumberField
                 value={quinzenal.primeiro}
@@ -586,21 +657,19 @@ export function TaxasPrazosPage() {
         />
       </td>
       <td className="whitespace-nowrap px-3 py-2">
-        <NumberField
+        <MoedaField
           value={efetivo.doc ?? 0}
-          min={0}
           aria-label="DOC (R$)"
-          className={INPUT_NUM_CLASS}
-          onCommit={(v) => onChange({ doc: v ?? 0 })}
+          className="w-28"
+          onCommit={(v) => onChange({ doc: v })}
         />
       </td>
       <td className="whitespace-nowrap px-3 py-2">
-        <NumberField
+        <MoedaField
           value={efetivo.porVenda ?? 0}
-          min={0}
           aria-label="Por venda (R$)"
-          className={INPUT_NUM_CLASS}
-          onCommit={(v) => onChange({ porVenda: v ?? 0 })}
+          className="w-28"
+          onCommit={(v) => onChange({ porVenda: v })}
         />
       </td>
       <td className="whitespace-nowrap px-3 py-2 text-center">
@@ -613,12 +682,11 @@ export function TaxasPrazosPage() {
         />
       </td>
       <td className="whitespace-nowrap px-3 py-2">
-        <NumberField
+        <MoedaField
           value={efetivo.anuidade ?? 0}
-          min={0}
           aria-label="Anuidade (R$)"
-          className={INPUT_NUM_CLASS}
-          onCommit={(v) => onChange({ anuidade: v ?? 0 })}
+          className="w-28"
+          onCommit={(v) => onChange({ anuidade: v })}
         />
       </td>
     </>
@@ -641,7 +709,7 @@ export function TaxasPrazosPage() {
             <table className="w-full min-w-[900px]">
               <thead className="border-b border-border bg-muted/40">
                 <tr>
-                  {['Bandeira', 'Taxa (%)', 'Prazo (dias)', 'DOC (R$)', 'Por venda (R$)', 'Cupons', 'Anuidade (R$)', 'Fechamento', 'Corte', 'Corte quinzenal'].map(
+                  {['Bandeira', 'Taxa (%)', 'Prazo (dias)', 'DOC (R$)', 'Por venda (R$)', 'Cupons', 'Anuidade (R$)', 'Fechamento', 'Corte'].map(
                     (h) => (
                       <th
                         key={h}
@@ -707,7 +775,7 @@ export function TaxasPrazosPage() {
                 })}
                 {bandeirasVoucher.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                    <td colSpan={9} className="px-6 py-8 text-center text-sm text-muted-foreground">
                       Nenhuma bandeira voucher cadastrada. Cadastre acima em Bandeiras.
                     </td>
                   </tr>
@@ -780,7 +848,7 @@ export function TaxasPrazosPage() {
               )}
               {(ifoodConfig.fechamento ?? 'normal') === 'quinzenal' && (
                 <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-                  Corte quinzenal (dias do mes)
+                  Corte (dias do mes)
                   <div className="flex items-center gap-1">
                     <NumberField
                       value={ifoodConfig.corteQuinzenal?.primeiro ?? CORTE_QUINZENAL_PADRAO.primeiro}

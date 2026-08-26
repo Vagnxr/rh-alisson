@@ -83,7 +83,7 @@ export function ControleDinheiroPage() {
         accessorKey: 'totalDia',
         header: 'Total dia',
         cell: ({ row }) => (
-          <span className="font-semibold text-slate-900">
+          <span className="font-semibold text-foreground">
             {formatCurrency(row.getValue('totalDia'))}
           </span>
         ),
@@ -110,8 +110,8 @@ export function ControleDinheiroPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Controle Dinheiro</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-xl font-bold text-foreground sm:text-2xl">Controle Dinheiro</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Data, dia, deposito, sobra, pag. PDV e total do dia
           </p>
         </div>
@@ -132,23 +132,23 @@ export function ControleDinheiroPage() {
           />
         </div>
       </div>
-      <p className="text-sm text-slate-500">Pagina somente de visualizacao (reflexo do caixa).</p>
+      <p className="text-sm text-muted-foreground">Pagina somente de visualizacao (reflexo do caixa).</p>
 
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="rounded-xl border border-input bg-background overflow-hidden">
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
           <table className="w-full min-w-[600px]">
-            <thead className="border-b border-slate-200 bg-slate-50">
+            <thead className="border-b border-input bg-muted">
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-700"
+                      className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-foreground"
                     >
                       {header.isPlaceholder
                         ? null
@@ -161,13 +161,13 @@ export function ControleDinheiroPage() {
             <tbody className="divide-y divide-slate-200">
               {table.getRowModel().rows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-slate-500">
+                  <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-muted-foreground">
                     Nenhum registro no periodo
                   </td>
                 </tr>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50">
+                  <tr key={row.id} className="hover:bg-muted">
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
@@ -181,12 +181,12 @@ export function ControleDinheiroPage() {
               )}
             </tbody>
             {items.length > 0 && (
-              <tfoot className="border-t border-slate-200 bg-slate-50">
+              <tfoot className="border-t border-input bg-muted">
                 <tr>
-                  <td colSpan={columns.length - 1} className="px-4 py-3 text-right text-sm font-medium text-slate-900">
+                  <td colSpan={columns.length - 1} className="px-4 py-3 text-right text-sm font-medium text-foreground">
                     Total:
                   </td>
-                  <td className="px-4 py-3 text-sm font-bold text-slate-900">
+                  <td className="px-4 py-3 text-sm font-bold text-foreground">
                     {formatCurrency(totalGeral)}
                   </td>
                 </tr>

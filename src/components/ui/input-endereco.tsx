@@ -111,7 +111,7 @@ export function InputEndereco({ value, onChange, disabled, required }: InputEnde
       {/* Logradouro e Numero */}
       <div className="grid gap-4 sm:grid-cols-4">
         <div className="sm:col-span-3">
-          <label className="mb-1 block text-sm font-medium text-slate-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Logradouro
             {required && <span className="ml-0.5 text-red-500">*</span>}
           </label>
@@ -122,15 +122,15 @@ export function InputEndereco({ value, onChange, disabled, required }: InputEnde
             disabled={disabled}
             placeholder="Rua, Avenida, etc."
             className={cn(
-              'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900',
-              'placeholder:text-slate-400',
+              'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground',
+              'placeholder:text-muted-foreground',
               'focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500',
-              'disabled:bg-slate-50 disabled:text-slate-500'
+              'disabled:bg-muted disabled:text-muted-foreground'
             )}
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Numero
             {required && <span className="ml-0.5 text-red-500">*</span>}
           </label>
@@ -141,10 +141,10 @@ export function InputEndereco({ value, onChange, disabled, required }: InputEnde
             disabled={disabled}
             placeholder="123"
             className={cn(
-              'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900',
-              'placeholder:text-slate-400',
+              'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground',
+              'placeholder:text-muted-foreground',
               'focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500',
-              'disabled:bg-slate-50 disabled:text-slate-500'
+              'disabled:bg-muted disabled:text-muted-foreground'
             )}
           />
         </div>
@@ -153,7 +153,7 @@ export function InputEndereco({ value, onChange, disabled, required }: InputEnde
       {/* Complemento e Bairro */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Complemento</label>
+          <label className="mb-1 block text-sm font-medium text-foreground">Complemento</label>
           <input
             type="text"
             value={endereco.complemento}
@@ -161,15 +161,15 @@ export function InputEndereco({ value, onChange, disabled, required }: InputEnde
             disabled={disabled}
             placeholder="Apto, Sala, etc."
             className={cn(
-              'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900',
-              'placeholder:text-slate-400',
+              'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground',
+              'placeholder:text-muted-foreground',
               'focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500',
-              'disabled:bg-slate-50 disabled:text-slate-500'
+              'disabled:bg-muted disabled:text-muted-foreground'
             )}
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Bairro
             {required && <span className="ml-0.5 text-red-500">*</span>}
           </label>
@@ -180,10 +180,10 @@ export function InputEndereco({ value, onChange, disabled, required }: InputEnde
             disabled={disabled}
             placeholder="Bairro"
             className={cn(
-              'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900',
-              'placeholder:text-slate-400',
+              'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground',
+              'placeholder:text-muted-foreground',
               'focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500',
-              'disabled:bg-slate-50 disabled:text-slate-500'
+              'disabled:bg-muted disabled:text-muted-foreground'
             )}
           />
         </div>
@@ -192,7 +192,7 @@ export function InputEndereco({ value, onChange, disabled, required }: InputEnde
       {/* Cidade e Estado */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-sm font-medium text-slate-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Cidade
             {required && <span className="ml-0.5 text-red-500">*</span>}
           </label>
@@ -203,15 +203,15 @@ export function InputEndereco({ value, onChange, disabled, required }: InputEnde
             disabled={disabled}
             placeholder="Cidade"
             className={cn(
-              'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900',
-              'placeholder:text-slate-400',
+              'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground',
+              'placeholder:text-muted-foreground',
               'focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500',
-              'disabled:bg-slate-50 disabled:text-slate-500'
+              'disabled:bg-muted disabled:text-muted-foreground'
             )}
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">
+          <label className="mb-1 block text-sm font-medium text-foreground">
             Estado
             {required && <span className="ml-0.5 text-red-500">*</span>}
           </label>
@@ -220,9 +220,9 @@ export function InputEndereco({ value, onChange, disabled, required }: InputEnde
             onChange={(e) => handleChange('estado', e.target.value)}
             disabled={disabled}
             className={cn(
-              'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900',
+              'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground',
               'focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500',
-              'disabled:bg-slate-50 disabled:text-slate-500'
+              'disabled:bg-muted disabled:text-muted-foreground'
             )}
           >
             <option value="">UF</option>

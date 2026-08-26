@@ -118,12 +118,33 @@ export function useTaxasPrazos(): TaxasPrazosState {
     void refetch();
   }, [refetch]);
 
-  const bandeirasCredito = useMemo(() => bandeiras.filter((b) => b.tipo === 'credito'), [bandeiras]);
-  const bandeirasDebito = useMemo(() => bandeiras.filter((b) => b.tipo === 'debito'), [bandeiras]);
-  const bandeirasVoucher = useMemo(() => bandeiras.filter((b) => b.tipo === 'voucher'), [bandeiras]);
+  /**
+   * Ordem alfabetica em pt-BR, aplicada na FONTE.
+   *
+   * As listas saiam na ordem de cadastro, entao bandeiras criadas depois (o
+   * cliente citou Pluxee e Teste) apareciam no fim, fora de ordem, em todas as
+   * telas. Ordenar aqui corrige Controle de Cartoes, Taxas e Prazos e A Receber
+   * de uma vez. `sensitivity: base` ignora acento e caixa.
+   */
+  const porLabel = <T extends { label: string }>(lista: T[]): T[] =>
+    [...lista].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR', { sensitivity: 'base' }));
+
+  const bandeirasCredito = useMemo(
+    () => porLabel(bandeiras.filter((b) => b.tipo === 'credito')),
+    [bandeiras],
+  );
+  const bandeirasDebito = useMemo(
+    () => porLabel(bandeiras.filter((b) => b.tipo === 'debito')),
+    [bandeiras],
+  );
+  const bandeirasVoucher = useMemo(
+    () => porLabel(bandeiras.filter((b) => b.tipo === 'voucher')),
+    [bandeiras],
+  );
+  const maquininhasOrdenadas = useMemo(() => porLabel(maquininhas), [maquininhas]);
   const maquininhasVisiveis = useMemo(
-    () => maquininhas.filter((m) => maquininhasHabilitadas.includes(m.id)),
-    [maquininhas, maquininhasHabilitadas],
+    () => maquininhasOrdenadas.filter((m) => maquininhasHabilitadas.includes(m.id)),
+    [maquininhasOrdenadas, maquininhasHabilitadas],
   );
 
   return {
@@ -134,7 +155,7 @@ export function useTaxasPrazos(): TaxasPrazosState {
     bandeirasCredito,
     bandeirasDebito,
     bandeirasVoucher,
-    maquininhas,
+    maquininhas: maquininhasOrdenadas,
     maquininhasHabilitadas,
     maquininhasVisiveis,
     modulos,

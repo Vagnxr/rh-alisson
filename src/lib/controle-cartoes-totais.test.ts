@@ -9,6 +9,7 @@ import type { ControleCartoesRow } from '@/types/financeiro';
 import {
   agruparPorBlocoCorte,
   calcularTotais,
+  calcularTotaisDeBlocos,
   descontoDaLinha,
   temQtdCupons,
 } from './controle-cartoes-totais';
@@ -137,6 +138,90 @@ describe('agruparPorBlocoCorte', () => {
 
   it('lista vazia nao gera bloco', () => {
     expect(agruparPorBlocoCorte([])).toEqual([]);
+  });
+
+  it('ordena os lancamentos dentro do bloco por data de venda', () => {
+    const blocos = agruparPorBlocoCorte([
+      linha({ data: '2026-08-25', dataAReceber: '2026-09-21' }),
+      linha({ data: '2026-08-19', dataAReceber: '2026-09-21' }),
+      linha({ data: '2026-08-22', dataAReceber: '2026-09-21' }),
+    ]);
+    expect(blocos[0].rows.map((r) => r.data)).toEqual(['2026-08-19', '2026-08-22', '2026-08-25']);
+  });
+});
+
+describe('agruparPorBlocoCorte — DOC por bloco', () => {
+  /** Cenario exato da planilha do cliente: Ticket Alimentacao, DOC de 8,37. */
+  const seteVendas = () =>
+    Array.from({ length: 7 }, (_, i) =>
+      linha({
+        data: `2026-08-${19 + i}`,
+        valor: 1000,
+        desconto: 63,
+        aReceber: 937,
+        dataAReceber: '2026-09-21',
+      }),
+    );
+
+  it('desconta o DOC uma vez por bloco: 6.559,00 vira 6.550,63', () => {
+    const [bloco] = agruparPorBlocoCorte(seteVendas(), 8.37);
+    expect(bloco.subtotal.valor).toBe(7000);
+    expect(bloco.subtotal.aReceber).toBe(6550.63);
+    expect(bloco.subtotal.desconto).toBe(449.37);
+  });
+
+  it('mantem valor - desconto = a receber com o DOC embutido', () => {
+    const [bloco] = agruparPorBlocoCorte(seteVendas(), 8.37);
+    const t = bloco.subtotal;
+    expect(Math.round((t.valor - t.desconto - t.aReceber) * 100) / 100).toBe(0);
+  });
+
+  it('cobra o DOC por bloco, nao por lancamento', () => {
+    const blocos = agruparPorBlocoCorte(
+      [
+        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-14' }),
+        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
+        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
+      ],
+      8.37,
+    );
+    expect(blocos).toHaveLength(2);
+    // Dois blocos = dois DOCs, mesmo com tres lancamentos.
+    const totais = calcularTotaisDeBlocos(blocos);
+    expect(totais.desconto).toBe(205.74); // 189 + 2 x 8,37
+    expect(totais.aReceber).toBe(2794.26); // 2811 - 16,74
+  });
+
+  it('sem DOC configurado, o subtotal nao muda', () => {
+    const [bloco] = agruparPorBlocoCorte(seteVendas());
+    expect(bloco.doc).toBe(0);
+    expect(bloco.subtotal.aReceber).toBe(6559);
+  });
+});
+
+describe('calcularTotaisDeBlocos', () => {
+  it('soma os subtotais ja com DOC, batendo com o rodape da tela', () => {
+    const blocos = agruparPorBlocoCorte(
+      [
+        linha({ valor: 1000, desconto: 20, aReceber: 980, dataAReceber: '2026-07-20' }),
+        linha({ valor: 500, desconto: 5, aReceber: 495, dataAReceber: '2026-08-17' }),
+      ],
+      10,
+    );
+    const t = calcularTotaisDeBlocos(blocos);
+    expect(t.valor).toBe(1500);
+    expect(t.aReceber).toBe(1455); // 1475 - 2 x 10
+    expect(t.quantidade).toBe(2);
+  });
+
+  it('lista vazia devolve tudo zerado', () => {
+    expect(calcularTotaisDeBlocos([])).toEqual({
+      valor: 0,
+      desconto: 0,
+      aReceber: 0,
+      valorLoja: 0,
+      quantidade: 0,
+    });
   });
 });
 
