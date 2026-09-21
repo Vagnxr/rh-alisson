@@ -8,6 +8,11 @@ import {
   MAQUININHAS_PADRAO_HABILITADAS,
 } from '@/lib/maquininhas';
 import { cn } from '@/lib/cn';
+import {
+  corChipClasses,
+  corTabClasses,
+  DEFAULT_MAQUININHAS_CORES,
+} from '@/lib/cores-maquininha';
 import { PAGE_TITLE, PAGE_SUBTITLE, BTN_CANCEL, INPUT_CLASS } from '@/lib/uiClasses';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { NumberField } from '@/components/ui/number-field';
@@ -198,6 +203,8 @@ export function TaxasPrazosPage() {
   const [maquininhas, setMaquininhas] = useState<{ id: string; label: string; custom?: boolean }[]>([]);
   const [habilitadas, setHabilitadas] = useState<string[]>(MAQUININHAS_PADRAO_HABILITADAS);
   const [modulos, setModulos] = useState<ModulosHabilitados>({ voucher: true, ifood: true });
+  /** Cor por maquininha/modulo (Gerenciar maquininhas) — abas e chips seguem ela. */
+  const [cores, setCores] = useState<Record<string, string>>(DEFAULT_MAQUININHAS_CORES);
   const [ifoodConfig, setIfoodConfig] = useState<IfoodConfig>(DEFAULT_IFOOD_CONFIG);
   /** Map (operadora|tipo|categoria|bandeira) -> { taxa, prazo }. So credito/debito/pix. */
   const [configs, setConfigs] = useState<Record<string, { taxa: number; prazo: number }>>({});
@@ -256,6 +263,12 @@ export function TaxasPrazosPage() {
 
         setModulos(getModulosHabilitados(taxasJson));
         setIfoodConfig(taxasJson.ifoodConfig ?? DEFAULT_IFOOD_CONFIG);
+        setCores({
+          ...DEFAULT_MAQUININHAS_CORES,
+          ...(taxasJson.maquininhasCores && typeof taxasJson.maquininhasCores === 'object'
+            ? taxasJson.maquininhasCores
+            : {}),
+        });
 
         // Aba ativa default = primeira maquininha habilitada
         const visiveis = lista.filter((m) => habs.includes(m.id));
@@ -291,13 +304,23 @@ export function TaxasPrazosPage() {
     fetchData();
   }, [fetchData]);
 
-  const bandeirasCredito = useMemo(() => bandeiras.filter((b) => b.tipo === 'credito'), [bandeiras]);
-  const bandeirasDebito = useMemo(() => bandeiras.filter((b) => b.tipo === 'debito'), [bandeiras]);
-  const bandeirasVoucher = useMemo(() => bandeiras.filter((b) => b.tipo === 'voucher'), [bandeiras]);
+  /**
+   * Ordem alfabetica pt-BR, ignorando acento e caixa.
+   *
+   * `useTaxasPrazos` ja ordenava para Controle de Cartoes e A Receber, mas esta
+   * tela mantem lista propria e ficou de fora — o cliente cobrou a ordenacao
+   * tres vezes (Bandeiras, taxas por maquininha e Voucher/iFood), sempre aqui.
+   */
+  const porLabel = <T extends { label: string }>(lista: T[]): T[] =>
+    [...lista].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR', { sensitivity: 'base' }));
+
+  const bandeirasCredito = useMemo(() => porLabel(bandeiras.filter((b) => b.tipo === 'credito')), [bandeiras]);
+  const bandeirasDebito = useMemo(() => porLabel(bandeiras.filter((b) => b.tipo === 'debito')), [bandeiras]);
+  const bandeirasVoucher = useMemo(() => porLabel(bandeiras.filter((b) => b.tipo === 'voucher')), [bandeiras]);
 
   /** Maquininhas exibidas nas abas: apenas habilitadas no Gerenciar (Controle de Cartoes). */
   const maquininhasVisiveis = useMemo(
-    () => maquininhas.filter((m) => habilitadas.includes(m.id)),
+    () => porLabel(maquininhas.filter((m) => habilitadas.includes(m.id))),
     [maquininhas, habilitadas],
   );
 
@@ -514,8 +537,6 @@ export function TaxasPrazosPage() {
   ) => {
     const herdandoFechamento = herdavel && proprio.fechamento === undefined;
     const herdandoCorte = herdavel && proprio.corte === undefined;
-    const herdandoQuinzenal = herdavel && proprio.corteQuinzenal === undefined;
-    const quinzenal = efetivo.corteQuinzenal ?? CORTE_QUINZENAL_PADRAO;
     const marcaHerdado = (herdando: boolean) => (herdando ? 'italic text-muted-foreground' : '');
 
     return (
@@ -527,22 +548,21 @@ export function TaxasPrazosPage() {
               onChange(v === HERDAR ? { fechamento: undefined } : { fechamento: v as FechamentoVoucher })
             }
           >
-            {/* O gatilho mostra so "Herdar": com "Herdar (Semanal)" o texto era
-                cortado no meio e ficava feio, como o cliente apontou. O valor
-                efetivo continua legivel no title e na opcao aberta. */}
             <SelectTrigger
               className={cn('h-9 w-36', marcaHerdado(herdandoFechamento))}
               title={herdandoFechamento ? `Herdando: ${fechamentoLabelDe(efetivo.fechamento)}` : undefined}
             >
-              {/* Herdando, o gatilho mostra so "Herdar": o texto completo
-                  ("Herdar (Semanal)") era cortado no meio e ficava feio. O valor
-                  efetivo aparece no title e na lista aberta. */}
+              {/* Herdando, o gatilho fica VAZIO. Antes escrevia "Herdar
+                  (Semanal)", que era cortado no meio; encurtar para "Herdar" nao
+                  resolveu — o cliente voltou dizendo "esse nome HERDAR ta
+                  estranho, deixar sem nada a caixinha ate a pessoa preencher".
+                  O valor herdado continua no title e na lista aberta. */}
               <SelectValue>
-                {herdandoFechamento ? 'Herdar' : fechamentoLabelDe(efetivo.fechamento)}
+                {herdandoFechamento ? '' : fechamentoLabelDe(efetivo.fechamento)}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {herdavel && <SelectItem value={HERDAR}>Herdar ({fechamentoLabelDe(efetivo.fechamento)})</SelectItem>}
+              {herdavel && <SelectItem value={HERDAR}>— ({fechamentoLabelDe(efetivo.fechamento)})</SelectItem>}
               {FECHAMENTO_OPTIONS.map((o) => (
                 <SelectItem key={o.id} value={o.id}>
                   {o.label}
@@ -564,7 +584,13 @@ export function TaxasPrazosPage() {
           corte pra selecionar o dia".
         */}
         <td className="whitespace-nowrap px-3 py-2 align-middle">
-          {efetivo.fechamento === 'semanal' ? (
+          {/*
+            Semanal e quinzenal usam o MESMO seletor de dia da semana: o cliente
+            corrigiu a regra do quinzenal para "a mesma mecanica do semanal, so
+            que faz bloco de 2 semanas". Antes aqui havia dois campos de dia do
+            mes ("15 e 0"), que nao existem mais na regra.
+          */}
+          {efetivo.fechamento === 'semanal' || efetivo.fechamento === 'quinzenal' ? (
             <Select
               value={herdandoCorte ? HERDAR : String(efetivo.corte ?? 1)}
               onValueChange={(v) =>
@@ -573,14 +599,20 @@ export function TaxasPrazosPage() {
             >
               <SelectTrigger
                 className={cn('h-9 w-32', marcaHerdado(herdandoCorte))}
-                title={herdandoCorte ? `Herdando: ${corteLabelDe(efetivo.corte)}` : undefined}
+                title={
+                  herdandoCorte
+                    ? `Herdando: ${corteLabelDe(efetivo.corte)}`
+                    : efetivo.fechamento === 'quinzenal'
+                      ? 'Dia de fechamento; o bloco fecha a cada duas semanas'
+                      : undefined
+                }
               >
                 <SelectValue>
-                  {herdandoCorte ? 'Herdar' : corteLabelDe(efetivo.corte)}
+                  {herdandoCorte ? '' : corteLabelDe(efetivo.corte)}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {herdavel && <SelectItem value={HERDAR}>Herdar ({corteLabelDe(efetivo.corte)})</SelectItem>}
+                {herdavel && <SelectItem value={HERDAR}>— ({corteLabelDe(efetivo.corte)})</SelectItem>}
                 {CORTE_OPTIONS.map((o) => (
                   <SelectItem key={o.id} value={String(o.id)}>
                     {o.label}
@@ -588,41 +620,6 @@ export function TaxasPrazosPage() {
                 ))}
               </SelectContent>
             </Select>
-          ) : efetivo.fechamento === 'quinzenal' ? (
-            <div className={cn('flex items-center gap-1', marcaHerdado(herdandoQuinzenal))}>
-              <NumberField
-                value={quinzenal.primeiro}
-                decimals={0}
-                min={1}
-                max={28}
-                aria-label="Primeiro dia de corte"
-                className="w-14"
-                onCommit={(v) =>
-                  onChange({ corteQuinzenal: { ...quinzenal, primeiro: v ?? CORTE_QUINZENAL_PADRAO.primeiro } })
-                }
-              />
-              <span className="text-xs text-muted-foreground">e</span>
-              <NumberField
-                value={quinzenal.segundo ?? 0}
-                decimals={0}
-                min={0}
-                max={31}
-                title="0 = ultimo dia do mes"
-                aria-label="Segundo dia de corte (0 = fim do mes)"
-                className="w-14"
-                onCommit={(v) => onChange({ corteQuinzenal: { ...quinzenal, segundo: v ?? 0 } })}
-              />
-              {herdavel && !herdandoQuinzenal && (
-                <button
-                  type="button"
-                  title="Voltar a herdar da bandeira"
-                  onClick={() => onChange({ corteQuinzenal: undefined })}
-                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
           ) : (
             <span className="text-sm text-muted-foreground">-</span>
           )}
@@ -678,7 +675,7 @@ export function TaxasPrazosPage() {
           checked={!!efetivo.usaQtdCupons}
           onChange={(e) => onChange({ usaQtdCupons: e.target.checked })}
           className="h-4 w-4 accent-emerald-600"
-          title="Por Venda cobrada por cupom (lancamento pede Qtd Cupons)"
+          title="Por Venda cobrada por cupom (lançamento pede Qtd Cupons)"
         />
       </td>
       <td className="whitespace-nowrap px-3 py-2">
@@ -1088,7 +1085,7 @@ export function TaxasPrazosPage() {
               className={cn(
                 'rounded-t-lg border-b-2 px-3 py-2 text-sm font-medium transition-colors',
                 maqAtiva === m.id
-                  ? 'border-emerald-600 text-emerald-700'
+                  ? corTabClasses(cores, m.id)
                   : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >
@@ -1112,7 +1109,7 @@ export function TaxasPrazosPage() {
               className={cn(
                 'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                 tipoAtivo === t.id
-                  ? 'bg-emerald-600 text-white'
+                  ? corChipClasses(cores, maqAtiva)
                   : 'bg-muted text-foreground hover:bg-accent',
               )}
             >
@@ -1133,7 +1130,7 @@ export function TaxasPrazosPage() {
                 className={cn(
                   'rounded-lg px-3 py-1 text-xs font-medium transition-colors',
                   catAtiva === c.id
-                    ? 'bg-primary text-primary-foreground'
+                    ? corChipClasses(cores, maqAtiva)
                     : 'bg-card text-foreground ring-1 ring-border hover:bg-muted/40',
                 )}
               >
@@ -1195,8 +1192,8 @@ export function TaxasPrazosPage() {
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="credito">Credito</SelectItem>
-                    <SelectItem value="debito">Debito</SelectItem>
+                    <SelectItem value="credito">Crédito</SelectItem>
+                    <SelectItem value="debito">Débito</SelectItem>
                     <SelectItem value="voucher">Voucher</SelectItem>
                   </SelectContent>
                 </Select>

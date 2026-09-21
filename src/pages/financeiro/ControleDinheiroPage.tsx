@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { PAGE_TITLE, PAGE_SUBTITLE } from '@/lib/uiClasses';
 import {
   useReactTable,
   getCoreRowModel,
@@ -110,8 +111,8 @@ export function ControleDinheiroPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground sm:text-2xl">Controle Dinheiro</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h1 className={PAGE_TITLE}>Controle Dinheiro</h1>
+          <p className={PAGE_SUBTITLE}>
             Data, dia, deposito, sobra, pag. PDV e total do dia
           </p>
         </div>

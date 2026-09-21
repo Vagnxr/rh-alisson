@@ -19,6 +19,8 @@ interface CorMaquininha {
   chip: string;
   /** Bolinha/preview da cor em selects. */
   dot: string;
+  /** Aba ativa (borda inferior + texto) — abas de maquininha em Taxas e Prazos. */
+  tab: string;
 }
 
 export const CORES_MAQUININHA: Record<CorMaquininhaId, CorMaquininha> = {
@@ -27,48 +29,56 @@ export const CORES_MAQUININHA: Record<CorMaquininhaId, CorMaquininha> = {
     header: 'bg-blue-50 text-blue-900 dark:bg-blue-950/40 dark:text-blue-200',
     chip: 'bg-blue-600 text-white hover:bg-blue-700',
     dot: 'bg-blue-500',
+    tab: 'border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300',
   },
   laranja: {
     label: 'Laranja',
     header: 'bg-orange-50 text-orange-900 dark:bg-orange-950/40 dark:text-orange-200',
     chip: 'bg-orange-600 text-white hover:bg-orange-700',
     dot: 'bg-orange-500',
+    tab: 'border-orange-600 text-orange-700 dark:border-orange-400 dark:text-orange-300',
   },
   vermelho: {
     label: 'Vermelho',
     header: 'bg-red-50 text-red-900 dark:bg-red-950/40 dark:text-red-200',
     chip: 'bg-red-600 text-white hover:bg-red-700',
     dot: 'bg-red-500',
+    tab: 'border-red-600 text-red-700 dark:border-red-400 dark:text-red-300',
   },
   roxo: {
     label: 'Roxo',
     header: 'bg-purple-50 text-purple-900 dark:bg-purple-950/40 dark:text-purple-200',
     chip: 'bg-purple-600 text-white hover:bg-purple-700',
     dot: 'bg-purple-500',
+    tab: 'border-purple-600 text-purple-700 dark:border-purple-400 dark:text-purple-300',
   },
   verde: {
     label: 'Verde',
     header: 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200',
     chip: 'bg-emerald-600 text-white hover:bg-emerald-700',
     dot: 'bg-emerald-500',
+    tab: 'border-emerald-600 text-emerald-700 dark:border-emerald-400 dark:text-emerald-300',
   },
   amarelo: {
     label: 'Amarelo',
     header: 'bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200',
     chip: 'bg-amber-500 text-white hover:bg-amber-600',
     dot: 'bg-amber-500',
+    tab: 'border-amber-500 text-amber-700 dark:border-amber-400 dark:text-amber-300',
   },
   rosa: {
     label: 'Rosa',
     header: 'bg-pink-50 text-pink-900 dark:bg-pink-950/40 dark:text-pink-200',
     chip: 'bg-pink-600 text-white hover:bg-pink-700',
     dot: 'bg-pink-500',
+    tab: 'border-pink-600 text-pink-700 dark:border-pink-400 dark:text-pink-300',
   },
   cinza: {
     label: 'Cinza',
     header: 'bg-slate-100 text-slate-900 dark:bg-slate-800/60 dark:text-slate-200',
     chip: 'bg-slate-600 text-white hover:bg-slate-700',
     dot: 'bg-slate-500',
+    tab: 'border-slate-600 text-slate-700 dark:border-slate-400 dark:text-slate-300',
   },
 };
 
@@ -110,4 +120,16 @@ export function corChipClasses(cores: Record<string, string> | undefined, id: st
   const corId = (cores?.[id] ?? DEFAULT_MAQUININHAS_CORES[id]) as CorMaquininhaId | undefined;
   if (corId && CORES_MAQUININHA[corId]) return CORES_MAQUININHA[corId].chip;
   return CORES_MAQUININHA.verde.chip;
+}
+
+/**
+ * Classes da aba ativa de uma maquininha (Taxas e Prazos).
+ *
+ * A aba era verde fixa: com Cielo (azul) selecionada, a aba saia verde e o card
+ * logo abaixo azul. Segue a mesma cor dos chips e cabecalhos.
+ */
+export function corTabClasses(cores: Record<string, string> | undefined, id: string): string {
+  const corId = (cores?.[id] ?? DEFAULT_MAQUININHAS_CORES[id]) as CorMaquininhaId | undefined;
+  if (corId && CORES_MAQUININHA[corId]) return CORES_MAQUININHA[corId].tab;
+  return CORES_MAQUININHA.verde.tab;
 }

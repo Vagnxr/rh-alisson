@@ -216,7 +216,7 @@ export function EntradaFormDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Data emissao (nota)</label>
+                  <label className="text-sm font-medium text-foreground">Data emissão (nota)</label>
                   <DateInput
                     value={formData.dataEmissao}
                     onChange={v =>

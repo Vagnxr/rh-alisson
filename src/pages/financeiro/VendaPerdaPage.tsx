@@ -222,7 +222,7 @@ export function VendaPerdaPage() {
               <tr>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase text-muted-foreground">Total bruto</th>
                 <th className="px-5 py-3 text-right text-xs font-medium uppercase text-muted-foreground">Descontos</th>
-                <th className="px-5 py-3 text-right text-xs font-medium uppercase text-muted-foreground">Total liquido</th>
+                <th className="px-5 py-3 text-right text-xs font-medium uppercase text-muted-foreground">Total líquido</th>
               </tr>
             </thead>
             <tbody>
@@ -318,7 +318,7 @@ export function VendaPerdaPage() {
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium uppercase text-muted-foreground">Valor liquido</label>
+                  <label className="text-xs font-medium uppercase text-muted-foreground">Valor líquido</label>
                   {editavel ? (
                     <CurrencyInput
                       value={ifoodConfigInput.valorLiquido}
@@ -346,7 +346,7 @@ export function VendaPerdaPage() {
 
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className={CARD_HEADER}>
-              <h2 className={CARD_TITLE}>Total cartoes</h2>
+              <h2 className={CARD_TITLE}>Total cartões</h2>
             </div>
             <div className="overflow-x-auto p-1">
               <table className="w-full min-w-[280px]">
@@ -354,7 +354,7 @@ export function VendaPerdaPage() {
                   <tr>
                     <th className="px-5 py-3 text-left text-xs font-medium uppercase text-muted-foreground">Valor bruto</th>
                     <th className="px-5 py-3 text-right text-xs font-medium uppercase text-muted-foreground">Descontos</th>
-                    <th className="px-5 py-3 text-right text-xs font-medium uppercase text-muted-foreground">Total liquido</th>
+                    <th className="px-5 py-3 text-right text-xs font-medium uppercase text-muted-foreground">Total líquido</th>
                   </tr>
                 </thead>
                 <tbody>

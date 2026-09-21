@@ -181,7 +181,7 @@ function BalancoTable({
       </div>
       <div className="divide-y divide-border overflow-x-auto">
         <div className="grid grid-cols-[1fr_100px_80px] gap-2 bg-muted px-4 py-2 text-xs font-medium uppercase text-muted-foreground min-w-[400px]">
-          <div>Descricao</div>
+          <div>Descrição</div>
           <div className="text-right">Valor</div>
           {showPercent && <div className="text-right">% Venda</div>}
         </div>
@@ -291,7 +291,7 @@ export function BalancoGeralPage() {
   if (error) {
     return (
       <div className="space-y-4">
-        <h1 className={PAGE_TITLE}>Balanco Mensal</h1>
+        <h1 className={PAGE_TITLE}>Balanço Mensal</h1>
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
@@ -312,8 +312,8 @@ export function BalancoGeralPage() {
       <div className="space-y-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className={PAGE_TITLE}>Balanco Mensal</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Resumo financeiro consolidado do periodo</p>
+            <h1 className={PAGE_TITLE}>Balanço Mensal</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Resumo financeiro consolidado do período</p>
           </div>
           <DateFilter value={dateFilter} onChange={setDateFilter} />
         </div>
@@ -330,7 +330,7 @@ export function BalancoGeralPage() {
       <div className="sticky top-0 z-10 -mx-4 -mt-4 bg-muted/40 px-4 pt-4 pb-4 sm:-mx-6 sm:px-6 sm:pt-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className={PAGE_TITLE}>Balanco Mensal</h1>
+            <h1 className={PAGE_TITLE}>Balanço Mensal</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Resumo financeiro consolidado do periodo
               {isMultiLoja && !lojaFiltro && ' - Todas as lojas'}
@@ -387,7 +387,7 @@ export function BalancoGeralPage() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className="text-xs font-medium text-muted-foreground">Entrada / Saida</p>
+                <p className="text-xs font-medium text-muted-foreground">Entrada / Saída</p>
                 <div className="flex rounded-lg border border-border bg-muted/40 p-0.5">
                   <button
                     type="button"
@@ -549,7 +549,7 @@ export function BalancoGeralPage() {
             <div className="p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Building2 className="h-4 w-4 text-red-600" />
-                <span className="text-xs font-medium uppercase text-muted-foreground">Saida</span>
+                <span className="text-xs font-medium uppercase text-muted-foreground">Saída</span>
               </div>
               <p className="text-lg font-bold text-foreground">
                 {formatCurrency(filteredData.ativoImobilizado.saida)}

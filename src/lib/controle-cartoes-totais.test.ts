@@ -199,6 +199,58 @@ describe('agruparPorBlocoCorte — DOC por bloco', () => {
   });
 });
 
+describe('agruparPorBlocoCorte — DOC embutido na linha', () => {
+  /*
+   * O cliente conferiu na tela: bloco com uma venda de R$ 1.000,00 a 6,3%
+   * mostrava a linha com R$ 937,00 e o subtotal com R$ 928,63. Ele pediu o DOC
+   * "junto no A RECEBER e nao separado" — a linha tem de ler o valor que cai
+   * na conta.
+   */
+  it('abate o DOC no a receber da linha quando ha um unico lancamento', () => {
+    const [bloco] = agruparPorBlocoCorte(
+      [linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' })],
+      8.37,
+    );
+    expect(bloco.rows[0].aReceber).toBe(928.63);
+    expect(bloco.rows[0].desconto).toBe(71.37);
+  });
+
+  it('rateia o DOC entre as linhas do bloco, proporcional ao a receber', () => {
+    const [bloco] = agruparPorBlocoCorte(
+      [
+        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
+        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
+      ],
+      8.37,
+    );
+    // 8,37 / 2 = 4,185, que arredonda para 4,18 em cada linha; o centavo que
+    // sobra sai da maior (empate: a primeira), fechando exatamente 8,37.
+    expect(bloco.rows.map((r) => r.aReceber)).toEqual([932.81, 932.82]);
+    expect(bloco.rows[0].aReceber + bloco.rows[1].aReceber).toBeCloseTo(bloco.subtotal.aReceber, 2);
+  });
+
+  it('mantem a soma das linhas igual ao subtotal do bloco', () => {
+    const [bloco] = agruparPorBlocoCorte(
+      [
+        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
+        linha({ valor: 500, desconto: 31.5, aReceber: 468.5, dataAReceber: '2026-09-21' }),
+        linha({ valor: 300, desconto: 18.9, aReceber: 281.1, dataAReceber: '2026-09-21' }),
+      ],
+      8.37,
+    );
+    const somaLinhas = bloco.rows.reduce((acc, r) => acc + r.aReceber, 0);
+    expect(Math.round(somaLinhas * 100) / 100).toBe(bloco.subtotal.aReceber);
+  });
+
+  it('nao altera as linhas quando a bandeira nao cobra DOC', () => {
+    const [bloco] = agruparPorBlocoCorte(
+      [linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' })],
+      0,
+    );
+    expect(bloco.rows[0].aReceber).toBe(937);
+  });
+});
+
 describe('calcularTotaisDeBlocos', () => {
   it('soma os subtotais ja com DOC, batendo com o rodape da tela', () => {
     const blocos = agruparPorBlocoCorte(

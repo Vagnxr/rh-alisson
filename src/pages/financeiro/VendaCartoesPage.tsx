@@ -179,7 +179,7 @@ export function VendaCartoesPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className={PAGE_TITLE}>Venda Cartoes</h1>
+          <h1 className={PAGE_TITLE}>Venda Cartões</h1>
           <p className={PAGE_SUBTITLE}>
             Colunas definidas pela API conforme periodo selecionado
           </p>
@@ -197,7 +197,7 @@ export function VendaCartoesPage() {
             })}
             columns={exportColumnsConfig}
             filename="venda-cartoes"
-            title="Venda Cartoes"
+            title="Venda Cartões"
           />
         </div>
       </div>

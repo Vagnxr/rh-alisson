@@ -253,7 +253,7 @@ export function PedidoVendaPage() {
             </div>
             <div className="flex flex-wrap items-center gap-4 justify-end">
               <div>
-                <label className="block text-xs text-muted-foreground">Numero do Pedido</label>
+                <label className="block text-xs text-muted-foreground">Número do Pedido</label>
                 <input
                   type="text"
                   value={form.numeroPedido}
@@ -400,7 +400,7 @@ export function PedidoVendaPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-border bg-muted/40">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Numero</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Número</th>
                   <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Data</th>
                   <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">Comprador</th>
                   <th className="px-4 py-2 text-right text-xs font-medium uppercase text-muted-foreground">Total</th>

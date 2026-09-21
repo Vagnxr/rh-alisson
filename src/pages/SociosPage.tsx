@@ -41,7 +41,7 @@ import { cn } from '@/lib/cn';
 import { DateInput } from '@/components/ui/date-input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CARD_INTERACTIVE } from '@/lib/uiClasses';
+import { CARD_INTERACTIVE, PAGE_SUBTITLE, PAGE_TITLE } from '@/lib/uiClasses';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -601,8 +601,8 @@ export function SociosPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-foreground sm:text-2xl">Socios</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h1 className={PAGE_TITLE}>Sócios</h1>
+            <p className={PAGE_SUBTITLE}>
               Cadastre socios e acompanhe movimentacoes. Clique em um card para ver detalhes.
             </p>
           </div>
@@ -633,7 +633,7 @@ export function SociosPage() {
                 <Users className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">Total Geral - Todos os Socios</p>
+                <p className="text-sm font-medium text-foreground">Total Geral - Todos os Sócios</p>
                 <p className="text-2xl font-bold text-foreground">
                   {formatCurrencySocios(totalGeral).text}
                 </p>
@@ -648,7 +648,7 @@ export function SociosPage() {
             <div className="rounded-xl border border-dashed border-border bg-muted/40 p-12 text-center">
               <Users className="mx-auto h-12 w-12 text-muted-foreground" />
               <p className="mt-3 text-sm font-medium text-muted-foreground">Nenhum socio inativo</p>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className={PAGE_SUBTITLE}>
                 Socios desativados aparecem aqui e podem ser reativados.
               </p>
               <Button className="mt-4" variant="outline" onClick={() => setShowInativos(false)}>
@@ -679,7 +679,7 @@ export function SociosPage() {
           <div className="rounded-xl border border-dashed border-border bg-muted/40 p-12 text-center">
             <Users className="mx-auto h-12 w-12 text-muted-foreground" />
             <p className="mt-3 text-sm font-medium text-muted-foreground">Nenhum socio cadastrado</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className={PAGE_SUBTITLE}>
               Cadastre o primeiro socio para comecar a registrar movimentacoes.
             </p>
             <Button className="mt-4" onClick={() => handleOpenSocioDialog()}>
@@ -822,7 +822,7 @@ export function SociosPage() {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-foreground sm:text-2xl">{selectedSocio.nome}</h1>
+            <h1 className={PAGE_TITLE}>{selectedSocio.nome}</h1>
             <p className="text-sm text-muted-foreground">
               {formatCpf(selectedSocio.cpf)} - {selectedSocio.percentualSociedade}% de participacao
             </p>
@@ -916,7 +916,7 @@ export function SociosPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">Descricao</label>
+              <label className="mb-1 block text-sm font-medium text-foreground">Descrição</label>
               <input
                 type="text"
                 value={formData.descricao}

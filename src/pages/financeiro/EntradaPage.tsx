@@ -656,7 +656,7 @@ export function EntradaPage() {
               <span className="whitespace-nowrap">Formas pag.</span>
             </button>
           </div>
-          <span className="hidden h-6 w-px bg-slate-200 sm:block" aria-hidden />
+          <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
           <div className="ml-auto flex items-center gap-2">
             <ExportButtons
               data={items.map(r => ({

@@ -200,7 +200,7 @@ export function LojaForm({
                       type="checkbox"
                       checked={formData.isMatriz}
                       onChange={(e) => setFormData({ ...formData, isMatriz: e.target.checked })}
-                      className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      className="h-4 w-4 rounded border-input text-emerald-600 focus:ring-emerald-500"
                     />
                     <span className="text-sm text-foreground">Esta e a loja matriz</span>
                   </label>
@@ -235,7 +235,7 @@ export function LojaForm({
 
           {/* Endereco */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-foreground">Endereco</h3>
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Endereço</h3>
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-3">
                 <InputCEP
@@ -463,7 +463,7 @@ export function LojaForm({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-slate-100"
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               Cancelar
             </button>

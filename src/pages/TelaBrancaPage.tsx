@@ -11,7 +11,7 @@ export function TelaBrancaPage() {
     <button
       type="button"
       onClick={() => navigate('/dashboard')}
-      className="flex h-full min-h-[60vh] w-full cursor-pointer flex-col items-center justify-center rounded-xl bg-slate-100/90 p-8 transition-colors hover:bg-slate-200/90 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+      className="flex h-full min-h-[60vh] w-full cursor-pointer flex-col items-center justify-center rounded-xl bg-muted/60 p-8 transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
       title="Clique para voltar"
     >
       {/* Ilustracao: janela/privacidade - cortina fechada com flor */}

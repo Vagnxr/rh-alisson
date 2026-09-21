@@ -153,10 +153,21 @@
     letter-spacing: -0.025em;
   }
 
-  /* Scrollbar - Estilo limpo */
+  /*
+   * Scrollbar — discreta e no tom do tema.
+   *
+   * "Arrumar a barra de rolagem aqui ta feia": no modal de Novo Fornecedor a
+   * barra saia grossa e escura, competindo com o conteudo. Fica mais fina, com
+   * o polegar transparente no repouso.
+   */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
@@ -164,20 +175,12 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.8 0.002 247);
-    border-radius: 4px;
+    background: var(--border);
+    border-radius: 999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.7 0.002 247);
-  }
-
-  .dark ::-webkit-scrollbar-thumb {
-    background: oklch(0.35 0.015 256);
-  }
-
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.45 0.015 256);
+    background: var(--muted-foreground);
   }
 
   /* Focus styles */
@@ -249,6 +252,36 @@ table thead th {
 
   .dark .border-slate-200,
   .dark .border-slate-300 {
+    border-color: var(--border);
+  }
+
+  /*
+   * Buracos que o cliente achou um a um: o shim cobria bg-slate-50/100 mas nao
+   * 200/300, e nao cobria variante `hover:` nenhuma — dai o traco claro na
+   * Entrada e os hovers que "acendiam" branco na tela preta. Cobrir a faixa
+   * inteira evita a proxima rodada pelo mesmo motivo.
+   */
+  .dark .bg-slate-200,
+  .dark .bg-slate-300,
+  .dark .hover\:bg-slate-50:hover,
+  .dark .hover\:bg-slate-100:hover,
+  .dark .hover\:bg-slate-200:hover {
+    background-color: var(--muted);
+  }
+
+  .dark .hover\:bg-white:hover {
+    background-color: var(--card);
+  }
+
+  .dark .hover\:text-slate-600:hover,
+  .dark .hover\:text-slate-700:hover,
+  .dark .hover\:text-slate-800:hover,
+  .dark .hover\:text-slate-900:hover {
+    color: var(--foreground);
+  }
+
+  .dark .hover\:border-slate-200:hover,
+  .dark .hover\:border-slate-300:hover {
     border-color: var(--border);
   }
 
@@ -410,9 +443,51 @@ table thead th {
     --rdp-accent-background-color: oklch(0.596 0.145 163 / 0.15);
   }
 
+  /*
+   * `select` nativo herdando a cor do tema.
+   *
+   * Nenhum dos 20 selects do app declarava cor de texto: no light o preto do
+   * sistema passava despercebido, mas no dark o texto ficava preto sobre card
+   * escuro e "sumia" — foi o que o cliente viu em Relatorios ("aqui em tela
+   * preta some as informacoes"). Herdar resolve todos de uma vez, inclusive os
+   * que forem criados depois.
+   */
+  select {
+    color: inherit;
+  }
+
+  /* Popup nativo: o color-scheme abaixo cuida do realce, mas Firefox e Linux
+     precisam da cor de fundo explicita para nao abrir claro no tema escuro. */
+  .dark select option {
+    background-color: var(--card);
+    color: var(--foreground);
+  }
+
   input[type='checkbox'],
   input[type='radio'] {
     accent-color: var(--primary);
+  }
+
+  /*
+   * Icone nativo de date/time no dark.
+   *
+   * O `color-scheme: dark` abaixo ja pede um icone claro ao navegador, mas o
+   * campo Hora do Lembrete tem fundo proprio bem escuro e o relogio continuava
+   * preto sobre preto — "na tela preta o desenho do relogio some". O invert
+   * garante contraste em qualquer fundo.
+   */
+  .dark input[type='date']::-webkit-calendar-picker-indicator,
+  .dark input[type='time']::-webkit-calendar-picker-indicator,
+  .dark input[type='datetime-local']::-webkit-calendar-picker-indicator,
+  .dark input[type='month']::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.6);
+    opacity: 0.85;
+    cursor: pointer;
+  }
+
+  .dark input[type='date']::-webkit-calendar-picker-indicator:hover,
+  .dark input[type='time']::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
   }
 
   /*

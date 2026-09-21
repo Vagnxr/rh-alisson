@@ -202,7 +202,7 @@ export function LembretesPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className={PAGE_TITLE}>Lembretes</h1>
-          <p className={PAGE_SUBTITLE}>Gerencie seus lembretes e notificacoes</p>
+          <p className={PAGE_SUBTITLE}>Gerencie seus lembretes e notificações</p>
         </div>
         <button
           onClick={() => handleOpenDialog()}
@@ -425,7 +425,7 @@ export function LembretesPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Descricao</label>
+                <label className="text-sm font-medium text-foreground">Descrição</label>
                 <textarea
                   value={formData.descricao}
                   onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}

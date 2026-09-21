@@ -216,7 +216,7 @@ export function SaidaPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className={PAGE_TITLE}>Saida</h1>
+          <h1 className={PAGE_TITLE}>Saída</h1>
           <p className={PAGE_SUBTITLE}>
             Preenchido automaticamente conforme entrada.
           </p>
@@ -260,7 +260,7 @@ export function SaidaPage() {
               { key: 'total', label: 'TOTAL' },
             ]}
             filename="saida"
-            title="Saida"
+            title="Saída"
           />
         </div>
       </div>
@@ -296,7 +296,7 @@ export function SaidaPage() {
                       colSpan={columns.length}
                       className="px-6 py-12 text-center text-sm text-muted-foreground"
                     >
-                      <p>Nenhum registro no periodo.</p>
+                      <p>Nenhum registro no período.</p>
                     </td>
                   </tr>
                 ) : (

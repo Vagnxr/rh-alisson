@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PAGE_TITLE, PAGE_SUBTITLE } from '@/lib/uiClasses';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -83,8 +84,8 @@ export function CriarDespesaPage() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Criar despesa</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className={PAGE_TITLE}>Criar despesa</h1>
+        <p className={PAGE_SUBTITLE}>
           Lancar uma despesa manualmente com os mesmos campos das telas de despesas.
         </p>
       </div>
@@ -142,7 +143,7 @@ export function CriarDespesaPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Descricao</label>
+          <label className="text-sm font-medium text-foreground">Descrição</label>
           <input
             type="text"
             value={form.descricao}
@@ -171,7 +172,7 @@ export function CriarDespesaPage() {
             type="checkbox"
             checked={form.recorrente}
             onChange={(e) => setForm((f) => ({ ...f, recorrente: e.target.checked }))}
-            className="h-4 w-4 rounded border-slate-300 text-emerald-600"
+            className="h-4 w-4 rounded border-input text-emerald-600"
           />
           <label htmlFor="recorrente" className="text-sm font-medium text-foreground">
             Recorrente
@@ -204,7 +205,7 @@ export function CriarDespesaPage() {
             type="checkbox"
             checked={form.comunicarAgenda}
             onChange={(e) => setForm((f) => ({ ...f, comunicarAgenda: e.target.checked }))}
-            className="h-4 w-4 rounded border-slate-300 text-emerald-600"
+            className="h-4 w-4 rounded border-input text-emerald-600"
           />
           <label htmlFor="comunicarAgenda" className="text-sm font-medium text-foreground">
             Comunicar Agenda

@@ -796,6 +796,22 @@ export function ControleCartoesPage() {
     setIsDialogOpen(true);
   };
 
+  /**
+   * Cor do contexto da aba atual, herdada por TODOS os chips descendentes
+   * (Tipo, Cartoes, Vouchers, Categoria).
+   *
+   * O cliente apontou duas vezes o mesmo defeito: com Cielo (azul) selecionada
+   * a bandeira "Visa" saia verde, e dentro do Voucher (roxo) a subcategoria
+   * "Alimentacao" tambem saia verde. O verde era `bg-emerald-600` fixo. Agora a
+   * cor desce do modulo/maquininha, entao a hierarquia inteira fica na mesma
+   * familia de cor.
+   */
+  const corDoContexto = useMemo(() => {
+    if (tab === 'voucher') return corChipClasses(cores, 'voucher');
+    if (tab === 'ifood') return corChipClasses(cores, 'ifood');
+    return corChipClasses(cores, operadora);
+  }, [tab, cores, operadora]);
+
   const showBandeiras = tab === 'credito' || tab === 'debito';
   /**
    * Bandeiras da aba atual, filtradas pela whitelist da maquininha quando ela
@@ -843,7 +859,7 @@ export function ControleCartoesPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className={PAGE_TITLE}>Controle Cartoes</h1>
+          <h1 className={PAGE_TITLE}>Controle Cartões</h1>
           <p className={PAGE_SUBTITLE}>
             Credito/Debito, PIX, Voucher e iFood. Prazo, taxa, bruto e liquido (a receber calculado pelo sistema).
           </p>
@@ -889,7 +905,7 @@ export function ControleCartoesPage() {
               aReceber: formatCurrency(totaisGerais.aReceber),
             }}
             filename={`controle-cartoes-${tab}`}
-            title="Controle Cartoes"
+            title="Controle Cartões"
           />
           <button
             type="button"
@@ -983,7 +999,7 @@ export function ControleCartoesPage() {
               className={cn(
                 'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                 tipoCredito === t.id
-                  ? 'bg-emerald-600 text-white'
+                  ? corDoContexto
                   : 'bg-muted text-foreground hover:bg-accent'
               )}
             >
@@ -1003,7 +1019,7 @@ export function ControleCartoesPage() {
               className={cn(
                 'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                 bandeira === b.id
-                  ? 'bg-emerald-600 text-white'
+                  ? corDoContexto
                   : 'bg-muted text-foreground hover:bg-accent'
               )}
             >
@@ -1028,7 +1044,7 @@ export function ControleCartoesPage() {
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                   bandeiraVoucher === b.id
-                    ? corChipClasses(cores, 'voucher')
+                    ? corDoContexto
                     : 'bg-muted text-foreground hover:bg-accent',
                 )}
               >
@@ -1047,7 +1063,7 @@ export function ControleCartoesPage() {
                   className={cn(
                     'rounded-lg px-3 py-1 text-xs font-medium transition-colors',
                     categoriaVoucher === c.id
-                      ? 'bg-primary text-primary-foreground'
+                      ? corDoContexto
                       : 'bg-card text-foreground ring-1 ring-border hover:bg-muted/40',
                   )}
                 >
@@ -1178,11 +1194,13 @@ export function ControleCartoesPage() {
                       <td
                         colSpan={columns.length}
                         className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wider"
+                        title={bloco.doc > 0 ? `DOC de ${formatCurrency(bloco.doc)} ja abatido no a receber das linhas` : undefined}
                       >
+                        {/* O DOC nao aparece mais aqui: ja esta rateado no a receber
+                            de cada linha (ver ratearDoc). Fica so no title. */}
                         Bloco de corte — recebimento em {formatDateStringToBR(bloco.chave)} (
                         {bloco.subtotal.quantidade} lancamento
-                        {bloco.subtotal.quantidade > 1 ? 's' : ''}
-                        {bloco.doc > 0 ? `, DOC ${formatCurrency(bloco.doc)}` : ''})
+                        {bloco.subtotal.quantidade > 1 ? 's' : ''})
                       </td>
                     </tr>
                     {linhasDoBloco.map((row) => (
@@ -1255,7 +1273,7 @@ export function ControleCartoesPage() {
               </div>
               {tab === 'credito' && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Tipo credito</label>
+                  <label className="text-sm font-medium text-foreground">Tipo crédito</label>
                   {/* Select do design system, nao o nativo: no dark mode o dropdown
                       nativo e desenhado pelo SO e vinha com realce azul, destoando
                       do resto do app (mesmo padrao usado nas despesas). */}
@@ -1814,7 +1832,7 @@ function MaquininhaForm({
 
       {value.tipos.some((t) => ['a-vista', 'parcelado-vista', 'parcelado-prazo'].includes(t)) && (
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Bandeiras de credito aceitas</label>
+          <label className="text-sm font-medium text-foreground">Bandeiras de crédito aceitas</label>
           <div className="flex flex-wrap gap-2">
             {bandeirasCredito.map((b) => {
               // Sem whitelist (undefined) = todas aceitas. Ao desmarcar a
@@ -1843,7 +1861,7 @@ function MaquininhaForm({
 
       {value.tipos.includes('debito') && (
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Bandeiras de debito aceitas</label>
+          <label className="text-sm font-medium text-foreground">Bandeiras de débito aceitas</label>
           <div className="flex flex-wrap gap-2">
             {bandeirasDebito.map((b) => {
               const atuais = value.bandeirasDebito ?? bandeirasDebito.map((x) => x.id);

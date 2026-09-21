@@ -760,8 +760,11 @@
   .login-page .ticker-card {
     transition: none;
   }
+  /* A faixa e informacao, nao enfeite: em vez de parar, corre bem devagar.
+     Parar por completo foi lido como bug ("a informacao de baixo parou de
+     correr"). */
   .login-page .tape {
-    animation: none;
+    animation-duration: 90s;
   }
   .login-page .pulse-dot,
   .login-page .cursor {

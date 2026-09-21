@@ -308,7 +308,7 @@ export function AdminUsersPage() {
       {/* Header fixo com botao Criar sempre visivel */}
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className={PAGE_TITLE}>Usuarios</h1>
+          <h1 className={PAGE_TITLE}>Usuários</h1>
           <p className="text-sm text-muted-foreground">Gerencie os usuarios do sistema</p>
         </div>
         <button
@@ -342,7 +342,7 @@ export function AdminUsersPage() {
         ) : users.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 font-medium text-foreground">Nenhum usuario cadastrado</p>
+            <p className="mt-4 font-medium text-foreground">Nenhum usuário cadastrado</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Clique em "Novo Usuario" para adicionar
             </p>
@@ -479,7 +479,7 @@ export function AdminUsersPage() {
                 }
                 className={INPUT_CLASS}
               >
-                <option value="user">Usuario</option>
+                <option value="user">Usuário</option>
                 <option value="manager">Gerente</option>
                 <option value="admin">Administrador</option>
               </select>
@@ -576,7 +576,7 @@ export function AdminUsersPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir usuario?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir o usuario{' '}
               <span className="font-medium">{userToDelete?.nome}</span>? Esta acao nao pode

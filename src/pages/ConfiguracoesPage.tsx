@@ -714,7 +714,7 @@ export function ConfiguracoesPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className={PAGE_TITLE}>Configuracoes</h1>
+          <h1 className={PAGE_TITLE}>Configurações</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Personalize a exibicao de colunas por modulo do sistema
           </p>
@@ -749,7 +749,7 @@ export function ConfiguracoesPage() {
       <div className={INFO_BANNER}>
         <Settings className="h-5 w-5 shrink-0 text-primary" />
         <div>
-          <p className="font-medium text-foreground">Configuracoes de Colunas</p>
+          <p className="font-medium text-foreground">Configurações de Colunas</p>
           <p className="text-sm text-muted-foreground">
             Escolha quais colunas deseja visualizar em cada tabela. As configuracoes sao salvas
             automaticamente e aplicadas em todas as suas sessoes.

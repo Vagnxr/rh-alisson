@@ -90,9 +90,10 @@ export function agruparPorBlocoCorte(rows: ControleCartoesRow[], doc = 0): Bloco
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([chave, itens]) => {
       const base = calcularTotais(itens);
+      const ordenados = [...itens].sort((a, b) => (a.data ?? '').localeCompare(b.data ?? ''));
       return {
         chave,
-        rows: [...itens].sort((a, b) => (a.data ?? '').localeCompare(b.data ?? '')),
+        rows: tarifa > 0 ? ratearDoc(ordenados, tarifa) : ordenados,
         doc: tarifa,
         subtotal:
           tarifa > 0
@@ -104,6 +105,48 @@ export function agruparPorBlocoCorte(rows: ControleCartoesRow[], doc = 0): Bloco
             : base,
       };
     });
+}
+
+/**
+ * Distribui o DOC do bloco pelas linhas, proporcional ao a receber de cada uma.
+ *
+ * O DOC e cobrado uma vez por bloco, mas so aparecia no cabecalho e no subtotal:
+ * a linha mostrava R$ 937,00 e o subtotal logo abaixo R$ 928,63, com a diferenca
+ * sem explicacao visivel. O cliente: "o DOC tem que estar junto no A RECEBER e
+ * nao separado, isso vale para todos".
+ *
+ * O resto do arredondamento vai para a maior linha, entao a soma das linhas
+ * continua batendo exatamente com o subtotal do bloco.
+ */
+function ratearDoc(rows: ControleCartoesRow[], tarifa: number): ControleCartoesRow[] {
+  const base = rows.reduce((acc, r) => acc + (Number(r.aReceber) || 0), 0);
+  if (base <= 0) return rows;
+
+  let distribuido = 0;
+  const ajustadas = rows.map((r) => {
+    const aReceber = Number(r.aReceber) || 0;
+    const parte = round2((tarifa * aReceber) / base);
+    distribuido = round2(distribuido + parte);
+    return {
+      ...r,
+      aReceber: round2(aReceber - parte),
+      desconto: round2(descontoDaLinha(r) + parte),
+    };
+  });
+
+  const resto = round2(tarifa - distribuido);
+  if (resto !== 0) {
+    let iMaior = 0;
+    for (let i = 1; i < ajustadas.length; i += 1) {
+      if (ajustadas[i].aReceber > ajustadas[iMaior].aReceber) iMaior = i;
+    }
+    ajustadas[iMaior] = {
+      ...ajustadas[iMaior],
+      aReceber: round2(ajustadas[iMaior].aReceber - resto),
+      desconto: round2(ajustadas[iMaior].desconto + resto),
+    };
+  }
+  return ajustadas;
 }
 
 /**

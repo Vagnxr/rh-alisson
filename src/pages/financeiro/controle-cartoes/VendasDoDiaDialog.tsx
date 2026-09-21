@@ -58,17 +58,19 @@ export function VendasDoDiaDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
-          <div className="space-y-2">
+          {/* Respiro entre venda, parcelas e taxa: no print do cliente
+              "R$ 1.000,00  5x · 2%" saia tudo grudado. */}
+          <div className="space-y-3">
             {vendas.map((venda) => {
               const aberta = expandida === venda.id;
               const parcelas = venda.parcelas ?? [];
               return (
                 <div key={venda.id} className="rounded-lg border border-border">
-                  <div className="flex items-center gap-2 px-3 py-2">
+                  <div className="flex items-center gap-3 px-4 py-3">
                     <button
                       type="button"
                       onClick={() => setExpandida(aberta ? null : venda.id)}
-                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
                       aria-expanded={aberta}
                     >
                       {aberta ? (
@@ -106,7 +108,7 @@ export function VendasDoDiaDialog({
                   </div>
 
                   {aberta && (
-                    <div className="border-t border-border px-3 py-2">
+                    <div className="border-t border-border px-4 py-3">
                       {parcelas.length === 0 ? (
                         <p className="text-xs text-muted-foreground">
                           Sem parcelas registradas para esta venda.

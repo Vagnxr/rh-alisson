@@ -230,7 +230,7 @@ export function EntradaTable({
                     colSpan={columns.length}
                     className="px-6 py-12 text-center text-sm text-muted-foreground"
                   >
-                    <p>Nenhum registro no periodo.</p>
+                    <p>Nenhum registro no período.</p>
                   </td>
                 </tr>
               ) : (

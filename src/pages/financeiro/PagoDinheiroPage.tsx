@@ -223,7 +223,7 @@ export function PagoDinheiroPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className={PAGE_TITLE}>Pago em Dinheiro</h1>
-          <p className={PAGE_SUBTITLE}>Data, descricao/fornecedor e valor</p>
+          <p className={PAGE_SUBTITLE}>Data, descrição/fornecedor e valor</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />

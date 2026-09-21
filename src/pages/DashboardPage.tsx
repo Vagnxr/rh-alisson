@@ -200,7 +200,7 @@ export function DashboardPage() {
                   <table className="w-full">
                     <thead className={TABLE_HEAD}>
                       <tr>
-                        <th className={cn(TABLE_TH, 'font-bold')}>Descricao</th>
+                        <th className={cn(TABLE_TH, 'font-bold')}>Descrição</th>
                         <th className={cn(TABLE_TH, 'font-bold')}>Categoria</th>
                         <th className={cn(TABLE_TH, 'font-bold')}>Data</th>
                         <th className={cn(TABLE_TH, 'text-right font-bold')}>Valor</th>

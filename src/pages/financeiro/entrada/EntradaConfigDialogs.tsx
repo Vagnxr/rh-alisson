@@ -230,7 +230,7 @@ export function EntradaConfigDialogs({
                 />
                 <span>
                   Comunicar agenda{' '}
-                  <span className="text-muted-foreground">(modo Boleto: gera agenda, saida ao pagar)</span>
+                  <span className="text-muted-foreground">(modo Boleto: gera agenda, saída ao pagar)</span>
                 </span>
               </label>
               <button

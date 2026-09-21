@@ -154,7 +154,7 @@ export function DespesaBancoGerenciarBancosDialog({
                   />
                   <input
                     type="text"
-                    placeholder="Codigo (opcional)"
+                    placeholder="Código (opcional)"
                     value={bancoForm.codigo}
                     onChange={(e) => setBancoForm((f) => ({ ...f, codigo: e.target.value }))}
                     className="flex h-9 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-sm"

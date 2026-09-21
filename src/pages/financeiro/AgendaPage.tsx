@@ -227,7 +227,7 @@ export function AgendaPage() {
     e.preventDefault();
     const descricao = formDirect.descricao?.trim() ?? '';
     if (!descricao) {
-      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Descricao e Valor.</span>);
+      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Descrição e Valor.</span>);
       return;
     }
     if (formDirect.recorrente && formDirect.valores?.length) {
@@ -265,7 +265,7 @@ export function AgendaPage() {
     const data = formDirect.data?.trim().slice(0, 10) ?? '';
     const valorNum = parseValorFromInput(formDirect.valor);
     if (!data) {
-      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Data, Descricao e Valor.</span>);
+      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Data, Descrição e Valor.</span>);
       return;
     }
     if (valorNum <= 0) {
@@ -279,7 +279,7 @@ export function AgendaPage() {
         valor: valorNum,
       };
       await addItemDirect(payload);
-      toast.success(<span data-testid="agenda-mensagem-sucesso">Lancamento adicionado na agenda.</span>);
+      toast.success(<span data-testid="agenda-mensagem-sucesso">Lançamento adicionado na agenda.</span>);
       setOpenLancarDirect(false);
       setFormDirect(initialFormDirect);
       fetchDias({ dataInicio, dataFim }).catch(() => {});
@@ -305,11 +305,11 @@ export function AgendaPage() {
     const descricao = formEditDirect.descricao.trim();
     const valorNum = parseValorFromInput(formEditDirect.valor);
     if (!descricao) {
-      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Data, Descricao e Valor.</span>);
+      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Data, Descrição e Valor.</span>);
       return;
     }
     if (valorNum <= 0) {
-      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Data, Descricao e Valor.</span>);
+      toast.error(<span data-testid="agenda-mensagem-erro">Preencha Data, Descrição e Valor.</span>);
       return;
     }
     try {
@@ -331,7 +331,7 @@ export function AgendaPage() {
     if (!excluirItemId) return;
     try {
       await deleteItemDirect(excluirItemId);
-      toast.success(<span data-testid="agenda-mensagem-sucesso">Lancamento excluido da agenda.</span>);
+      toast.success(<span data-testid="agenda-mensagem-sucesso">Lançamento excluido da agenda.</span>);
       setExcluirItemId(null);
       await fetchDias({ dataInicio, dataFim });
       if (diaSelecionado?.data) await fetchDia(diaSelecionado.data);
@@ -862,7 +862,7 @@ export function AgendaPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir lancamento</AlertDialogTitle>
+            <AlertDialogTitle>Excluir lançamento</AlertDialogTitle>
             <AlertDialogDescription>
               Excluir este lancamento da agenda? Esta acao nao pode ser desfeita.
             </AlertDialogDescription>

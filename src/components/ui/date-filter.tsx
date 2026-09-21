@@ -40,6 +40,20 @@ export function getDefaultFilter(): DateFilterValue {
   };
 }
 
+/**
+ * Filtro do DIA de hoje.
+ *
+ * Pedido do cliente para A Receber, e so para ela ("deixa SO AQUI sempre que
+ * clicar nessa tela a data abrir no dia que estiver"): a tela responde "o que
+ * cai na conta hoje", entao abrir no mes inteiro obrigava a estreitar o periodo
+ * toda vez. As demais telas seguem com `getDefaultFilter` (mes corrente).
+ */
+export function getTodayFilter(): DateFilterValue {
+  const now = new Date();
+  const dia = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return { period: 'day', startDate: dia, endDate: dia };
+}
+
 export function DateFilter({ value, onChange, className }: DateFilterProps) {
   const [filter, setFilter] = useState<DateFilterValue>(value || getDefaultFilter());
   const [isOpen, setIsOpen] = useState(false);
@@ -206,7 +220,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
         >
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-2.5">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="text-sm font-medium text-foreground">Periodo</span>
+                <span className="text-sm font-medium text-foreground">Período</span>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
@@ -238,7 +252,7 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
               </div>
 
               <div className="mt-2.5 border-t border-border pt-2.5">
-                <p className="mb-2 text-xs font-medium text-muted-foreground">Periodo personalizado</p>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Período personalizado</p>
                 <div className="flex flex-col gap-3">
                   <div className="min-w-0">
                     <label htmlFor="date-filter-start" className="mb-1 block text-xs text-muted-foreground">

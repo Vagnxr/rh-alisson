@@ -112,7 +112,7 @@ function GraficoBarras({
         </div>
         <div className="flex items-center gap-1">
           <div className="h-3 w-3 rounded bg-red-400" />
-          <span className="text-muted-foreground">Saidas</span>
+          <span className="text-muted-foreground">Saídas</span>
         </div>
       </div>
     </div>
@@ -264,8 +264,8 @@ export function RelatoriosPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className={PAGE_TITLE}>Relatorios</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Analise detalhada dos dados financeiros</p>
+          <h1 className={PAGE_TITLE}>Relatórios</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Análise detalhada dos dados financeiros</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <DateFilter value={dateFilter} onChange={setDateFilter} />
@@ -277,7 +277,7 @@ export function RelatoriosPage() {
             <option value="">Todos os Tipos</option>
             <option value="despesa-fixa">Despesa Fixa</option>
             <option value="despesa-extra">Despesa Extra</option>
-            <option value="funcionario">Funcionario</option>
+            <option value="funcionario">Funcionário</option>
             <option value="imposto">Imposto</option>
           </select>
           <ExportButtons
@@ -322,7 +322,7 @@ export function RelatoriosPage() {
               <DollarSign className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Lucro Liquido</p>
+              <p className="text-xs font-medium text-muted-foreground">Lucro Líquido</p>
               <p className={cn('text-lg font-bold', lucroTotal >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                 {formatCurrency(lucroTotal)}
               </p>
@@ -343,7 +343,7 @@ export function RelatoriosPage() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-medium text-foreground">Selecione o Relatorio</h2>
+        <h2 className="mb-3 text-sm font-medium text-foreground">Selecione o Relatório</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {RELATORIOS.slice(0, 4).map((config) => (
             <RelatorioCard
@@ -403,9 +403,9 @@ export function RelatoriosPage() {
               ))}
             </div>
           ) : (tipoRelatorio === 'por-tipo' || tipoRelatorio === 'por-loja' || tipoRelatorio === 'comparativo') ? (
-            <p className="text-sm text-muted-foreground">Relatorio em breve.</p>
+            <p className="text-sm text-muted-foreground">Relatório em breve.</p>
           ) : (
-            <p className="text-sm text-muted-foreground">Nenhum dado no periodo.</p>
+            <p className="text-sm text-muted-foreground">Nenhum dado no período.</p>
           )}
         </div>
 

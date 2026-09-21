@@ -160,68 +160,62 @@ export function getModulosHabilitados(json: TaxasJsonShape | null | undefined): 
 }
 
 /**
- * Defaults canonicos de voucher conforme tabela do cliente (planilha 27/05/2026).
- * Espelho de DEFAULT_VOUCHER_CONFIGS do backend — manter em sincronia.
+ * Defaults canonicos de voucher.
+ *
+ * Ate 27/08/2026 estes defaults carregavam os numeros da loja do cliente
+ * (planilha 27/05/2026): taxa 6,3, DOC 8,37, anuidade 150... Num sistema
+ * multi-tenant isso entrega a tabela de UMA loja para todas as outras, e o
+ * cliente pediu campo zerado "para a pessoa preencher TAXA, PRAZO, DOC, POR
+ * VENDA, ANUIDADE e CORTE".
+ *
+ * Fica pre-preenchido apenas o FECHAMENTO, que e regra da bandeira e nao numero
+ * negociado: Alelo e Ben normal, Verocard quinzenal, o resto semanal. O CORTE
+ * sai vazio de proposito — sem ele o campo aparece em branco ate a escolha.
+ *
+ * As categorias continuam aqui: sao a estrutura da bandeira (Ticket tem
+ * Alimentacao/Restaurante/Flex), nao valores negociados.
  */
 export const DEFAULT_VOUCHER_CONFIGS: Record<string, VoucherConfig> = {
-  alelo: { taxa: 5, prazo: 30, fechamento: 'normal' },
-  ben: { taxa: 6, prazo: 30, fechamento: 'normal' },
+  alelo: { taxa: 0, prazo: 0, fechamento: 'normal' },
+  ben: { taxa: 0, prazo: 0, fechamento: 'normal' },
   pluxee: {
-    taxa: 6.3,
-    prazo: 28,
+    taxa: 0,
+    prazo: 0,
     fechamento: 'semanal',
-    corte: 1,
-    doc: 10.19,
-    anuidade: 178.54,
     categorias: [
       { id: 'alimentacao', label: 'Alimentacao' },
-      { id: 'refeicao', label: 'Refeicao', prazo: 23 },
-      { id: 'premium', label: 'Premium', taxa: 5.5, anuidade: 204.24 },
-      { id: 'gift', label: 'Gift', taxa: 5.5, anuidade: 204.24 },
+      { id: 'refeicao', label: 'Refeicao' },
+      { id: 'premium', label: 'Premium' },
+      { id: 'gift', label: 'Gift' },
     ],
   },
   ticket: {
-    taxa: 6.3,
-    prazo: 26,
+    taxa: 0,
+    prazo: 0,
     fechamento: 'semanal',
-    corte: 4,
-    doc: 8.37,
-    anuidade: 150,
     categorias: [
       { id: 'alimentacao', label: 'Alimentacao' },
-      {
-        id: 'restaurante',
-        label: 'Restaurante',
-        taxa: 6,
-        prazo: 30,
-        porVenda: 0.78,
-        usaQtdCupons: true,
-        anuidade: 310.82,
-      },
-      { id: 'flex', label: 'Flex', taxa: 6, porVenda: 0.78, usaQtdCupons: true, anuidade: 310.82 },
+      { id: 'restaurante', label: 'Restaurante', usaQtdCupons: true },
+      { id: 'flex', label: 'Flex', usaQtdCupons: true },
     ],
   },
   vr: {
-    taxa: 5.5,
-    prazo: 28,
+    taxa: 0,
+    prazo: 0,
     fechamento: 'semanal',
-    corte: 1,
-    doc: 6.76,
-    anuidade: 232,
     categorias: [
       { id: 'alimentacao', label: 'Alimentacao' },
-      { id: 'refeicao', label: 'Refeicao', anuidade: 230.2 },
+      { id: 'refeicao', label: 'Refeicao' },
     ],
   },
-  verocard: { taxa: 7.2, prazo: 14, fechamento: 'quinzenal', doc: 4.9, anuidade: 776.95 },
+  verocard: { taxa: 0, prazo: 0, fechamento: 'quinzenal' },
 };
 
 /** Espelho de DEFAULT_IFOOD_CONFIG do backend. */
 export const DEFAULT_IFOOD_CONFIG: IfoodConfig = {
-  taxa: 10.5,
-  prazo: 7,
+  taxa: 0,
+  prazo: 0,
   fechamento: 'semanal',
-  corte: 3,
 };
 
 /**

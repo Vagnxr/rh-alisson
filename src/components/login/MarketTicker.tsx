@@ -61,8 +61,16 @@ export function MarketTicker() {
   const marketRef = useRef(market);
 
   useEffect(() => {
-    // Movimento reduzido: mercado fica estatico, sem intervalo agendado.
-    if (prefersReducedMotion) return;
+    /*
+     * Movimento reduzido nao congela o painel — apenas tira o piscar.
+     *
+     * Antes o efeito nem agendava o intervalo: os valores paravam de mudar e os
+     * cards nunca acendiam. Numa maquina com animacoes reduzidas (padrao em
+     * varios Windows corporativos) o painel inteiro ficava morto, e foi o que o
+     * cliente viu: "os card nao estao piscando... e a informacao de baixo parou
+     * de correr". Os numeros continuam atualizando, so o flash e suprimido.
+     */
+    const intervalo = prefersReducedMotion ? 5000 : 2200;
 
     const id = window.setInterval(() => {
       // O mercado vem de um ref, nao da closure: com `market` nas dependencias,
@@ -73,14 +81,14 @@ export function MarketTicker() {
       const { market: proximo, flash: proximoFlash } = tickMarket(marketRef.current);
       marketRef.current = proximo;
       setMarket(proximo);
-      setFlash(proximoFlash);
+      setFlash(prefersReducedMotion ? {} : proximoFlash);
       // Limpa o flash depois que o ultimo card ja acendeu.
       window.clearTimeout(limparFlashRef.current);
       limparFlashRef.current = window.setTimeout(
         () => setFlash({}),
         500 + PRIMARY_TICKERS.length * ATRASO_POR_CARD_MS,
       );
-    }, 2200);
+    }, intervalo);
 
     return () => {
       window.clearInterval(id);

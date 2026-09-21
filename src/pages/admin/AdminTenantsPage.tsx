@@ -582,13 +582,13 @@ export function AdminTenantsPage() {
                 />
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-foreground">Endereco</label>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Endereço</label>
                   <input
                     type="text"
                     value={formData.endereco}
                     onChange={e => setFormData({ ...formData, endereco: e.target.value })}
                     className={INPUT_CLASS}
-                    placeholder="Endereco completo"
+                    placeholder="Endereço completo"
                   />
                 </div>
               </div>

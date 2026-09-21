@@ -144,7 +144,7 @@ export function SignInView({ onForgot, onSignup, onLogin, isLoading, apiError }:
               {showPwd ? <IconEyeOff size={14} /> : <IconEye size={14} />}
             </button>
           </div>
-          <div className="field-err">Minimo 6 caracteres.</div>
+          <div className="field-err">Mínimo 6 caracteres.</div>
         </div>
 
         <div className="opts">

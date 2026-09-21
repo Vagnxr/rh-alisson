@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { PAGE_TITLE, PAGE_SUBTITLE } from '@/lib/uiClasses';
 import {
   useReactTable,
   getCoreRowModel,
@@ -202,7 +203,7 @@ export function LojasPage() {
             <span
               className={cn(
                 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                isAtiva ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                isAtiva ? 'bg-emerald-50 text-emerald-700' : 'bg-muted text-muted-foreground'
               )}
             >
               {isAtiva ? 'Ativa' : 'Inativa'}
@@ -228,7 +229,7 @@ export function LojasPage() {
             return (
               <div className="flex items-center justify-end gap-1">
                 <button
-                  className="rounded p-1.5 text-muted-foreground hover:bg-slate-100 hover:text-slate-600"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                   title="Editar"
                   onClick={() => handleOpenDialog(loja)}
                 >
@@ -275,8 +276,8 @@ export function LojasPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground sm:text-2xl">Lojas</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h1 className={PAGE_TITLE}>Lojas</h1>
+          <p className={PAGE_SUBTITLE}>
             Gerencie as lojas/filiais da empresa
             {currentTenant && (
               <span className="ml-1 font-medium text-foreground">({currentTenant.name})</span>
@@ -327,7 +328,7 @@ export function LojasPage() {
               { key: 'status', label: 'Status' },
             ]}
             filename="lojas"
-            title="Relatorio de Lojas"
+            title="Relatório de Lojas"
           />
           <button
             onClick={() => handleOpenDialog()}
@@ -460,7 +461,7 @@ export function LojasPage() {
                     </div>
                     <div className="ml-4 flex gap-1">
                       <button
-                        className="rounded p-1.5 text-muted-foreground hover:bg-slate-100 hover:text-slate-600"
+                        className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                         title="Editar"
                         onClick={() => handleOpenDialog(loja)}
                       >

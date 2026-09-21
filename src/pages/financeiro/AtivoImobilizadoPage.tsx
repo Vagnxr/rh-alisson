@@ -623,7 +623,7 @@ export function AtivoImobilizadoPage() {
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted px-4 py-2">
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Ativo Imobilizado - Saida</h2>
+              <h2 className="text-sm font-semibold text-foreground">Ativo Imobilizado - Saída</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Preenchido automaticamente conforme Entrada e pagamentos na Agenda.
               </p>
@@ -642,7 +642,7 @@ export function AtivoImobilizadoPage() {
                 { key: 'valor', label: 'Valor' },
               ]}
               filename="ativo-imobilizado-saida"
-              title="Ativo Imobilizado - Saida"
+              title="Ativo Imobilizado - Saída"
             />
           </div>
           {loading2 ? (
@@ -708,7 +708,7 @@ export function AtivoImobilizadoPage() {
                       })
                     }
                     className={`${inputClass} uppercase`}
-                    placeholder="Descricao / Fornecedor"
+                    placeholder="Descrição / Fornecedor"
                     required
                   />
                 </div>

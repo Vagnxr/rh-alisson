@@ -355,7 +355,7 @@ export function ControleDepositoPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className={PAGE_TITLE}>Controle Deposito</h1>
+          <h1 className={PAGE_TITLE}>Controle Depósito</h1>
           <p className={PAGE_SUBTITLE}>
             Tabela Deposito: reflexo da parte de deposito do caixa. Valor depositado: valor efetivamente depositado.
           </p>
@@ -538,7 +538,7 @@ export function ControleDepositoPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingDeposito ? 'Editar Deposito' : 'Novo Deposito'}</DialogTitle>
-            <DialogDescription>Lancamento manual do valor depositado. Todos os campos sao obrigatorios.</DialogDescription>
+            <DialogDescription>Lançamento manual do valor depositado. Todos os campos sao obrigatorios.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitDeposito} className="flex min-h-0 flex-1 flex-col">
             <DialogBody>

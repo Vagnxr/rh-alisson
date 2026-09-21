@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { DateFilter, getDefaultFilter, type DateFilterValue } from '@/components/ui/date-filter';
+import { DateFilter, getTodayFilter, type DateFilterValue } from '@/components/ui/date-filter';
 import { api } from '@/lib/api';
 import { dateFilterToParams } from '@/lib/financeiro-api';
 import type { AReceberRow } from '@/types/financeiro';
@@ -39,7 +39,7 @@ function formatCurrency(value: number) {
 }
 
 export function AReceberPage() {
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>(getDefaultFilter);
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(getTodayFilter);
   const [credito, setCredito] = useState<AReceberRow[]>([]);
   const [debito, setDebito] = useState<AReceberRow[]>([]);
   const [pix, setPix] = useState<AReceberRow[]>([]);
@@ -277,7 +277,14 @@ export function AReceberPage() {
     );
   };
 
-  /** Voucher consolidado: linhas por bandeira/categoria + DOC por bloco de fechamento. */
+  /** Memoria de calculo do DOC ja abatido na linha (tooltip). */
+  const docDaBandeira = (bandeira: string): string | undefined => {
+    const d = voucher.doc.find((x) => x.bandeira === bandeira);
+    if (!d) return undefined;
+    return `Ja com DOC de ${formatCurrency(d.doc)} x ${d.blocos} bloco${d.blocos > 1 ? 's' : ''} = ${formatCurrency(d.total)}`;
+  };
+
+  /** Voucher consolidado: linhas por bandeira/categoria, ja liquidas de DOC. */
   const renderTabelaVoucher = () => {
     return (
       <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -304,16 +311,13 @@ export function AReceberPage() {
               ) : voucher.itens.map((r) => (
                 <tr key={`${r.bandeira}-${r.categoria ?? ''}`} className="hover:bg-muted/40">
                   <td className="px-4 py-2 text-sm text-foreground">{r.label}</td>
-                  <td className="px-4 py-2 text-right text-sm font-medium text-foreground">{formatCurrency(r.aReceber)}</td>
-                </tr>
-              ))}
-              {voucher.doc.map((d) => (
-                <tr key={`doc-${d.bandeira}`} className="hover:bg-muted/40">
-                  <td className="px-4 py-2 text-sm text-red-600 dark:text-red-400">
-                    DOC {d.label} <span className="text-xs text-muted-foreground">({d.blocos} bloco{d.blocos > 1 ? 's' : ''} x {formatCurrency(d.doc)})</span>
-                  </td>
-                  <td className="px-4 py-2 text-right text-sm font-medium text-red-600 dark:text-red-400">
-                    -{formatCurrency(d.total)}
+                  {/* Valor ja liquido de DOC (rateado no backend). O detalhe da
+                      tarifa fica no title, sem linha separada — pedido do cliente. */}
+                  <td
+                    className="px-4 py-2 text-right text-sm font-medium text-foreground"
+                    title={docDaBandeira(r.bandeira)}
+                  >
+                    {formatCurrency(r.aReceber)}
                   </td>
                 </tr>
               ))}
@@ -333,7 +337,9 @@ export function AReceberPage() {
   /** Card iFood: a receber calculado + valor bruto/loja informativos. */
   const renderTabelaIfood = () => {
     return (
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      // `self-start`: sem isso o card estica ate a altura do card de Voucher, ao
+      // lado, e sobra um bloco branco embaixo das tres linhas.
+      <div className="self-start rounded-xl border border-border bg-card overflow-hidden">
         <div className={cn('border-b border-border px-4 py-2', corHeaderClasses(cores, 'ifood'))}>
           <h2 className="text-sm font-semibold">
             iFood <span className="opacity-70">— consolidado</span>
@@ -343,7 +349,9 @@ export function AReceberPage() {
           <table className="w-full min-w-[280px]">
             <tbody className="divide-y divide-border">
               <tr className="hover:bg-muted/40">
-                <td className="px-4 py-2 text-sm text-foreground">Valor bruto (iFood)</td>
+                {/* "Valor bruto (iFood)" confundia: o recebido na loja ja entrou,
+                    o que falta e o valor do iFood liquido de taxas. */}
+                <td className="px-4 py-2 text-sm text-foreground">Valor iFood</td>
                 <td className="px-4 py-2 text-right text-sm font-medium text-foreground">{formatCurrency(ifood.valorBruto)}</td>
               </tr>
               <tr className="hover:bg-muted/40">
@@ -433,7 +441,7 @@ export function AReceberPage() {
       ) : (
         <div className="space-y-6">
           <section>
-            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Credito</h2>
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Crédito</h2>
             {maquininhasHabilitadas.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhuma maquininha habilitada.</p>
             ) : (
@@ -447,7 +455,7 @@ export function AReceberPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Debito</h2>
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Débito</h2>
             {maquininhasHabilitadas.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhuma maquininha habilitada.</p>
             ) : (

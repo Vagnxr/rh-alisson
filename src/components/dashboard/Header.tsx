@@ -198,7 +198,7 @@ export function Header() {
           <div className="relative" ref={adminMenuRef}>
             <button
               onClick={() => setShowAdminMenu(!showAdminMenu)}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground dark:border-purple-800/50 dark:bg-purple-950/40 dark:text-purple-200 dark:hover:bg-purple-900/50"
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground dark:border-emerald-800/50 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
             >
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Admin</span>
@@ -231,8 +231,11 @@ export function Header() {
           <div className="hidden sm:block">
             <p className="text-sm font-medium text-foreground">
               {user?.nome}
+              {/* Badge verde, nao roxo: "a cor principal do sistema e verde,
+                  esse roxo ta meio estranho nessa parte" — combina com o avatar
+                  ao lado, que ja era verde. */}
               {user?.isSuperAdmin && (
-                <span className="ml-1.5 rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                <span className="ml-1.5 rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
                   Super
                 </span>
               )}

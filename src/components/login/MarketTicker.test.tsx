@@ -90,7 +90,14 @@ describe('MarketTicker', () => {
     expect(primeiroValor(container)).not.toBe(inicial);
   });
 
-  it('nao agenda nada quando o usuario pede movimento reduzido', () => {
+  /*
+   * Movimento reduzido tira o piscar, nao a atualizacao.
+   *
+   * Congelar tudo deixava o painel morto em maquinas com animacao reduzida — o
+   * cliente reportou como bug ("os card nao estao piscando... a informacao de
+   * baixo parou de correr"). O criterio virou: valores mudam, cards nao acendem.
+   */
+  it('com movimento reduzido atualiza os valores mas nao acende os cards', () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn().mockReturnValue({
@@ -103,10 +110,11 @@ describe('MarketTicker', () => {
     const inicial = primeiroValor(container);
 
     act(() => {
-      vi.advanceTimersByTime(INTERVALO_TICK * 3);
+      // Com movimento reduzido o tick e mais espacado (5s).
+      vi.advanceTimersByTime(5000 * 3);
     });
 
-    expect(primeiroValor(container)).toBe(inicial);
+    expect(primeiroValor(container)).not.toBe(inicial);
     expect(cardsAcesos(container)).toBe(0);
   });
 });
