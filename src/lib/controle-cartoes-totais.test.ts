@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ControleCartoesRow } from '@/types/financeiro';
 import {
+  abaterDocNasLinhas,
   agruparPorBlocoCorte,
   calcularTotais,
   calcularTotaisDeBlocos,
@@ -150,7 +151,17 @@ describe('agruparPorBlocoCorte', () => {
   });
 });
 
-describe('agruparPorBlocoCorte — DOC por bloco', () => {
+describe('abaterDocNasLinhas', () => {
+  /*
+   * O DOC e abatido na ORIGEM das linhas, nao no agrupamento.
+   *
+   * Na primeira versao o abatimento vivia dentro de `agruparPorBlocoCorte`, mas
+   * a tabela da tela desenha as celulas a partir dos dados de entrada: a coluna
+   * A RECEBER seguia mostrando o valor cheio enquanto o subtotal logo abaixo ja
+   * vinha com o DOC. Foi o que o cliente viu — "no a receber ta indo o valor sem
+   * o doc". Abatendo aqui, todo consumidor le o mesmo numero.
+   */
+
   /** Cenario exato da planilha do cliente: Ticket Alimentacao, DOC de 8,37. */
   const seteVendas = () =>
     Array.from({ length: 7 }, (_, i) =>
@@ -163,60 +174,17 @@ describe('agruparPorBlocoCorte — DOC por bloco', () => {
       }),
     );
 
-  it('desconta o DOC uma vez por bloco: 6.559,00 vira 6.550,63', () => {
-    const [bloco] = agruparPorBlocoCorte(seteVendas(), 8.37);
-    expect(bloco.subtotal.valor).toBe(7000);
-    expect(bloco.subtotal.aReceber).toBe(6550.63);
-    expect(bloco.subtotal.desconto).toBe(449.37);
-  });
-
-  it('mantem valor - desconto = a receber com o DOC embutido', () => {
-    const [bloco] = agruparPorBlocoCorte(seteVendas(), 8.37);
-    const t = bloco.subtotal;
-    expect(Math.round((t.valor - t.desconto - t.aReceber) * 100) / 100).toBe(0);
-  });
-
-  it('cobra o DOC por bloco, nao por lancamento', () => {
-    const blocos = agruparPorBlocoCorte(
-      [
-        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-14' }),
-        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
-        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
-      ],
-      8.37,
-    );
-    expect(blocos).toHaveLength(2);
-    // Dois blocos = dois DOCs, mesmo com tres lancamentos.
-    const totais = calcularTotaisDeBlocos(blocos);
-    expect(totais.desconto).toBe(205.74); // 189 + 2 x 8,37
-    expect(totais.aReceber).toBe(2794.26); // 2811 - 16,74
-  });
-
-  it('sem DOC configurado, o subtotal nao muda', () => {
-    const [bloco] = agruparPorBlocoCorte(seteVendas());
-    expect(bloco.doc).toBe(0);
-    expect(bloco.subtotal.aReceber).toBe(6559);
-  });
-});
-
-describe('agruparPorBlocoCorte — DOC embutido na linha', () => {
-  /*
-   * O cliente conferiu na tela: bloco com uma venda de R$ 1.000,00 a 6,3%
-   * mostrava a linha com R$ 937,00 e o subtotal com R$ 928,63. Ele pediu o DOC
-   * "junto no A RECEBER e nao separado" — a linha tem de ler o valor que cai
-   * na conta.
-   */
   it('abate o DOC no a receber da linha quando ha um unico lancamento', () => {
-    const [bloco] = agruparPorBlocoCorte(
+    const [row] = abaterDocNasLinhas(
       [linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' })],
       8.37,
     );
-    expect(bloco.rows[0].aReceber).toBe(928.63);
-    expect(bloco.rows[0].desconto).toBe(71.37);
+    expect(row.aReceber).toBe(928.63);
+    expect(row.desconto).toBe(71.37);
   });
 
-  it('rateia o DOC entre as linhas do bloco, proporcional ao a receber', () => {
-    const [bloco] = agruparPorBlocoCorte(
+  it('rateia o DOC entre as linhas do mesmo recebimento', () => {
+    const rows = abaterDocNasLinhas(
       [
         linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
         linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
@@ -225,12 +193,72 @@ describe('agruparPorBlocoCorte — DOC embutido na linha', () => {
     );
     // 8,37 / 2 = 4,185, que arredonda para 4,18 em cada linha; o centavo que
     // sobra sai da maior (empate: a primeira), fechando exatamente 8,37.
-    expect(bloco.rows.map((r) => r.aReceber)).toEqual([932.81, 932.82]);
-    expect(bloco.rows[0].aReceber + bloco.rows[1].aReceber).toBeCloseTo(bloco.subtotal.aReceber, 2);
+    expect(rows.map((r) => r.aReceber)).toEqual([932.81, 932.82]);
   });
 
-  it('mantem a soma das linhas igual ao subtotal do bloco', () => {
-    const [bloco] = agruparPorBlocoCorte(
+  it('cobra o DOC uma vez por data de recebimento, nao por lancamento', () => {
+    const rows = abaterDocNasLinhas(seteVendas(), 8.37);
+    const somaAReceber = rows.reduce((acc, r) => acc + r.aReceber, 0);
+    // 7 vendas, um unico recebimento: 6.559,00 - 8,37.
+    expect(Math.round(somaAReceber * 100) / 100).toBe(6550.63);
+  });
+
+  it('cobra um DOC para cada data de recebimento distinta', () => {
+    const rows = abaterDocNasLinhas(
+      [
+        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-14' }),
+        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
+        linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
+      ],
+      8.37,
+    );
+    const t = calcularTotais(rows);
+    expect(t.desconto).toBe(205.74); // 189 + 2 x 8,37
+    expect(t.aReceber).toBe(2794.26); // 2811 - 16,74
+  });
+
+  it('preserva a ordem original das linhas', () => {
+    const entrada = [
+      linha({ id: 'c', data: '2026-08-21', valor: 300, aReceber: 281.1, dataAReceber: '2026-09-21' }),
+      linha({ id: 'a', data: '2026-08-19', valor: 1000, aReceber: 937, dataAReceber: '2026-09-21' }),
+      linha({ id: 'b', data: '2026-08-20', valor: 500, aReceber: 468.5, dataAReceber: '2026-09-21' }),
+    ];
+    expect(abaterDocNasLinhas(entrada, 8.37).map((r) => r.id)).toEqual(['c', 'a', 'b']);
+  });
+
+  it('nao altera nada quando a bandeira nao cobra DOC', () => {
+    const entrada = [linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' })];
+    expect(abaterDocNasLinhas(entrada, 0)[0].aReceber).toBe(937);
+  });
+
+  it('mantem valor - desconto = a receber em cada linha', () => {
+    for (const r of abaterDocNasLinhas(seteVendas(), 8.37)) {
+      expect(Math.round((r.valor - r.desconto - r.aReceber) * 100) / 100).toBe(0);
+    }
+  });
+});
+
+describe('agruparPorBlocoCorte', () => {
+  /* Agrupa e soma; o DOC ja chegou abatido nas linhas (ver acima). */
+
+  it('separa os lancamentos por data de recebimento', () => {
+    const blocos = agruparPorBlocoCorte(
+      abaterDocNasLinhas(
+        [
+          linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-14' }),
+          linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
+          linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
+        ],
+        8.37,
+      ),
+      8.37,
+    );
+    expect(blocos).toHaveLength(2);
+    expect(blocos.map((b) => b.chave)).toEqual(['2026-09-14', '2026-09-21']);
+  });
+
+  it('o subtotal fecha exatamente com a soma das linhas do bloco', () => {
+    const rows = abaterDocNasLinhas(
       [
         linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' }),
         linha({ valor: 500, desconto: 31.5, aReceber: 468.5, dataAReceber: '2026-09-21' }),
@@ -238,31 +266,37 @@ describe('agruparPorBlocoCorte — DOC embutido na linha', () => {
       ],
       8.37,
     );
-    const somaLinhas = bloco.rows.reduce((acc, r) => acc + r.aReceber, 0);
-    expect(Math.round(somaLinhas * 100) / 100).toBe(bloco.subtotal.aReceber);
+    const [bloco] = agruparPorBlocoCorte(rows, 8.37);
+    const soma = bloco.rows.reduce((acc, r) => acc + r.aReceber, 0);
+    expect(Math.round(soma * 100) / 100).toBe(bloco.subtotal.aReceber);
   });
 
-  it('nao altera as linhas quando a bandeira nao cobra DOC', () => {
-    const [bloco] = agruparPorBlocoCorte(
+  it('nao cobra o DOC de novo no subtotal', () => {
+    const rows = abaterDocNasLinhas(
       [linha({ valor: 1000, desconto: 63, aReceber: 937, dataAReceber: '2026-09-21' })],
-      0,
+      8.37,
     );
-    expect(bloco.rows[0].aReceber).toBe(937);
+    const [bloco] = agruparPorBlocoCorte(rows, 8.37);
+    expect(bloco.subtotal.aReceber).toBe(928.63);
+    expect(bloco.doc).toBe(8.37);
   });
 });
 
 describe('calcularTotaisDeBlocos', () => {
   it('soma os subtotais ja com DOC, batendo com o rodape da tela', () => {
     const blocos = agruparPorBlocoCorte(
-      [
-        linha({ valor: 1000, desconto: 20, aReceber: 980, dataAReceber: '2026-07-20' }),
-        linha({ valor: 500, desconto: 5, aReceber: 495, dataAReceber: '2026-08-17' }),
-      ],
+      abaterDocNasLinhas(
+        [
+          linha({ valor: 1000, desconto: 20, aReceber: 980, dataAReceber: '2026-07-20' }),
+          linha({ valor: 500, desconto: 5, aReceber: 495, dataAReceber: '2026-08-17' }),
+        ],
+        10,
+      ),
       10,
     );
     const t = calcularTotaisDeBlocos(blocos);
     expect(t.valor).toBe(1500);
-    expect(t.aReceber).toBe(1455); // 1475 - 2 x 10
+    expect(t.aReceber).toBe(1455); // 1475 - 2 x 10 (um DOC por recebimento)
     expect(t.quantidade).toBe(2);
   });
 

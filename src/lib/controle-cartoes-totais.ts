@@ -89,22 +89,48 @@ export function agruparPorBlocoCorte(rows: ControleCartoesRow[], doc = 0): Bloco
   return [...mapa.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([chave, itens]) => {
-      const base = calcularTotais(itens);
       const ordenados = [...itens].sort((a, b) => (a.data ?? '').localeCompare(b.data ?? ''));
       return {
         chave,
-        rows: tarifa > 0 ? ratearDoc(ordenados, tarifa) : ordenados,
+        rows: ordenados,
         doc: tarifa,
-        subtotal:
-          tarifa > 0
-            ? {
-                ...base,
-                desconto: round2(base.desconto + tarifa),
-                aReceber: round2(base.aReceber - tarifa),
-              }
-            : base,
+        // Subtotal sai das proprias linhas: elas ja chegam com o DOC abatido
+        // (`abaterDocNasLinhas`, aplicado na origem dos dados da tela). Somar a
+        // tarifa de novo aqui cobraria o DOC duas vezes.
+        subtotal: calcularTotais(ordenados),
       };
     });
+}
+
+/**
+ * Abate o DOC nas linhas, agrupando por data de recebimento, SEM reordenar.
+ *
+ * O rateio por bloco existia so dentro de `agruparPorBlocoCorte`, que a tela usa
+ * apenas quando o fechamento e semanal ou quinzenal. Com fechamento `normal`
+ * (Alelo e Ben, pela regra do cliente) a tela nao agrupa — e o DOC nao era
+ * abatido em lugar nenhum do Controle de Cartoes, enquanto A Receber e Venda e
+ * Perda abatiam. As tres telas mostravam numeros diferentes para a mesma venda.
+ *
+ * Aqui o criterio de bloco e o mesmo dos outros dois: uma data de recebimento
+ * distinta e um bloco, com ou sem fechamento configurado.
+ */
+export function abaterDocNasLinhas(rows: ControleCartoesRow[], doc = 0): ControleCartoesRow[] {
+  const tarifa = round2(Number(doc) || 0);
+  if (tarifa <= 0 || rows.length === 0) return rows;
+
+  const porData = new Map<string, ControleCartoesRow[]>();
+  for (const r of rows) {
+    const chave = (r.dataAReceber ?? '').slice(0, 10);
+    const atual = porData.get(chave);
+    if (atual) atual.push(r);
+    else porData.set(chave, [r]);
+  }
+
+  const ajustadaPorId = new Map<string, ControleCartoesRow>();
+  for (const doBloco of porData.values()) {
+    for (const linha of ratearDoc(doBloco, tarifa)) ajustadaPorId.set(linha.id, linha);
+  }
+  return rows.map((r) => ajustadaPorId.get(r.id) ?? r);
 }
 
 /**

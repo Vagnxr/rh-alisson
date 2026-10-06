@@ -56,6 +56,7 @@ import {
 import { useTaxasPrazos } from '@/hooks/useTaxasPrazos';
 import { useLatestRequest } from '@/hooks/useLatestRequest';
 import {
+  abaterDocNasLinhas,
   agruparPorBlocoCorte,
   calcularTotais,
   calcularTotaisDeBlocos,
@@ -698,8 +699,29 @@ export function ControleCartoesPage() {
     [tab, tipoCredito, mostrarQtdCupons, bandeirasVoucherAll]
   );
 
+  const fechamentoDaAba = useMemo(() => {
+    if (tab === 'voucher') return voucherCfgEfetiva?.fechamento ?? 'normal';
+    if (tab === 'ifood') return json.ifoodConfig?.fechamento ?? DEFAULT_IFOOD_CONFIG.fechamento ?? 'normal';
+    return 'normal';
+  }, [tab, voucherCfgEfetiva, json]);
+  const usaBlocos = (tab === 'voucher' || tab === 'ifood') && fechamentoDaAba !== 'normal';
+
+  /** Tarifa fixa por bloco (DOC). So o voucher cobra; o iFood nao tem DOC. */
+  const docDaAba = tab === 'voucher' ? (voucherCfgEfetiva?.doc ?? 0) : 0;
+
+  /**
+   * Linhas da aba com o DOC ja abatido — a unica fonte da tela.
+   *
+   * Antes o abatimento era feito depois, dentro do agrupamento por bloco, mas a
+   * tabela desenha as celulas a partir DESTES dados: a coluna A RECEBER
+   * continuava mostrando o valor cheio enquanto o subtotal logo abaixo mostrava
+   * o valor com DOC. Abatendo aqui, tabela, ordenacao, subtotais, rodape e
+   * exportacao leem todos o mesmo numero.
+   */
+  const itemsComDoc = useMemo(() => abaterDocNasLinhas(items, docDaAba), [items, docDaAba]);
+
   const table = useReactTable({
-    data: items,
+    data: itemsComDoc,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -722,15 +744,6 @@ export function ControleCartoesPage() {
    * "tem que tirar esse bloco de corte deles". O iFood, ao contrario, fecha
    * semanalmente e passou a usar blocos como o voucher.
    */
-  const fechamentoDaAba = useMemo(() => {
-    if (tab === 'voucher') return voucherCfgEfetiva?.fechamento ?? 'normal';
-    if (tab === 'ifood') return json.ifoodConfig?.fechamento ?? DEFAULT_IFOOD_CONFIG.fechamento ?? 'normal';
-    return 'normal';
-  }, [tab, voucherCfgEfetiva, json]);
-  const usaBlocos = (tab === 'voucher' || tab === 'ifood') && fechamentoDaAba !== 'normal';
-
-  /** Tarifa fixa por bloco (DOC). So o voucher cobra; o iFood nao tem DOC. */
-  const docDaAba = tab === 'voucher' ? (voucherCfgEfetiva?.doc ?? 0) : 0;
 
   /**
    * Voucher e iFood sao pagos por bloco de fechamento: os subtotais respeitam
@@ -742,8 +755,8 @@ export function ControleCartoesPage() {
     [usaBlocos, linhasVisiveis, docDaAba],
   );
 
-  // Com blocos, o total da aba e a soma dos subtotais — senao o rodape ignoraria
-  // o DOC e nao fecharia com os subtotais logo acima.
+  // Com blocos, o total da aba e a soma dos subtotais — senao o rodape nao
+  // fecharia com os subtotais logo acima. O DOC ja veio abatido nas linhas.
   const totaisGerais = useMemo(
     () => (usaBlocos ? calcularTotaisDeBlocos(blocosCorte) : calcularTotais(linhasVisiveis)),
     [usaBlocos, blocosCorte, linhasVisiveis],
