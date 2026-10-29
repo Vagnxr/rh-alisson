@@ -349,6 +349,25 @@ export function ControleCartoesPage() {
     [voucherSelecionado, categoriaVoucher],
   );
 
+  /**
+   * Mantem a categoria voucher valida para a bandeira selecionada.
+   *
+   * A categoria so era escolhida no clique da bandeira. Quando a bandeira vinha
+   * do padrao ou do fallback acima e tinha categorias (ex.: Ticket), a aba abria
+   * sem nenhuma marcada: a lista misturava Alimentacao e Restaurante no mesmo
+   * bloco de corte com um DOC so (o A Receber cobra um por categoria), e o
+   * lancamento novo era gravado sem categoria, calculado pela config da bandeira.
+   */
+  useEffect(() => {
+    if (!voucherSelecionado) return;
+    const cats = voucherSelecionado.voucher?.categorias ?? [];
+    if (cats.length === 0) {
+      if (categoriaVoucher) setCategoriaVoucher('');
+      return;
+    }
+    if (!cats.some((c) => c.id === categoriaVoucher)) setCategoriaVoucher(cats[0].id);
+  }, [voucherSelecionado, categoriaVoucher]);
+
   /** Se o modulo da aba atual for desabilitado, volta para credito. */
   useEffect(() => {
     if ((tab === 'voucher' && !modulos.voucher) || (tab === 'ifood' && !modulos.ifood)) {
