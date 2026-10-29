@@ -56,7 +56,6 @@ import {
 import { useTaxasPrazos } from '@/hooks/useTaxasPrazos';
 import { useLatestRequest } from '@/hooks/useLatestRequest';
 import {
-  abaterDocNasLinhas,
   agruparPorBlocoCorte,
   calcularTotais,
   calcularTotaisDeBlocos,
@@ -709,19 +708,15 @@ export function ControleCartoesPage() {
   /** Tarifa fixa por bloco (DOC). So o voucher cobra; o iFood nao tem DOC. */
   const docDaAba = tab === 'voucher' ? (voucherCfgEfetiva?.doc ?? 0) : 0;
 
-  /**
-   * Linhas da aba com o DOC ja abatido — a unica fonte da tela.
-   *
-   * Antes o abatimento era feito depois, dentro do agrupamento por bloco, mas a
-   * tabela desenha as celulas a partir DESTES dados: a coluna A RECEBER
-   * continuava mostrando o valor cheio enquanto o subtotal logo abaixo mostrava
-   * o valor com DOC. Abatendo aqui, tabela, ordenacao, subtotais, rodape e
-   * exportacao leem todos o mesmo numero.
+  /*
+   * As linhas vao para a tabela como o backend calculou: desconto = taxa % +
+   * tarifa por cupom, sem DOC. O DOC entra uma vez por bloco, so no subtotal e
+   * no rodape (`agruparPorBlocoCorte`). Ratear o DOC nas linhas deixava cada
+   * venda de R$ 100,00 a 6% com R$ 6,71 / R$ 6,74 de desconto, e o cliente quer
+   * ver R$ 6,00 na linha.
    */
-  const itemsComDoc = useMemo(() => abaterDocNasLinhas(items, docDaAba), [items, docDaAba]);
-
   const table = useReactTable({
-    data: itemsComDoc,
+    data: items,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -755,11 +750,12 @@ export function ControleCartoesPage() {
     [usaBlocos, linhasVisiveis, docDaAba],
   );
 
-  // Com blocos, o total da aba e a soma dos subtotais — senao o rodape nao
-  // fecharia com os subtotais logo acima. O DOC ja veio abatido nas linhas.
+  // O total da aba e sempre a soma dos subtotais por data de recebimento, com
+  // um DOC por recebimento — com ou sem faixa de bloco na tela. Sem DOC (demais
+  // abas) isso e so a soma das linhas.
   const totaisGerais = useMemo(
-    () => (usaBlocos ? calcularTotaisDeBlocos(blocosCorte) : calcularTotais(linhasVisiveis)),
-    [usaBlocos, blocosCorte, linhasVisiveis],
+    () => calcularTotaisDeBlocos(usaBlocos ? blocosCorte : agruparPorBlocoCorte(linhasVisiveis, docDaAba)),
+    [usaBlocos, blocosCorte, linhasVisiveis, docDaAba],
   );
 
   /** Faixa de separacao dos blocos, na cor configurada do modulo. */
@@ -1194,8 +1190,8 @@ export function ControleCartoesPage() {
               </tbody>
             ) : usaBlocos ? (
               // Voucher e iFood: um tbody por bloco de corte, cada um com seu
-              // subtotal (DOC ja embutido). A faixa usa a cor do modulo para os
-              // blocos ficarem visualmente separados.
+              // subtotal (o DOC entra so nele, nao nas linhas). A faixa usa a cor
+              // do modulo para os blocos ficarem visualmente separados.
               blocosCorte.map((bloco) => {
                 const idsDoBloco = new Set(bloco.rows.map((r) => r.id));
                 const linhasDoBloco = table
@@ -1207,10 +1203,8 @@ export function ControleCartoesPage() {
                       <td
                         colSpan={columns.length}
                         className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wider"
-                        title={bloco.doc > 0 ? `DOC de ${formatCurrency(bloco.doc)} ja abatido no a receber das linhas` : undefined}
+                        title={bloco.doc > 0 ? `DOC de ${formatCurrency(bloco.doc)} incluido no desconto do subtotal` : undefined}
                       >
-                        {/* O DOC nao aparece mais aqui: ja esta rateado no a receber
-                            de cada linha (ver ratearDoc). Fica so no title. */}
                         Bloco de corte — recebimento em {formatDateStringToBR(bloco.chave)} (
                         {bloco.subtotal.quantidade} lancamento
                         {bloco.subtotal.quantidade > 1 ? 's' : ''})

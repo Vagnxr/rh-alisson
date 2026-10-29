@@ -64,15 +64,12 @@ export function VendaPerdaPage() {
   const [totalCartoes, setTotalCartoes] = useState<VendaPerdaTotalCartoesRow>(defaultTotalCartoes());
   const [posAluguel, setPosAluguel] = useState<VendaPerdaPosAluguelRow>(defaultPosAluguel());
   const [perdaTotal, setPerdaTotal] = useState<VendaPerdaPerdaTotalRow>(defaultPerdaTotal());
-  /**
-   * DOC do periodo — tarifa fixa por bloco de fechamento das bandeiras voucher.
-   *
-   * O backend ja mandava esse valor e ja o somava na Perda total, mas a tela
-   * nunca o exibiu: ficava dentro dos "Descontos" do Voucher, sem nome. O
-   * cliente nao conseguia conferir e reportou que o DOC "nao esta indo" em
-   * Percas. Agora aparece ao lado do POS aluguel, que e perda da mesma natureza.
+  /*
+   * Sem card de DOC: o DOC ja esta nos "Descontos" do Voucher (junto com taxa e
+   * cupom) e, por ele, na Perda total. O card separado foi pedido numa rodada
+   * anterior e retirado a pedido do cliente em 13/10 ("esse DOC voce pode
+   * tirar") — o total de desconto do Voucher e que traz tudo.
    */
-  const [doc, setDoc] = useState<{ valor: number }>({ valor: 0 });
   const [configMes, setConfigMes] = useState<VendaPerdaConfigMes>({ posAluguel: 0, ifood: defaultIfoodConfig() });
   const [posAluguelInput, setPosAluguelInput] = useState('');
   const [ifoodConfigInput, setIfoodConfigInput] = useState({
@@ -124,7 +121,6 @@ export function VendaPerdaPage() {
           food?: VendaPerdaIfoodRow;
           totalCartoes?: VendaPerdaTotalCartoesRow;
           posAluguel?: VendaPerdaPosAluguelRow;
-    doc?: { valor: number };
           perdaTotal?: VendaPerdaPerdaTotalRow;
         };
         if (d?.credito) setCredito(d.credito);
@@ -136,7 +132,6 @@ export function VendaPerdaPage() {
         if (d?.totalCartoes) setTotalCartoes(d.totalCartoes);
         if (d?.posAluguel) setPosAluguel(d.posAluguel);
         if (d?.perdaTotal) setPerdaTotal(d.perdaTotal);
-      if (d?.doc) setDoc(d.doc);
 
         if (configRes?.data) {
           const cfg = configRes.data;
@@ -212,11 +207,10 @@ export function VendaPerdaPage() {
       { tipo: 'Voucher', totalBruto: formatCurrency(voucher.totalBruto), descontos: formatCurrency(voucher.descontos), totalLiquido: formatCurrency(voucher.totalLiquido) },
       { tipo: 'iFood (cartoes)', totalBruto: formatCurrency(ifood.totalBruto), descontos: formatCurrency(ifood.descontos), totalLiquido: formatCurrency(ifood.totalLiquido) },
       { tipo: 'Total cartoes', totalBruto: formatCurrency(totalCartoes.valorBruto), descontos: formatCurrency(totalCartoes.descontos), totalLiquido: formatCurrency(totalCartoes.totalLiquido) },
-      { tipo: 'DOC', valor: formatCurrency(doc.valor) },
       { tipo: 'POS aluguel', valor: formatCurrency(posAluguel.valor) },
       { tipo: 'Perda total', valor: formatCurrency(perdaTotal.valor) },
     ],
-    [credito, debitoPix, voucher, ifood, totalCartoes, doc, posAluguel, perdaTotal],
+    [credito, debitoPix, voucher, ifood, totalCartoes, posAluguel, perdaTotal],
   );
 
   function renderTabelaResumo(
@@ -377,19 +371,6 @@ export function VendaPerdaPage() {
                   </tr>
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className={CARD_HEADER}>
-              <h2 className={CARD_TITLE}>DOC</h2>
-            </div>
-            <div className="space-y-2 p-5">
-              <p className="text-3xl font-bold text-foreground">{formatCurrency(doc.valor)}</p>
-              <p className="text-sm text-muted-foreground">
-                Tarifa fixa das bandeiras voucher, cobrada uma vez por fechamento.
-                Ja somada nos descontos do Voucher e na Perda total.
-              </p>
             </div>
           </div>
 

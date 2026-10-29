@@ -21,7 +21,7 @@ import { corHeaderClasses } from '@/lib/cores-maquininha';
 interface VoucherAReceberResp {
   itens: { bandeira: string; categoria: string | null; label: string; aReceber: number }[];
   subtotal: number;
-  doc: { bandeira: string; label: string; blocos: number; doc: number; total: number }[];
+  doc: { bandeira: string; categoria?: string | null; label: string; blocos: number; doc: number; total: number }[];
   docTotal: number;
   total: number;
 }
@@ -277,9 +277,9 @@ export function AReceberPage() {
     );
   };
 
-  /** Memoria de calculo do DOC ja abatido na linha (tooltip). */
-  const docDaBandeira = (bandeira: string): string | undefined => {
-    const d = voucher.doc.find((x) => x.bandeira === bandeira);
+  /** Memoria de calculo do DOC ja abatido na linha (tooltip). O DOC vem por bandeira + categoria. */
+  const docDaLinha = (bandeira: string, categoria: string | null): string | undefined => {
+    const d = voucher.doc.find((x) => x.bandeira === bandeira && (x.categoria ?? null) === categoria);
     if (!d) return undefined;
     return `Ja com DOC de ${formatCurrency(d.doc)} x ${d.blocos} bloco${d.blocos > 1 ? 's' : ''} = ${formatCurrency(d.total)}`;
   };
@@ -315,7 +315,7 @@ export function AReceberPage() {
                       tarifa fica no title, sem linha separada — pedido do cliente. */}
                   <td
                     className="px-4 py-2 text-right text-sm font-medium text-foreground"
-                    title={docDaBandeira(r.bandeira)}
+                    title={docDaLinha(r.bandeira, r.categoria ?? null)}
                   >
                     {formatCurrency(r.aReceber)}
                   </td>
